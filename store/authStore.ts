@@ -27,18 +27,24 @@ interface AuthState {
   clearError: () => void;
 }
 
-// ── JWT Decoder ───────────────────────────────────────────────────────────────
+// ── JWT Decoder (SAFE) ─────────────────────────────────────────────────────────
 function decodeJWT(token: string): User | null {
   try {
+    if (!token) return null;
+
     const base64 = token.split(".")[1];
+    if (!base64) return null;
+
     const decoded = JSON.parse(atob(base64));
+
     return {
       user_id: decoded.user_id,
       tenant_id: decoded.tenant_id,
       email: decoded.email,
       role: decoded.role,
     };
-  } catch {
+  } catch (err) {
+    console.error("JWT decode failed:", err);
     return null;
   }
 }
@@ -59,20 +65,21 @@ function getRoleStorageKey(jwtRole: string): string {
     "Manager": "manager",
     "Staff": "staff",
   };
-  return roleMap[jwtRole] || jwtRole.toLowerCase();
+  return roleMap[jwtRole] || jwtRole?.toLowerCase() || "staff";
 }
 
 // ── Cookie setter helper ──────────────────────────────────────────────────────
 function setAuthCookie(user: User) {
-  // Must match EXACTLY what middleware.ts reads:
-  // parsed?.state?.user?.role
   const cookieValue = JSON.stringify({
     state: {
       user,
       isAuthenticated: true,
     },
   });
-  document.cookie = `skitech_auth=${encodeURIComponent(cookieValue)}; path=/; max-age=86400; SameSite=Lax`;
+
+  document.cookie = `skitech_auth=${encodeURIComponent(
+    cookieValue
+  )}; path=/; max-age=86400; SameSite=Lax`;
 }
 
 // ── Auth Store ────────────────────────────────────────────────────────────────
@@ -88,28 +95,34 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email: string, password: string, selectedRole?: string) => {
         set({ isLoading: true, error: null });
+
         try {
           const res = await api.post("/v1/auth/login", {
             email,
             password,
-            // Send selected role to backend for validation
-            // Backend maps "owner" → "Tenant Admin" etc.
             expected_role: selectedRole || null,
           });
 
           const { access_token, refresh_token } = res.data;
 
-          const user = decodeJWT(access_token);
-          if (!user) throw new Error("Invalid token received");
-
-          // Store tokens
+          // 🔥 CRITICAL: Store tokens FIRST
           localStorage.setItem("skitech_access_token", access_token);
           localStorage.setItem("skitech_refresh_token", refresh_token);
-          
-          // Store role for layout checks
-          localStorage.setItem("skitech_role", getRoleStorageKey(user.role));
 
-          // Set cookie for middleware — use helper to ensure consistent structure
+          console.log("✅ Access token stored:", access_token);
+
+          const user = decodeJWT(access_token);
+          if (!user) {
+            throw new Error("Invalid token received");
+          }
+
+          // Store role for layout checks
+          localStorage.setItem(
+            "skitech_role",
+            getRoleStorageKey(user.role)
+          );
+
+          // Set cookie for middleware
           setAuthCookie(user);
 
           set({
@@ -121,12 +134,21 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
 
-          // Return redirect path based on actual role from JWT
           return ROLE_ROUTES[user.role] || "/staff";
         } catch (err: any) {
+          console.error("Login error:", err);
+
           const message =
-            err.response?.data?.detail || "Login failed. Please try again.";
-          set({ isLoading: false, error: message, isAuthenticated: false });
+            err?.response?.data?.detail ||
+            err?.message ||
+            "Login failed. Please try again.";
+
+          set({
+            isLoading: false,
+            error: message,
+            isAuthenticated: false,
+          });
+
           throw new Error(message);
         }
       },
@@ -134,8 +156,10 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         localStorage.removeItem("skitech_access_token");
         localStorage.removeItem("skitech_refresh_token");
-        // Clear cookie
+        localStorage.removeItem("skitech_role");
+
         document.cookie = "skitech_auth=; path=/; max-age=0";
+
         set({
           user: null,
           access_token: null,
@@ -143,6 +167,7 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
           error: null,
         });
+
         window.location.href = "/auth/login";
       },
 
