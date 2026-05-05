@@ -3,6 +3,7 @@ import { Inter, Merriweather, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { SharedStoreProvider } from "../store/SharedStore";
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -38,6 +39,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">
           <SharedStoreProvider>
             {children}
+            <Toaster richColors position="top-right" />
           </SharedStoreProvider>
         </ThemeProvider>
       </body>

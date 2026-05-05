@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { User, Bell, Shield, CreditCard, Globe, Save } from "lucide-react";
+import { User, Bell, Shield, CreditCard, Save, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { usersAPI } from "@/lib/api/users";
+import { useAuthStore } from "@/store/authStore";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User },
@@ -12,13 +15,66 @@ const tabs = [
 ];
 
 export default function SettingsPage() {
+  const { user: authUser } = useAuthStore();
   const [tab, setTab] = useState("profile");
-  const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  // Profile
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileSaving, setProfileSaving] = useState(false);
+
+  // Security
+  const [currentPwd, setCurrentPwd] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
+  const [pwdSaving, setPwdSaving] = useState(false);
+
+  const loadProfile = useCallback(async () => {
+    try {
+      setProfileLoading(true);
+      const res = await usersAPI.me();
+      setFirstName(res.data.first_name ?? "");
+      setLastName(res.data.last_name ?? "");
+      setPhone(res.data.phone_number ?? "");
+    } catch {
+      toast.error("Failed to load profile");
+    } finally {
+      setProfileLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadProfile(); }, [loadProfile]);
+
+  const handleSaveProfile = async () => {
+    setProfileSaving(true);
+    try {
+      await usersAPI.updateMe({ first_name: firstName, last_name: lastName, phone_number: phone });
+      toast.success("Profile saved");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to save profile");
+    } finally {
+      setProfileSaving(false);
+    }
   };
+
+  const handleChangePassword = async () => {
+    if (newPwd !== confirmPwd) { toast.error("Passwords do not match"); return; }
+    if (newPwd.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    setPwdSaving(true);
+    try {
+      await usersAPI.changePassword({ current_password: currentPwd, new_password: newPwd });
+      toast.success("Password updated");
+      setCurrentPwd(""); setNewPwd(""); setConfirmPwd("");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to update password");
+    } finally {
+      setPwdSaving(false);
+    }
+  };
+
+  const initials = [firstName[0], lastName[0]].filter(Boolean).join("").toUpperCase() || authUser?.email?.[0]?.toUpperCase() || "?";
 
   return (
     <div className="p-6 lg:p-8">
@@ -28,16 +84,12 @@ export default function SettingsPage() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar tabs */}
         <div className="lg:w-52 flex-shrink-0">
           <div className="bg-white/70 backdrop-blur rounded-2xl border border-black/10 shadow-sm p-2">
             {tabs.map(t => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
+              <button key={t.id} onClick={() => setTab(t.id)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all mb-0.5 ${tab === t.id ? "bg-gradient-to-r from-black/10 to-neutral-700/10 text-black" : "text-neutral-600 hover:bg-white/50"}`}
-                style={{ fontWeight: tab === t.id ? 600 : 400 }}
-              >
+                style={{ fontWeight: tab === t.id ? 600 : 400 }}>
                 <t.icon className="w-4 h-4" />
                 {t.label}
               </button>
@@ -45,59 +97,57 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Content */}
         <div className="flex-1">
           {tab === "profile" && (
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="bg-white/70 backdrop-blur rounded-2xl border border-black/10 shadow-sm p-8">
               <h2 className="text-black mb-6" style={{ fontWeight: 700, fontSize: "1.05rem" }}>Profile Information</h2>
 
-              {/* Avatar */}
-              <div className="flex items-center gap-5 mb-8">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-black to-neutral-700 flex items-center justify-center text-white" style={{ fontWeight: 800, fontSize: "1.3rem" }}>
-                  OW
+              {profileLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-neutral-300" />
                 </div>
-                <div>
-                  <button className="text-sm text-black border border-black/30 px-4 py-2 rounded-lg hover:bg-black/[0.04] transition-colors">
-                    Change Photo
-                  </button>
-                  <p className="text-neutral-400 text-xs mt-1.5">JPG, PNG up to 2MB</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {[
-                  { label: "First Name", value: "Property" },
-                  { label: "Last Name", value: "Owner" },
-                  { label: "Email Address", value: "owner@grandhoriz.com" },
-                  { label: "Phone Number", value: "+971 50 000 1111" },
-                ].map((f, i) => (
-                  <div key={i}>
-                    <label className="block text-neutral-700 text-sm mb-2" style={{ fontWeight: 500 }}>{f.label}</label>
-                    <input
-                      defaultValue={f.value}
-                      className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all"
-                    />
+              ) : (
+                <>
+                  <div className="flex items-center gap-5 mb-8">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-black to-neutral-700 flex items-center justify-center text-white" style={{ fontWeight: 800, fontSize: "1.3rem" }}>
+                      {initials}
+                    </div>
+                    <div>
+                      <p className="text-neutral-500 text-xs mt-1.5">Avatar uses initials from your name</p>
+                    </div>
                   </div>
-                ))}
-              </div>
-              <div className="mt-6">
-                <label className="block text-neutral-700 text-sm mb-2" style={{ fontWeight: 500 }}>Company / Portfolio Name</label>
-                <input
-                  defaultValue="Grand Horizon Property Group"
-                  className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all"
-                />
-              </div>
 
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={handleSave}
-                className={`mt-6 flex items-center gap-2 px-6 py-3 rounded-xl text-sm shadow-md transition-all ${saved ? "bg-[#10B981] text-white" : "bg-black text-white"}`}
-                style={{ fontWeight: 600 }}
-              >
-                <Save className="w-4 h-4" />
-                {saved ? "Saved!" : "Save Changes"}
-              </motion.button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-neutral-700 text-sm mb-2" style={{ fontWeight: 500 }}>First Name</label>
+                      <input value={firstName} onChange={e => setFirstName(e.target.value)}
+                        className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all" />
+                    </div>
+                    <div>
+                      <label className="block text-neutral-700 text-sm mb-2" style={{ fontWeight: 500 }}>Last Name</label>
+                      <input value={lastName} onChange={e => setLastName(e.target.value)}
+                        className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all" />
+                    </div>
+                    <div>
+                      <label className="block text-neutral-700 text-sm mb-2" style={{ fontWeight: 500 }}>Email Address</label>
+                      <input value={authUser?.email ?? ""} disabled
+                        className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-neutral-400 focus:outline-none cursor-not-allowed" />
+                    </div>
+                    <div>
+                      <label className="block text-neutral-700 text-sm mb-2" style={{ fontWeight: 500 }}>Phone Number</label>
+                      <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+971 50 000 0000"
+                        className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all" />
+                    </div>
+                  </div>
+
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                    onClick={handleSaveProfile} disabled={profileSaving}
+                    className="mt-6 flex items-center gap-2 px-6 py-3 rounded-xl text-sm shadow-md bg-black text-white disabled:opacity-50" style={{ fontWeight: 600 }}>
+                    {profileSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    {profileSaving ? "Saving…" : "Save Changes"}
+                  </motion.button>
+                </>
+              )}
             </motion.div>
           )}
 
@@ -117,7 +167,7 @@ export default function SettingsPage() {
                       <p className="text-black text-sm" style={{ fontWeight: 600 }}>{n.label}</p>
                       <p className="text-neutral-400 text-xs mt-0.5">{n.desc}</p>
                     </div>
-                    <div className={`relative w-11 h-6 rounded-full cursor-pointer transition-colors ${n.enabled ? "bg-[#3B82F6]" : "bg-black/[0.06]"}`}>
+                    <div className={`relative cursor-pointer rounded-full transition-colors ${n.enabled ? "bg-[#3B82F6]" : "bg-black/[0.06]"}`} style={{ width: "44px", height: "24px" }}>
                       <div className={`absolute top-1 w-4 h-4 bg-white/70 backdrop-blur rounded-full shadow transition-all ${n.enabled ? "left-6" : "left-1"}`} />
                     </div>
                   </div>
@@ -128,16 +178,28 @@ export default function SettingsPage() {
 
           {tab === "security" && (
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="bg-white/70 backdrop-blur rounded-2xl border border-black/10 shadow-sm p-8">
-              <h2 className="text-black mb-6" style={{ fontWeight: 700, fontSize: "1.05rem" }}>Security</h2>
+              <h2 className="text-black mb-6" style={{ fontWeight: 700, fontSize: "1.05rem" }}>Change Password</h2>
               <div className="space-y-5">
-                {["Current Password", "New Password", "Confirm New Password"].map((f, i) => (
-                  <div key={i}>
-                    <label className="block text-neutral-700 text-sm mb-2" style={{ fontWeight: 500 }}>{f}</label>
-                    <input type="password" placeholder="••••••••" className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-black/20 transition-all" />
-                  </div>
-                ))}
-                <button className="bg-black text-white px-6 py-3 rounded-xl text-sm shadow-md" style={{ fontWeight: 600 }}>
-                  Update Password
+                <div>
+                  <label className="block text-neutral-700 text-sm mb-2" style={{ fontWeight: 500 }}>Current Password</label>
+                  <input type="password" value={currentPwd} onChange={e => setCurrentPwd(e.target.value)} placeholder="••••••••"
+                    className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-black/20 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-neutral-700 text-sm mb-2" style={{ fontWeight: 500 }}>New Password</label>
+                  <input type="password" value={newPwd} onChange={e => setNewPwd(e.target.value)} placeholder="••••••••"
+                    className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-black/20 transition-all" />
+                  <p className="text-neutral-400 text-xs mt-1">Minimum 8 characters with uppercase, lowercase, and digit</p>
+                </div>
+                <div>
+                  <label className="block text-neutral-700 text-sm mb-2" style={{ fontWeight: 500 }}>Confirm New Password</label>
+                  <input type="password" value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)} placeholder="••••••••"
+                    className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-black/20 transition-all" />
+                </div>
+                <button onClick={handleChangePassword} disabled={pwdSaving || !currentPwd || !newPwd || !confirmPwd}
+                  className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl text-sm shadow-md disabled:opacity-50" style={{ fontWeight: 600 }}>
+                  {pwdSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {pwdSaving ? "Updating…" : "Update Password"}
                 </button>
               </div>
             </motion.div>
@@ -151,23 +213,9 @@ export default function SettingsPage() {
                   <div>
                     <p className="text-neutral-500 text-xs mb-0.5">Current Plan</p>
                     <p className="text-black" style={{ fontWeight: 800, fontSize: "1.3rem" }}>Professional</p>
-                    <p className="text-neutral-500 text-sm mt-1">$99/month · Renews Feb 1, 2025</p>
-                  </div>
-                  <div className="text-right">
-                    <button className="bg-black text-white px-4 py-2 rounded-xl text-sm shadow-md" style={{ fontWeight: 600 }}>
-                      Upgrade
-                    </button>
+                    <p className="text-neutral-500 text-sm mt-1">Contact support to manage billing</p>
                   </div>
                 </div>
-              </div>
-              <h3 className="text-black mb-4" style={{ fontWeight: 600, fontSize: "0.95rem" }}>Billing History</h3>
-              <div className="space-y-2">
-                {["Jan 1, 2025 — $99.00", "Dec 1, 2024 — $99.00", "Nov 1, 2024 — $99.00"].map((b, i) => (
-                  <div key={i} className="flex items-center justify-between py-3 border-b border-black/10 text-sm">
-                    <span className="text-neutral-700">{b}</span>
-                    <span className="text-black" style={{ fontWeight: 600 }}>Paid</span>
-                  </div>
-                ))}
               </div>
             </motion.div>
           )}
