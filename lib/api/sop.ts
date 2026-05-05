@@ -19,4 +19,7 @@ export const sopAPI = {
     api.get(`/v1/sop/items/${sopId}/versions`),
   createVersion: (sopId: string, data: any) =>
     api.post(`/v1/sop/items/${sopId}/versions`, data),
+  myTasks: () => api.get("/v1/sop/my-tasks"),
+  completeTask: (executionId: string) =>
+    api.post(`/v1/sop/complete/${executionId}`),
 };

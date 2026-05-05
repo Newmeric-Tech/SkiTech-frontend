@@ -1,8 +1,18 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import { Download, TrendingUp, TrendingDown } from "lucide-react";
+import { Download, TrendingUp, TrendingDown, BedDouble } from "lucide-react";
+import { toast } from "sonner";
+import { reportsAPI } from "@/lib/api/reports";
+
+interface OccupancyReport {
+  property_id: string; property_name: string;
+  total_rooms: number; occupied_rooms: number;
+  available_rooms: number; maintenance_rooms: number;
+  occupancy_percentage: number;
+}
 
 const revenueData = [
   { month: "Aug", grand: 42000, skyline: 18000, amiras: 21000 },
@@ -90,6 +100,24 @@ const renderLegend = (props: any) => {
 };
 
 export default function ReportsPage() {
+  const [occupancyReports, setOccupancyReports] = useState<OccupancyReport[]>([]);
+
+  const loadOccupancy = useCallback(async () => {
+    try {
+      const res = await reportsAPI.occupancy();
+      const data = res.data as { period: string; reports: OccupancyReport[] };
+      setOccupancyReports(data.reports);
+    } catch {
+      toast.error("Failed to load occupancy data");
+    }
+  }, []);
+
+  useEffect(() => { loadOccupancy(); }, [loadOccupancy]);
+
+  const totalRooms = occupancyReports.reduce((s, r) => s + r.total_rooms, 0);
+  const totalOccupied = occupancyReports.reduce((s, r) => s + r.occupied_rooms, 0);
+  const avgOccupancy = totalRooms > 0 ? Math.round((totalOccupied / totalRooms) * 100) : 0;
+
   return (
     <div className="p-6 lg:p-8 space-y-8">
       <div className="flex items-center justify-between">
@@ -104,10 +132,10 @@ export default function ReportsPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         {[
-          { label: "Total Revenue (MTD)", value: "$131,000", change: "+18.4%", positive: true, color: "#3B82F6" },
-          { label: "Avg. Occupancy", value: "84%", change: "+6.2%", positive: true, color: "#10B981" },
-          { label: "RevPAR", value: "$112", change: "+14.1%", positive: true, color: "#6366F1" },
-          { label: "Guest Satisfaction", value: "4.7/5", change: "+0.2", positive: true, color: "#F59E0B" },
+          { label: "Total Rooms", value: totalRooms > 0 ? String(totalRooms) : "—", change: "Across all properties", positive: true, color: "#3B82F6" },
+          { label: "Live Occupancy", value: totalRooms > 0 ? `${avgOccupancy}%` : "—", change: `${totalOccupied} occupied`, positive: avgOccupancy > 70, color: "#10B981" },
+          { label: "Available Rooms", value: totalRooms > 0 ? String(totalRooms - totalOccupied) : "—", change: "Ready for guests", positive: true, color: "#6366F1" },
+          { label: "Properties Tracked", value: String(occupancyReports.length), change: "Active properties", positive: true, color: "#F59E0B" },
         ].map((k, i) => (
           <motion.div
             key={i}
@@ -126,7 +154,7 @@ export default function ReportsPage() {
                   <TrendingDown className="w-3 h-3 text-amber-600" />
                 </div>
               )}
-              <span className={`text-xs font-medium ${k.positive ? "text-emerald-700" : "text-amber-700"}`}>{k.change} vs last month</span>
+              <span className={`text-xs font-medium ${k.positive ? "text-emerald-700" : "text-amber-700"}`}>{k.change}</span>
             </div>
             <div className="text-slate-500 text-xs mb-2">{k.label}</div>
             <div className="text-3xl font-bold text-slate-950 tracking-tight">{k.value}</div>
@@ -211,6 +239,55 @@ export default function ReportsPage() {
           </LineChart>
         </ResponsiveContainer>
       </div>
+
+      {occupancyReports.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <h3 className="font-bold text-slate-950 text-lg">Live Occupancy by Property</h3>
+            <p className="text-slate-400 text-xs mt-1">Current room status across all properties</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  {["Property", "Total Rooms", "Occupied", "Available", "Maintenance", "Occupancy %"].map(h => (
+                    <th key={h} className="px-6 py-3 text-left text-xs text-slate-500 font-semibold">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {occupancyReports.map((r, i) => (
+                  <motion.tr key={r.property_id}
+                    initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                    className="hover:bg-slate-50/60 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                          <BedDouble className="w-4 h-4 text-blue-500" />
+                        </div>
+                        <span className="text-slate-950 text-sm font-semibold">{r.property_name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600 text-sm">{r.total_rooms}</td>
+                    <td className="px-6 py-4 text-blue-600 text-sm font-semibold">{r.occupied_rooms}</td>
+                    <td className="px-6 py-4 text-emerald-600 text-sm font-semibold">{r.available_rooms}</td>
+                    <td className="px-6 py-4 text-amber-600 text-sm">{r.maintenance_rooms}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-2 rounded-full"
+                            style={{ width: `${r.occupancy_percentage}%`, backgroundColor: r.occupancy_percentage > 70 ? "#10B981" : r.occupancy_percentage > 40 ? "#F59E0B" : "#EF4444" }} />
+                        </div>
+                        <span className="text-slate-950 text-sm font-bold">{r.occupancy_percentage}%</span>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

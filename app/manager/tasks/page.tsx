@@ -1,507 +1,221 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Search, Filter, CheckCircle2, Clock, AlertCircle, User,
-  Calendar, X, ChevronDown, AlignLeft, Tag, Users, Repeat,
-  Paperclip, Trash2, GripVertical, Bell, Flag, Building2, ChevronRight
+  Calendar, X, ChevronDown, Flag, ChevronRight, Loader2, FileText,
 } from "lucide-react";
+import { toast } from "sonner";
+import { sopAPI } from "@/lib/api/sop";
+import { workforceAPI } from "@/lib/api/workforce";
+import { usersAPI } from "@/lib/api/users";
 
-const tasks = [
-  { id: 1, task: "Housekeeping inspection — Floor 1-3", assignee: "Fatima A.", dept: "Housekeeping", due: "10:00 AM", priority: "high", status: "done" },
-  { id: 2, task: "Minibar restocking — All rooms", assignee: "Ahmed K.", dept: "F&B", due: "11:30 AM", priority: "medium", status: "pending" },
-  { id: 3, task: "Maintenance check — Pool area", assignee: "Raj P.", dept: "Maintenance", due: "01:00 PM", priority: "high", status: "pending" },
-  { id: 4, task: "Evening shift briefing", assignee: "Whole team", dept: "All", due: "04:00 PM", priority: "low", status: "upcoming" },
-  { id: 5, task: "Revenue reconciliation report", assignee: "Sarah M.", dept: "Front Desk", due: "05:00 PM", priority: "medium", status: "upcoming" },
-  { id: 6, task: "Guest checkout assistance — VIP suite", assignee: "James L.", dept: "Front Desk", due: "12:00 PM", priority: "high", status: "pending" },
-  { id: 7, task: "Laundry inventory check", assignee: "Maria S.", dept: "Housekeeping", due: "09:00 AM", priority: "low", status: "done" },
-  { id: 8, task: "AC unit repair — Room 302", assignee: "Raj P.", dept: "Maintenance", due: "02:30 PM", priority: "high", status: "overdue" },
-];
+interface SOPCategory { id: string; name: string; }
+interface SOPItem {
+  id: string; category_id: string; title: string; description?: string;
+  priority: "low" | "medium" | "high"; status: string;
+  due_date?: string; assigned_employee_id?: string;
+  created_at: string; updated_at: string;
+}
+interface Employee {
+  id: string; first_name: string; last_name: string;
+  position?: string; department_id?: string;
+}
 
-const staffList = [
-  { id: 1, name: "Fatima Al-Hassan", role: "Housekeeping Lead", dept: "Housekeeping", initials: "FA", color: "#6366F1" },
-  { id: 2, name: "Ahmed Khalid", role: "F&B Supervisor", dept: "F&B", initials: "AK", color: "#3B82F6" },
-  { id: 3, name: "Raj Patel", role: "Maintenance Tech", dept: "Maintenance", initials: "RP", color: "#10B981" },
-  { id: 4, name: "Sarah Mitchell", role: "Front Desk Sr.", dept: "Front Desk", initials: "SM", color: "#F59E0B" },
-  { id: 5, name: "James Lee", role: "Concierge", dept: "Front Desk", initials: "JL", color: "#8B5CF6" },
-  { id: 6, name: "Maria Santos", role: "Housekeeper", dept: "Housekeeping", initials: "MS", color: "#EC4899" },
-  { id: 7, name: "Carlos Rivera", role: "Head Chef", dept: "Kitchen", initials: "CR", color: "#14B8A6" },
-  { id: 8, name: "Nina Patel", role: "Spa Therapist", dept: "Wellness", initials: "NP", color: "#0EA5E9" },
-];
-
-const departments = ["All Departments", "Housekeeping", "F&B", "Maintenance", "Front Desk", "Kitchen", "Wellness", "Security"];
-const categories = ["Inspection", "Cleaning", "Maintenance", "F&B Service", "Guest Service", "Admin", "Safety", "Inventory"];
-
-const statusConfig = {
-  done: { color: "#10B981", bg: "bg-black/[0.04] text-black", label: "Done", icon: CheckCircle2 },
-  pending: { color: "#F59E0B", bg: "bg-black/[0.04] text-neutral-600", label: "In Progress", icon: Clock },
-  upcoming: { color: "#3B82F6", bg: "bg-black/[0.04] text-black", label: "Upcoming", icon: Calendar },
-  overdue: { color: "#EF4444", bg: "bg-black/[0.04] text-black", label: "Overdue", icon: AlertCircle },
+const statusConfig: Record<string, { color: string; bg: string; label: string; icon: typeof CheckCircle2 }> = {
+  pending:     { color: "#F59E0B", bg: "bg-amber-50 text-amber-700 border border-amber-200/60",         label: "Pending",     icon: Clock },
+  in_progress: { color: "#3B82F6", bg: "bg-blue-50 text-blue-700 border border-blue-200/60",            label: "In Progress", icon: Clock },
+  completed:   { color: "#10B981", bg: "bg-emerald-50 text-emerald-700 border border-emerald-200/60",    label: "Done",        icon: CheckCircle2 },
+  overdue:     { color: "#EF4444", bg: "bg-red-50 text-red-700 border border-red-200/60",                label: "Overdue",     icon: AlertCircle },
 };
 
-const priorityConfig = {
-  high: { color: "#EF4444", bg: "bg-black/[0.04] text-black" },
-  medium: { color: "#F59E0B", bg: "bg-black/[0.04] text-neutral-600" },
-  low: { color: "#10B981", bg: "bg-black/[0.04] text-black" },
+const priorityConfig: Record<string, { color: string; bg: string }> = {
+  high:   { color: "#EF4444", bg: "bg-red-50 text-red-700 border border-red-200/60" },
+  medium: { color: "#F59E0B", bg: "bg-amber-50 text-amber-700 border border-amber-200/60" },
+  low:    { color: "#10B981", bg: "bg-emerald-50 text-emerald-700 border border-emerald-200/60" },
 };
 
-// ─── New Task Panel ───────────────────────────────────────────────────────────
-function NewTaskPanel({ onClose, onSubmit }: { onClose: () => void; onSubmit: (task: any) => void }) {
+function NewTaskPanel({
+  categories, employees, onClose, onSubmit,
+}: {
+  categories: SOPCategory[]; employees: Employee[];
+  onClose: () => void; onSubmit: (data: any) => Promise<void>;
+}) {
+  const [step, setStep] = useState<1 | 2>(1);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedStaff, setSelectedStaff] = useState<number[]>([]);
-  const [priority, setPriority] = useState<"high" | "medium" | "low">("medium");
-  const [dueDate, setDueDate] = useState("2026-03-16");
-  const [dueTime, setDueTime] = useState("10:00");
-  const [category, setCategory] = useState("Inspection");
-  const [dept, setDept] = useState("All Departments");
-  const [checklist, setChecklist] = useState<{ id: number; text: string; done: boolean }[]>([
-    { id: 1, text: "Verify room condition", done: false },
-    { id: 2, text: "Document findings", done: false },
-  ]);
-  const [newCheckItem, setNewCheckItem] = useState("");
-  const [recurrence, setRecurrence] = useState("none");
-  const [notify, setNotify] = useState(true);
+  const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [dueDate, setDueDate] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState<string>("");
   const [staffSearch, setStaffSearch] = useState("");
-  const [step, setStep] = useState<1 | 2>(1);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const filteredStaff = staffList.filter(s =>
-    s.name.toLowerCase().includes(staffSearch.toLowerCase()) ||
-    s.dept.toLowerCase().includes(staffSearch.toLowerCase())
+  const filteredStaff = employees.filter(e =>
+    `${e.first_name} ${e.last_name}`.toLowerCase().includes(staffSearch.toLowerCase()) ||
+    (e.position ?? "").toLowerCase().includes(staffSearch.toLowerCase())
   );
 
-  const toggleStaff = (id: number) => {
-    setSelectedStaff(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const handleSubmit = async () => {
+    if (!title.trim()) { setError("Title is required"); setStep(1); return; }
+    if (!categoryId) { setError("Please select a category"); setStep(1); return; }
+    setSaving(true);
+    await onSubmit({
+      title: title.trim(),
+      description: description.trim() || undefined,
+      category_id: categoryId,
+      priority,
+      due_date: dueDate || undefined,
+      assigned_employee_id: selectedEmployee || undefined,
+      status: "pending",
+    });
+    setSaving(false);
   };
 
-  const addCheckItem = () => {
-    if (!newCheckItem.trim()) return;
-    setChecklist(prev => [...prev, { id: Date.now(), text: newCheckItem.trim(), done: false }]);
-    setNewCheckItem("");
-  };
-
-  const removeCheckItem = (id: number) => setChecklist(prev => prev.filter(c => c.id !== id));
-
-  const handleSubmit = () => {
-    if (!title.trim()) return;
-    onSubmit({ title, description, selectedStaff, priority, dueDate, dueTime, category, dept, checklist, recurrence });
-    onClose();
-  };
-
-  const priorityOptions: { key: "high" | "medium" | "low"; label: string; color: string; bg: string; icon: string }[] = [
-    { key: "high", label: "High", color: "#EF4444", bg: "bg-black/[0.04]", icon: "🔴" },
-    { key: "medium", label: "Medium", color: "#F59E0B", bg: "bg-black/[0.04]", icon: "🟡" },
-    { key: "low", label: "Low", color: "#10B981", bg: "bg-black/[0.04]", icon: "🟢" },
+  const priorityOptions: { key: "high" | "medium" | "low"; label: string; color: string }[] = [
+    { key: "high", label: "High", color: "#EF4444" },
+    { key: "medium", label: "Medium", color: "#F59E0B" },
+    { key: "low", label: "Low", color: "#10B981" },
   ];
 
   return (
     <>
-      {/* Backdrop */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" />
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-      />
-
-      {/* Panel */}
-      <motion.div
-        initial={{ x: "100%" }}
-        animate={{ x: 0 }}
-        exit={{ x: "100%" }}
+        initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
         transition={{ type: "spring", damping: 28, stiffness: 260 }}
-        className="fixed right-0 top-0 bottom-0 w-full max-w-[560px] bg-white z-50 flex flex-col shadow-2xl"
-      >
-        {/* ── Header ── */}
+        className="fixed right-0 top-0 bottom-0 w-full max-w-[520px] bg-white z-50 flex flex-col shadow-2xl">
+
         <div className="flex items-center justify-between px-6 py-5 border-b border-black/10 bg-white/80 backdrop-blur">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-black to-neutral-700 flex items-center justify-center shadow-md">
+            <div className="w-9 h-9 rounded-xl bg-black flex items-center justify-center shadow-md">
               <Plus className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-black" style={{ fontWeight: 700, fontSize: "1rem" }}>New Task</h2>
-              <p className="text-neutral-400 text-xs">Assign to staff at Skyline Suites</p>
+              <h2 className="text-black font-bold text-base">New Task</h2>
+              <p className="text-neutral-400 text-xs">Assign to your property's staff</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
-          >
+          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* ── Step tabs ── */}
         <div className="flex border-b border-black/10 bg-white/50">
           {[{ n: 1 as const, label: "Task Details" }, { n: 2 as const, label: "Assign Staff" }].map(({ n, label }) => (
-            <button
-              key={n}
-              onClick={() => setStep(n)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm transition-all relative ${
-                step === n ? "text-black" : "text-neutral-400 hover:text-neutral-600"
-              }`}
-              style={{ fontWeight: step === n ? 600 : 400 }}
-            >
-              <span
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
-                  step === n ? "bg-[#3B82F6] text-white" : "bg-black/[0.06] text-neutral-500"
-                }`}
-                style={{ fontWeight: 700 }}
-              >
-                {n}
-              </span>
+            <button key={n} onClick={() => setStep(n)}
+              className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm transition-all relative ${step === n ? "text-black font-semibold" : "text-neutral-400 hover:text-neutral-600"}`}>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${step === n ? "bg-blue-500 text-white" : "bg-black/[0.06] text-neutral-500"}`}>{n}</span>
               {label}
-              {step === n && (
-                <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#3B82F6]" />
-              )}
+              {step === n && <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />}
             </button>
           ))}
         </div>
 
-        {/* ── Scrollable body ── */}
         <div className="flex-1 overflow-y-auto">
           <AnimatePresence mode="wait">
             {step === 1 ? (
-              <motion.div
-                key="step1"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.18 }}
-                className="p-6 space-y-5"
-              >
-                {/* Title */}
+              <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.18 }} className="p-6 space-y-5">
                 <div>
-                  <label className="block text-neutral-700 text-sm mb-2" style={{ fontWeight: 600 }}>
-                    Task Title <span className="text-black">*</span>
-                  </label>
-                  <input
-                    value={title}
-                    onChange={e => setTitle(e.target.value)}
+                  <label className="block text-neutral-700 text-sm font-semibold mb-2">Title <span className="text-red-500">*</span></label>
+                  <input value={title} onChange={e => { setTitle(e.target.value); setError(""); }}
                     placeholder="e.g. Housekeeping inspection — Floor 1-3"
-                    className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black placeholder:text-neutral-400 focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all"
-                  />
+                    className={`w-full bg-black/[0.03] border rounded-xl px-4 py-3 text-sm text-black placeholder:text-neutral-400 focus:outline-none transition-all ${error ? "border-red-300" : "border-black/10 focus:border-black/20 focus:ring-2 focus:ring-blue-500/10"}`} />
+                  {error && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{error}</p>}
                 </div>
 
-                {/* Description */}
                 <div>
-                  <label className="flex items-center gap-1.5 text-neutral-700 text-sm mb-2" style={{ fontWeight: 600 }}>
-                    <AlignLeft className="w-3.5 h-3.5 text-neutral-400" /> Description
-                  </label>
-                  <textarea
-                    value={description}
-                    onChange={e => setDescription(e.target.value)}
-                    placeholder="Add task details, notes, or special instructions..."
-                    rows={3}
-                    className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black placeholder:text-neutral-400 focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all resize-none"
-                  />
+                  <label className="block text-neutral-700 text-sm font-semibold mb-2">Description</label>
+                  <textarea value={description} onChange={e => setDescription(e.target.value)}
+                    placeholder="Add task details or instructions..." rows={3}
+                    className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black placeholder:text-neutral-400 focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-blue-500/10 transition-all resize-none" />
                 </div>
 
-                {/* Category & Department row */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="flex items-center gap-1.5 text-neutral-700 text-sm mb-2" style={{ fontWeight: 600 }}>
-                      <Tag className="w-3.5 h-3.5 text-neutral-400" /> Category
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={category}
-                        onChange={e => setCategory(e.target.value)}
-                        className="w-full appearance-none bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all pr-8"
-                      >
-                        {categories.map(c => <option key={c}>{c}</option>)}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="flex items-center gap-1.5 text-neutral-700 text-sm mb-2" style={{ fontWeight: 600 }}>
-                      <Building2 className="w-3.5 h-3.5 text-neutral-400" /> Department
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={dept}
-                        onChange={e => setDept(e.target.value)}
-                        className="w-full appearance-none bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all pr-8"
-                      >
-                        {departments.map(d => <option key={d}>{d}</option>)}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
-                    </div>
+                <div>
+                  <label className="block text-neutral-700 text-sm font-semibold mb-2">Category <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <select value={categoryId} onChange={e => setCategoryId(e.target.value)}
+                      className="w-full appearance-none bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-blue-500/10 transition-all pr-8">
+                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
                   </div>
                 </div>
 
-                {/* Priority */}
                 <div>
-                  <label className="flex items-center gap-1.5 text-neutral-700 text-sm mb-2.5" style={{ fontWeight: 600 }}>
+                  <label className="flex items-center gap-1.5 text-neutral-700 text-sm font-semibold mb-2.5">
                     <Flag className="w-3.5 h-3.5 text-neutral-400" /> Priority
                   </label>
                   <div className="flex gap-2.5">
                     {priorityOptions.map(opt => (
-                      <button
-                        key={opt.key}
-                        onClick={() => setPriority(opt.key)}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm transition-all ${
-                          priority === opt.key
-                            ? "border-current shadow-sm"
-                            : "border-black/10 text-neutral-500 hover:border-black/20"
-                        }`}
-                        style={{
-                          color: priority === opt.key ? opt.color : undefined,
-                          backgroundColor: priority === opt.key ? opt.bg : "bg-black/[0.03]",
-                          fontWeight: priority === opt.key ? 700 : 400,
-                        }}
-                      >
-                        <span className="text-base">{opt.icon}</span>
+                      <button key={opt.key} onClick={() => setPriority(opt.key)}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm transition-all ${priority === opt.key ? "border-current shadow-sm font-bold" : "border-black/10 text-neutral-500 hover:border-black/20"}`}
+                        style={{ color: priority === opt.key ? opt.color : undefined }}>
                         {opt.label}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Due date & time */}
                 <div>
-                  <label className="flex items-center gap-1.5 text-neutral-700 text-sm mb-2" style={{ fontWeight: 600 }}>
-                    <Calendar className="w-3.5 h-3.5 text-neutral-400" /> Due Date & Time
+                  <label className="flex items-center gap-1.5 text-neutral-700 text-sm font-semibold mb-2">
+                    <Calendar className="w-3.5 h-3.5 text-neutral-400" /> Due Date
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="date"
-                      value={dueDate}
-                      onChange={e => setDueDate(e.target.value)}
-                      className="bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all"
-                    />
-                    <input
-                      type="time"
-                      value={dueTime}
-                      onChange={e => setDueTime(e.target.value)}
-                      className="bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Recurrence */}
-                <div>
-                  <label className="flex items-center gap-1.5 text-neutral-700 text-sm mb-2" style={{ fontWeight: 600 }}>
-                    <Repeat className="w-3.5 h-3.5 text-neutral-400" /> Recurrence
-                  </label>
-                  <div className="flex gap-2 flex-wrap">
-                    {["none", "daily", "weekly", "monthly"].map(r => (
-                      <button
-                        key={r}
-                        onClick={() => setRecurrence(r)}
-                        className={`px-4 py-1.5 rounded-lg border text-xs transition-all capitalize ${
-                          recurrence === r
-                            ? "bg-black/[0.04] border-[#3B82F6] text-black"
-                            : "bg-black/[0.03] border-black/10 text-neutral-500 hover:border-black/20"
-                        }`}
-                        style={{ fontWeight: recurrence === r ? 600 : 400 }}
-                      >
-                        {r === "none" ? "No repeat" : r.charAt(0).toUpperCase() + r.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Checklist */}
-                <div>
-                  <label className="flex items-center gap-1.5 text-neutral-700 text-sm mb-2.5" style={{ fontWeight: 600 }}>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-neutral-400" /> Checklist
-                    <span className="ml-auto text-xs text-neutral-400" style={{ fontWeight: 400 }}>
-                      {checklist.filter(c => c.done).length}/{checklist.length} done
-                    </span>
-                  </label>
-
-                  {/* Progress bar */}
-                  {checklist.length > 0 && (
-                    <div className="h-1 bg-black/[0.04] rounded-full mb-3">
-                      <div
-                        className="h-1 rounded-full bg-black transition-all duration-500"
-                        style={{ width: `${checklist.length ? (checklist.filter(c => c.done).length / checklist.length) * 100 : 0}%` }}
-                      />
-                    </div>
-                  )}
-
-                  <div className="space-y-2 mb-3">
-                    <AnimatePresence>
-                      {checklist.map((item) => (
-                        <motion.div
-                          key={item.id}
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="flex items-center gap-3 bg-black/[0.03] border border-black/10 rounded-xl px-3 py-2.5 group"
-                        >
-                          <GripVertical className="w-3.5 h-3.5 text-neutral-300 flex-shrink-0 cursor-grab" />
-                          <input
-                            type="checkbox"
-                            checked={item.done}
-                            onChange={() => setChecklist(prev => prev.map(c => c.id === item.id ? { ...c, done: !c.done } : c))}
-                            className="w-4 h-4 rounded border-slate-300 accent-[#3B82F6] cursor-pointer flex-shrink-0"
-                          />
-                          <span className={`flex-1 text-sm ${item.done ? "line-through text-neutral-400" : "text-neutral-700"}`}>
-                            {item.text}
-                          </span>
-                          <button
-                            onClick={() => removeCheckItem(item.id)}
-                            className="opacity-0 group-hover:opacity-100 text-neutral-300 hover:text-red-400 transition-all"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <input
-                      value={newCheckItem}
-                      onChange={e => setNewCheckItem(e.target.value)}
-                      onKeyDown={e => e.key === "Enter" && addCheckItem()}
-                      placeholder="Add checklist item..."
-                      className="flex-1 bg-black/[0.03] border border-black/10 rounded-xl px-3 py-2 text-sm text-black placeholder:text-neutral-400 focus:outline-none focus:border-black/20 transition-colors"
-                    />
-                    <button
-                      onClick={addCheckItem}
-                      className="px-3 py-2 rounded-xl bg-black/[0.04] text-black hover:bg-[#DBEAFE] transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Notify toggle */}
-                <div className="flex items-center justify-between p-4 bg-black/[0.03] border border-black/10 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-black/[0.04] flex items-center justify-center">
-                      <Bell className="w-4 h-4 text-black" />
-                    </div>
-                    <div>
-                      <p className="text-black text-sm" style={{ fontWeight: 500 }}>Send notification</p>
-                      <p className="text-neutral-400 text-xs">Notify assigned staff via app</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setNotify(!notify)}
-                    className={`w-11 h-6 rounded-full transition-colors relative ${notify ? "bg-[#3B82F6]" : "bg-black/[0.06]"}`}
-                  >
-                    <span
-                      className={`absolute top-0.5 w-5 h-5 bg-white/70 backdrop-blur rounded-full shadow-sm transition-all ${notify ? "left-5.5 translate-x-0.5" : "left-0.5"}`}
-                      style={{ left: notify ? "calc(100% - 22px)" : "2px" }}
-                    />
-                  </button>
+                  <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
+                    className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-blue-500/10 transition-all" />
                 </div>
               </motion.div>
             ) : (
-              <motion.div
-                key="step2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.18 }}
-                className="p-6 space-y-5"
-              >
-                {/* Selected staff preview */}
-                {selectedStaff.length > 0 && (
-                  <div className="bg-black/[0.04] border border-[#BFDBFE] rounded-xl p-4">
-                    <p className="text-[#1D4ED8] text-xs mb-3" style={{ fontWeight: 600 }}>
-                      {selectedStaff.length} staff member{selectedStaff.length > 1 ? "s" : ""} selected
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedStaff.map(id => {
-                        const s = staffList.find(x => x.id === id)!;
-                        return (
-                          <div key={id} className="flex items-center gap-2 bg-white border border-[#BFDBFE] rounded-lg px-2.5 py-1.5">
-                            <div className="w-5 h-5 rounded-md flex items-center justify-center text-white text-[9px]" style={{ backgroundColor: s.color, fontWeight: 700 }}>
-                              {s.initials}
-                            </div>
-                            <span className="text-neutral-700 text-xs" style={{ fontWeight: 500 }}>{s.name.split(" ")[0]}</span>
-                            <button onClick={() => toggleStaff(id)} className="text-neutral-400 hover:text-red-400 transition-colors">
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        );
-                      })}
+              <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.18 }} className="p-6 space-y-5">
+                <p className="text-neutral-500 text-sm">Optionally assign this task to a staff member. If left unassigned, it will appear as a general SOP.</p>
+
+                {selectedEmployee && (
+                  <div className="bg-blue-50 border border-blue-200/60 rounded-xl p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-blue-500 text-white text-xs font-bold flex items-center justify-center">
+                        {employees.find(e => e.id === selectedEmployee)?.first_name?.[0] ?? "?"}
+                      </div>
+                      <span className="text-blue-900 text-sm font-semibold">
+                        {(() => { const e = employees.find(x => x.id === selectedEmployee); return e ? `${e.first_name} ${e.last_name}` : ""; })()}
+                      </span>
                     </div>
+                    <button onClick={() => setSelectedEmployee("")} className="text-blue-400 hover:text-blue-600 transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 )}
 
-                {/* Search */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                  <input
-                    value={staffSearch}
-                    onChange={e => setStaffSearch(e.target.value)}
-                    placeholder="Search by name or department..."
-                    className="w-full bg-black/[0.03] border border-black/10 rounded-xl pl-10 pr-4 py-3 text-sm text-black placeholder:text-neutral-400 focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all"
-                  />
+                  <input value={staffSearch} onChange={e => setStaffSearch(e.target.value)}
+                    placeholder="Search staff by name or position..."
+                    className="w-full bg-black/[0.03] border border-black/10 rounded-xl pl-10 pr-4 py-3 text-sm text-black placeholder:text-neutral-400 focus:outline-none focus:border-black/20 transition-all" />
                 </div>
 
-                {/* Department filter chips */}
-                <div className="flex gap-2 flex-wrap">
-                  {["All", "Housekeeping", "F&B", "Maintenance", "Front Desk", "Kitchen"].map(d => (
-                    <button
-                      key={d}
-                      onClick={() => setStaffSearch(d === "All" ? "" : d)}
-                      className={`px-3 py-1 rounded-lg border text-xs transition-all ${
-                        (d === "All" && !staffSearch) || staffSearch === d
-                          ? "bg-black/[0.04] border-[#3B82F6] text-black"
-                          : "bg-black/[0.03] border-black/10 text-neutral-500 hover:border-black/20"
-                      }`}
-                      style={{ fontWeight: (d === "All" && !staffSearch) || staffSearch === d ? 600 : 400 }}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Staff list */}
                 <div className="space-y-2">
-                  <p className="text-neutral-500 text-xs" style={{ fontWeight: 500 }}>
-                    {filteredStaff.length} staff member{filteredStaff.length !== 1 ? "s" : ""} available
-                  </p>
+                  <p className="text-neutral-500 text-xs font-medium">{filteredStaff.length} staff member{filteredStaff.length !== 1 ? "s" : ""} available</p>
                   <AnimatePresence>
-                    {filteredStaff.map((s, i) => {
-                      const isSelected = selectedStaff.includes(s.id);
+                    {filteredStaff.map((e, i) => {
+                      const isSelected = selectedEmployee === e.id;
+                      const initials = `${e.first_name[0] ?? ""}${e.last_name[0] ?? ""}`;
                       return (
-                        <motion.button
-                          key={s.id}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.04 }}
-                          onClick={() => toggleStaff(s.id)}
-                          className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${
-                            isSelected
-                              ? "border-[#3B82F6] bg-black/[0.04]"
-                              : "border-black/10 bg-black/[0.03] hover:border-black/20 hover:bg-white/50"
-                          }`}
-                        >
-                          {/* Avatar */}
-                          <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm flex-shrink-0"
-                            style={{ backgroundColor: s.color, fontWeight: 700 }}
-                          >
-                            {s.initials}
+                        <motion.button key={e.id}
+                          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                          onClick={() => setSelectedEmployee(isSelected ? "" : e.id)}
+                          className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${isSelected ? "border-blue-500 bg-blue-50/50" : "border-black/10 bg-black/[0.03] hover:border-black/20"}`}>
+                          <div className="w-10 h-10 rounded-xl bg-slate-700 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">
+                            {initials}
                           </div>
-
-                          {/* Info */}
                           <div className="flex-1 min-w-0">
-                            <p className="text-black text-sm" style={{ fontWeight: isSelected ? 700 : 500 }}>{s.name}</p>
-                            <div className="flex items-center gap-2 text-xs text-neutral-500 mt-0.5">
-                              <span>{s.role}</span>
-                              <span>·</span>
-                              <span className="px-1.5 py-0.5 rounded bg-black/[0.06] text-neutral-600">{s.dept}</span>
-                            </div>
+                            <p className={`text-sm ${isSelected ? "text-black font-bold" : "text-black font-medium"}`}>{e.first_name} {e.last_name}</p>
+                            {e.position && <p className="text-neutral-500 text-xs mt-0.5">{e.position}</p>}
                           </div>
-
-                          {/* Check */}
-                          <div
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                              isSelected ? "bg-[#3B82F6] border-[#3B82F6]" : "border-slate-300"
-                            }`}
-                          >
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected ? "bg-blue-500 border-blue-500" : "border-slate-300"}`}>
                             {isSelected && <CheckCircle2 className="w-3 h-3 text-white fill-white" />}
                           </div>
                         </motion.button>
@@ -514,49 +228,29 @@ function NewTaskPanel({ onClose, onSubmit }: { onClose: () => void; onSubmit: (t
           </AnimatePresence>
         </div>
 
-        {/* ── Footer ── */}
         <div className="px-6 py-4 border-t border-black/10 bg-white/50">
           {step === 1 ? (
             <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="px-5 py-2.5 rounded-xl border border-black/10 text-neutral-600 text-sm hover:bg-black/[0.04] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => setStep(2)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-black text-white text-sm shadow-md hover:opacity-90 transition-opacity"
-                style={{ fontWeight: 600 }}
-              >
+              <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-black/10 text-neutral-600 text-sm font-semibold hover:bg-black/[0.04] transition-colors">Cancel</button>
+              <button onClick={() => setStep(2)} disabled={!title.trim() || !categoryId}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-black text-white text-sm font-semibold shadow-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed">
                 Next: Assign Staff <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           ) : (
             <div className="flex gap-3">
-              <button
-                onClick={() => setStep(1)}
-                className="px-5 py-2.5 rounded-xl border border-black/10 text-neutral-600 text-sm hover:bg-black/[0.04] transition-colors"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!title.trim() || selectedStaff.length === 0}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-black text-white text-sm shadow-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ fontWeight: 600 }}
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                Create Task {selectedStaff.length > 0 && `& Assign to ${selectedStaff.length}`}
+              <button onClick={() => setStep(1)} className="px-5 py-2.5 rounded-xl border border-black/10 text-neutral-600 text-sm font-semibold hover:bg-black/[0.04] transition-colors">← Back</button>
+              <button onClick={handleSubmit} disabled={saving}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-black text-white text-sm font-semibold shadow-md hover:opacity-90 transition-opacity disabled:opacity-40">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                Create Task{selectedEmployee ? " & Assign" : ""}
               </button>
             </div>
           )}
-
-          {/* Hint */}
           <p className="text-center text-neutral-400 text-xs mt-2.5">
             {step === 1
-              ? `${title.trim() ? "✓ Title set" : "⚠ Title required"} · ${checklist.length} checklist item${checklist.length !== 1 ? "s" : ""}`
-              : `${selectedStaff.length === 0 ? "⚠ Select at least one staff member" : `✓ ${selectedStaff.length} assigned`}`}
+              ? `${title.trim() ? "✓ Title set" : "⚠ Title required"}`
+              : `${selectedEmployee ? "✓ Staff assigned" : "No assignment (optional)"}`}
           </p>
         </div>
       </motion.div>
@@ -564,156 +258,212 @@ function NewTaskPanel({ onClose, onSubmit }: { onClose: () => void; onSubmit: (t
   );
 }
 
-// ─── Main TasksPage ───────────────────────────────────────────────────────────
-export default function TasksPage() {
+export default function ManagerTasksPage() {
+  const [propertyId, setPropertyId] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<SOPItem[]>([]);
+  const [categories, setCategories] = useState<SOPCategory[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [showNewTask, setShowNewTask] = useState(false);
-  const [taskList, setTaskList] = useState(tasks);
 
-  const filteredTasks = taskList.filter(t => {
-    const matchesSearch = t.task.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          t.assignee.toLowerCase().includes(searchQuery.toLowerCase());
+  const load = useCallback(async (propId: string) => {
+    try {
+      const [sopRes, catRes, empRes] = await Promise.all([
+        sopAPI.listSOPs(propId),
+        sopAPI.listCategories(propId),
+        workforceAPI.listEmployees(propId),
+      ]);
+      setTasks(sopRes.data as SOPItem[]);
+      setCategories(catRes.data as SOPCategory[]);
+      setEmployees(empRes.data as Employee[]);
+    } catch {
+      toast.error("Failed to load tasks");
+    }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const meRes = await usersAPI.me();
+        const propId = meRes.data.property_id;
+        if (!propId) { toast.error("No property assigned to your account"); setLoading(false); return; }
+        setPropertyId(propId);
+        await load(propId);
+      } catch {
+        toast.error("Failed to load user info");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [load]);
+
+  const handleCreateTask = async (data: any) => {
+    if (!propertyId) return;
+    try {
+      const res = await sopAPI.createSOP(propertyId, data);
+      setTasks(prev => [res.data as SOPItem, ...prev]);
+      toast.success("Task created");
+      setShowNewTask(false);
+    } catch {
+      toast.error("Failed to create task");
+    }
+  };
+
+  const updateTaskStatus = async (task: SOPItem, status: string) => {
+    try {
+      const res = await sopAPI.updateSOP(task.id, { status });
+      setTasks(prev => prev.map(t => t.id === task.id ? res.data as SOPItem : t));
+      toast.success("Task status updated");
+    } catch {
+      toast.error("Failed to update task");
+    }
+  };
+
+  const filteredTasks = tasks.filter(t => {
+    const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterStatus === "all" || t.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
 
-  const handleNewTask = (data: any) => {
-    const assigneeNames = data.selectedStaff
-      .map((id: number) => staffList.find(s => s.id === id)?.name.split(" ")[0])
-      .join(", ");
-    const newTask = {
-      id: taskList.length + 1,
-      task: data.title,
-      assignee: assigneeNames || "Unassigned",
-      dept: data.dept === "All Departments" ? "All" : data.dept,
-      due: data.dueTime,
-      priority: data.priority,
-      status: "upcoming",
-    };
-    setTaskList(prev => [newTask, ...prev]);
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-8 h-8 animate-spin text-neutral-300" />
+      </div>
+    );
+  }
+
+  const stats = [
+    { label: "Total Tasks", value: tasks.length, color: "#3B82F6" },
+    { label: "Completed", value: tasks.filter(t => t.status === "completed").length, color: "#10B981" },
+    { label: "In Progress", value: tasks.filter(t => t.status === "in_progress").length, color: "#F59E0B" },
+    { label: "Pending", value: tasks.filter(t => t.status === "pending").length, color: "#EF4444" },
+  ];
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-black" style={{ fontSize: "1.4rem", fontWeight: 800 }}>Task Management</h1>
-          <p className="text-neutral-500 text-sm mt-0.5">Assign and track daily operational tasks</p>
+          <h1 className="text-black font-bold" style={{ fontSize: "1.4rem" }}>Task Management</h1>
+          <p className="text-neutral-500 text-sm mt-0.5">Assign and track operational tasks</p>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => setShowNewTask(true)}
-          className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl text-sm shadow-md"
-          style={{ fontWeight: 600 }}
-        >
+        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+          onClick={() => setShowNewTask(true)} disabled={categories.length === 0}
+          className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md disabled:opacity-40" title={categories.length === 0 ? "Create a SOP category first" : undefined}>
           <Plus className="w-4 h-4" /> New Task
         </motion.button>
       </div>
 
-      {/* Stats */}
+      {categories.length === 0 && (
+        <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <p className="text-amber-800 text-sm">Tasks require a SOP category. Go to <strong>SOP Management</strong> and create a category first.</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Total Tasks", value: taskList.length, color: "#3B82F6" },
-          { label: "Completed", value: taskList.filter(t => t.status === "done").length, color: "#10B981" },
-          { label: "In Progress", value: taskList.filter(t => t.status === "pending").length, color: "#F59E0B" },
-          { label: "Overdue", value: taskList.filter(t => t.status === "overdue").length, color: "#EF4444" },
-        ].map((stat, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="bg-white/70 backdrop-blur rounded-xl p-5 border border-black/10 shadow-sm"
-          >
+        {stats.map((stat, i) => (
+          <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+            className="bg-white/70 backdrop-blur rounded-xl p-5 border border-black/10 shadow-sm">
             <div className="text-neutral-500 text-sm mb-1">{stat.label}</div>
-            <div className="text-black" style={{ fontSize: "1.8rem", fontWeight: 800, color: stat.color }}>{stat.value}</div>
+            <div style={{ fontSize: "1.8rem", fontWeight: 800, color: stat.color }}>{stat.value}</div>
           </motion.div>
         ))}
       </div>
 
-      {/* Filters */}
       <div className="bg-white/70 backdrop-blur rounded-xl p-5 border border-black/10 shadow-sm">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search tasks or assignees..."
-              className="w-full bg-white/50 border border-black/10 rounded-lg pl-10 pr-4 py-2.5 text-sm text-black placeholder:text-neutral-400 focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all"
-            />
+            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search tasks..."
+              className="w-full bg-white/50 border border-black/10 rounded-lg pl-10 pr-4 py-2.5 text-sm text-black placeholder:text-neutral-400 focus:outline-none focus:border-black/20 transition-all" />
           </div>
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-neutral-500" />
-            <select
-              value={filterStatus}
-              onChange={e => setFilterStatus(e.target.value)}
-              className="bg-white/50 border border-black/10 rounded-lg px-4 py-2.5 text-sm text-black focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all"
-            >
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+              className="bg-white/50 border border-black/10 rounded-lg px-4 py-2.5 text-sm text-black focus:outline-none focus:border-black/20 transition-all">
               <option value="all">All Status</option>
-              <option value="done">Done</option>
-              <option value="pending">In Progress</option>
-              <option value="upcoming">Upcoming</option>
-              <option value="overdue">Overdue</option>
+              <option value="pending">Pending</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
             </select>
           </div>
         </div>
       </div>
 
-      {/* Task List */}
       <div className="bg-white/70 backdrop-blur rounded-xl border border-black/10 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-black/10">
-          <h3 className="text-black" style={{ fontWeight: 700 }}>All Tasks ({filteredTasks.length})</h3>
+          <h3 className="text-black font-bold">All Tasks ({filteredTasks.length})</h3>
         </div>
         <div className="divide-y divide-slate-50">
-          {filteredTasks.map((t, i) => {
-            const statusCfg = statusConfig[t.status as keyof typeof statusConfig];
-            const priorityCfg = priorityConfig[t.priority as keyof typeof priorityConfig];
-            const StatusIcon = statusCfg.icon;
+          {filteredTasks.length === 0 ? (
+            <div className="flex flex-col items-center py-14 text-neutral-400">
+              <FileText className="w-8 h-8 mb-2 opacity-30" />
+              <p className="text-sm">No tasks found. {tasks.length === 0 ? "Create your first task above." : "Try adjusting filters."}</p>
+            </div>
+          ) : (
+            filteredTasks.map((t, i) => {
+              const statusCfg = statusConfig[t.status] ?? statusConfig.pending;
+              const priorityCfg = priorityConfig[t.priority] ?? priorityConfig.medium;
+              const StatusIcon = statusCfg.icon;
+              const assignedEmp = employees.find(e => e.id === t.assigned_employee_id);
 
-            return (
-              <motion.div
-                key={t.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.03 }}
-                className="flex items-center gap-4 px-6 py-4 hover:bg-white/50/50 transition-colors group"
-              >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: statusCfg.color + "15" }}>
-                  <StatusIcon className="w-5 h-5" style={{ color: statusCfg.color }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-black text-sm mb-1" style={{ fontWeight: 600 }}>{t.task}</p>
-                  <div className="flex items-center gap-4 text-xs text-neutral-500">
-                    <span className="flex items-center gap-1"><User className="w-3 h-3" /> {t.assignee}</span>
-                    <span>·</span>
-                    <span>{t.dept}</span>
-                    <span>·</span>
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Due {t.due}</span>
+              return (
+                <motion.div key={t.id}
+                  initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
+                  className="flex items-center gap-4 px-6 py-4 hover:bg-white/60 transition-colors group">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: statusCfg.color + "15" }}>
+                    <StatusIcon className="w-5 h-5" style={{ color: statusCfg.color }} />
                   </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={`text-xs px-2.5 py-1 rounded-full ${priorityCfg.bg}`} style={{ fontWeight: 600, textTransform: "capitalize" }}>
-                    {t.priority}
-                  </span>
-                  <span className={`text-xs px-2.5 py-1 rounded-full ${statusCfg.bg}`} style={{ fontWeight: 600 }}>
-                    {statusCfg.label}
-                  </span>
-                </div>
-              </motion.div>
-            );
-          })}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-black text-sm font-semibold">{t.title}</p>
+                    <div className="flex items-center gap-3 text-xs text-neutral-500 mt-0.5">
+                      {assignedEmp && (
+                        <span className="flex items-center gap-1">
+                          <User className="w-3 h-3" /> {assignedEmp.first_name} {assignedEmp.last_name}
+                        </span>
+                      )}
+                      {t.due_date && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          Due {new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold capitalize ${priorityCfg.bg}`}>{t.priority}</span>
+                    <div className="relative">
+                      <select value={t.status}
+                        onChange={e => updateTaskStatus(t, e.target.value)}
+                        className={`text-xs px-2.5 py-1 rounded-full font-semibold border appearance-none cursor-pointer ${statusCfg.bg}`}
+                        style={{ paddingRight: "1.5rem" }}>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Done</option>
+                      </select>
+                      <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 pointer-events-none opacity-60" />
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })
+          )}
         </div>
       </div>
 
-      {/* New Task Panel */}
       <AnimatePresence>
         {showNewTask && (
-          <NewTaskPanel onClose={() => setShowNewTask(false)} onSubmit={handleNewTask} />
+          <NewTaskPanel
+            categories={categories}
+            employees={employees}
+            onClose={() => setShowNewTask(false)}
+            onSubmit={handleCreateTask}
+          />
         )}
       </AnimatePresence>
     </div>
