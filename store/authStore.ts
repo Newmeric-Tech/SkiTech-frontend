@@ -42,6 +42,8 @@ function decodeJWT(token: string): User | null {
       tenant_id: decoded.tenant_id,
       email: decoded.email,
       role: decoded.role,
+      first_name: decoded.first_name, 
+      last_name: decoded.last_name,
     };
   } catch (err) {
     console.error("JWT decode failed:", err);
@@ -106,10 +108,10 @@ export const useAuthStore = create<AuthState>()(
           const { access_token, refresh_token } = res.data;
 
           // 🔥 CRITICAL: Store tokens FIRST
-          localStorage.setItem("skitech_access_token", access_token);
-          localStorage.setItem("skitech_refresh_token", refresh_token);
+          localStorage.setItem("skitech_access_token", res.data.access_token);
+          localStorage.setItem("skitech_refresh_token", res.data.refresh_token);
 
-          console.log("✅ Access token stored:", access_token);
+          console.log("Access token stored:", res.data.access_token);
 
           const user = decodeJWT(access_token);
           if (!user) {

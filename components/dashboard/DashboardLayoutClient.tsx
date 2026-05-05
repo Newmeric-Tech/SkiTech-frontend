@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuthStore } from "@/store/authStore";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, LayoutDashboard, Building2, Users, UserCheck, BarChart3,
@@ -47,10 +48,21 @@ const staffNav = [
 ];
 
 export function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, [])
   const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar");
+    setCollapsed(saved === "true");
+  }, []);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const { user } = useAuthStore();
 
   // Determine which nav to show based on current path
   let navItems: typeof ownerNav = [];
@@ -77,6 +89,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
      router.push("/auth/login");
   };
 
+  if (!mounted) return <div className="h-screen bg-[#f8f7f4]" />;
   return (
     <div className="flex h-screen bg-[#f8f7f4] overflow-hidden">
       {/* ── Mobile Sidebar Overlay ── */}
@@ -234,12 +247,12 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
             
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold text-black">Demo User</p>
-                <p className="text-xs text-neutral-500">{roleLabel} Account</p>
+                <p className="text-sm font-semibold text-black">{user?.first_name} {user?.last_name}</p>
+                <p className="text-xs text-neutral-500">{user?.role || roleLabel}</p>
               </div>
               <div className="w-10 h-10 bg-white/80 backdrop-blur rounded-full border border-black/10 flex items-center justify-center text-black font-bold shadow-sm">
-                DU
-              </div>
+                {user?.first_name?.[0]}{user?.last_name?.[0]}
+            </div>
             </div>
           </div>
         </header>

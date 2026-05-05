@@ -162,7 +162,7 @@ export default function PlatformAnalytics() {
                 formatter={(value: number) => [`$${value.toLocaleString()}`, "Revenue"]}
                 contentStyle={{ background: "rgba(255,255,255,0.9)", border: "1px solid #e5e5e5", borderRadius: "8px" }}
               />
-              <Area type="monotone" dataKey="revenue" stroke="#18181b" strokeWidth={2} fill="url(#revenueGradient)" />
+              <Area type="monotone" dataKey="tasks" stroke="#18181b" strokeWidth={2} fill="url(#revenueGradient)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>

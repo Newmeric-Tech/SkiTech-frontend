@@ -1,28 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { fetchDashboard } from "@/lib/api";
 import { motion } from "framer-motion";
 import { Building2, Users, TrendingUp, ClipboardList, ArrowUpRight, CheckCircle2, AlertCircle, Clock, TrendingDown } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { fetchTasksTrend, fetchAlerts } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
 
-const stats = [
-  { icon: Building2, label: "Total Properties", value: "3", change: "+1 this month", positive: true, color: "#3B82F6", trend: "up" },
-  { icon: Users, label: "Total Staff", value: "47", change: "+3 this week", positive: true, color: "#6366F1", trend: "up" },
-  { icon: TrendingUp, label: "Daily Revenue", value: "$16,580", change: "+12.4% vs yesterday", positive: true, color: "#10B981", trend: "up" },
-  { icon: ClipboardList, label: "Pending Tasks", value: "8", change: "2 overdue", positive: false, color: "#F59E0B", trend: "down" },
-];
-
-const revenueData = [
-  { day: "Mon", revenue: 12400 },
-  { day: "Tue", revenue: 13800 },
-  { day: "Wed", revenue: 11200 },
-  { day: "Thu", revenue: 15600 },
-  { day: "Fri", revenue: 14200 },
-  { day: "Sat", revenue: 18400 },
-  { day: "Sun", revenue: 16580 },
-];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -39,15 +26,98 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function OwnerDashboard() {
+  const { user } = useAuthStore();
   const router = useRouter();
+  const [dashboard, setDashboard] = useState<any>(null);
+  const [trend, setTrend] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<any[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [formData, setFormData] = useState({ name: "", location: "", type: "", rooms: "" });
 
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const token = localStorage.getItem("skitech_access_token");
+
+        if (!token) {
+          console.warn("Waiting for token...");
+          return;
+        }
+
+        const data = await fetchDashboard(token);
+        console.log("Dashboard:", data);
+        setDashboard(data);
+
+        const trendData = await fetchTasksTrend(token);
+        console.log("Trend Data:", trendData);
+        setTrend(trendData);
+
+        const alertsData = await fetchAlerts(token);
+        console.log("Alerts Data:", alertsData);
+        setAlerts(alertsData);
+
+      } catch (err) {
+        console.error("Dashboard error:", err);
+      }
+    };
+
+    // retry every 500ms until token exists
+    const retry = setInterval(() => {
+      const token = localStorage.getItem("skitech_access_token");
+
+      if (token) {
+        loadDashboard();
+        clearInterval(retry); // stop retry once token found
+      }
+    }, 500);
+
+    return () => clearInterval(retry);
+  }, []);
+  console.log("Trend Data:", trend)
+  const stats = [
+    {
+      icon: ClipboardList,
+      label: "Total SOPs",
+      value: dashboard?.total_sops ?? 0,
+      color: "#3B82F6",
+      trend: "up",
+      positive: true,
+      change: "",
+    },
+    {
+      icon: Users,
+      label: "Total Tasks",
+      value: dashboard?.total_tasks ?? 0,
+      color: "#6366F1",
+      trend: "up",
+      positive: true,
+      change: "",
+    },
+    {
+      icon: CheckCircle2,
+      label: "Completed Tasks",
+      value: dashboard?.completed_tasks ?? 0,
+      color: "#10B981",
+      trend: "up",
+      positive: true,
+      change: "",
+    },
+    {
+      icon: AlertCircle,
+      label: "Pending Tasks",
+      value: dashboard?.pending_tasks ?? 0,
+      color: "#F59E0B",
+      trend: "down",
+      positive: false,
+      change: "",
+    },
+  ];
+  
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-           <h2 className="text-2xl font-bold text-slate-950 tracking-tight">Welcome back, Owner</h2>
+           <h2 className="text-2xl font-bold text-slate-950 tracking-tight">Welcome back, {user?.first_name || user?.email?.split("@")[0] || "User"}</h2>
            <p className="text-slate-500 text-sm mt-1">Here's your operations snapshot for today.</p>
         </div>
         <div className="flex gap-3">
@@ -104,8 +174,8 @@ export default function OwnerDashboard() {
         <div className="col-span-1 lg:col-span-2 bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="font-bold text-slate-950 text-lg">Revenue Trend</h3>
-              <p className="text-slate-500 text-sm mt-0.5">Daily revenue for the past week</p>
+              <h3 className="font-bold text-slate-950 text-lg">Tasks Trend</h3>
+              <p className="text-slate-500 text-sm mt-0.5">Daily tasks for the past week</p>
             </div>
             <select className="text-sm border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-950/10 focus:border-slate-300 bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer">
               <option>Last 7 Days</option>
@@ -114,40 +184,54 @@ export default function OwnerDashboard() {
           </div>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData}>
-                <defs>
-                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                     <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.15}/>
-                     <stop offset="100%" stopColor="#3B82F6" stopOpacity={0}/>
-                   </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="0" vertical={false} stroke="#E2E8F0" />
-                <XAxis 
-                   dataKey="day" 
-                   axisLine={false} 
-                   tickLine={false} 
-                   tick={{fontSize: 12, fill: '#94A3B8', fontWeight: 500}} 
-                   dy={12}
-                />
-                <YAxis 
-                   axisLine={false} 
-                   tickLine={false} 
-                   tick={{fontSize: 12, fill: '#94A3B8', fontWeight: 500}} 
-                   tickFormatter={(val) => `$${val/1000}k`}
-                   width={60}
-                />
-                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#94A3B8', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                <Area 
-                   type="monotone" 
-                   dataKey="revenue" 
-                   stroke="#3B82F6" 
-                   strokeWidth={2.5} 
-                   fillOpacity={1} 
-                   fill="url(#colorRevenue)"
-                   dot={{ fill: '#3B82F6', strokeWidth: 0, r: 4 }}
-                   activeDot={{ fill: '#3B82F6', r: 6, stroke: '#fff', strokeWidth: 2 }}
-                />
-              </AreaChart>
+              {trend && trend.length > 0 ? (
+                <AreaChart key={trend.length} data={trend}>
+                  <defs>
+                    <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.15}/>
+                      <stop offset="100%" stopColor="#3B82F6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+
+                  <CartesianGrid strokeDasharray="0" vertical={false} stroke="#E2E8F0" />
+
+                  <XAxis 
+                    dataKey="day" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 12, fill: '#94A3B8', fontWeight: 500 }} 
+                    dy={12}
+                  />
+
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 12, fill: '#94A3B8', fontWeight: 500 }} 
+                    tickFormatter={(val) => val}
+                    width={60}
+                  />
+
+                  <Tooltip 
+                    content={<CustomTooltip />} 
+                    cursor={{ stroke: '#94A3B8', strokeWidth: 1, strokeDasharray: '4 4' }} 
+                  />
+
+                  <Area 
+                    type="monotone" 
+                    dataKey="tasks" 
+                    stroke="#3B82F6" 
+                    strokeWidth={2.5} 
+                    fillOpacity={1} 
+                    fill="url(#colorTasks)"
+                    dot={{ fill: '#3B82F6', strokeWidth: 0, r: 4 }}
+                    activeDot={{ fill: '#3B82F6', r: 6, stroke: '#fff', strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              ) : (
+                <div className="flex items-center justify-center h-full text-slate-400">
+                  No task data available
+                </div>
+              )}
             </ResponsiveContainer>
           </div>
         </div>
@@ -158,26 +242,25 @@ export default function OwnerDashboard() {
              <p className="text-slate-500 text-sm mt-0.5">Latest notifications from your properties</p>
            </div>
            <div className="flex-1 overflow-y-auto pr-2 space-y-3 scrollbar-thin">
-             {[
-                { icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50 border border-amber-100", title: "Low inventory: Towels", time: "10 mins ago", prop: "Grand Horizon" },
-                { icon: Clock, color: "text-slate-500", bg: "bg-slate-50 border border-slate-100", title: "Late check-in", time: "32 mins ago", prop: "Skyline Suites" },
-                { icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50 border border-emerald-100", title: "Maintenance completed", time: "1 hr ago", prop: "Front Desk" },
-                { icon: Users, color: "text-slate-700", bg: "bg-slate-100 border border-slate-200", title: "Shift change: Housekeeping", time: "2 hrs ago", prop: "Grand Horizon" },
-             ].map((item, i) => (
+             {alerts.map((item, i) => (
                 <div key={i} className="flex gap-3 p-3.5 rounded-xl hover:bg-slate-50/80 transition-colors">
-                  <div className={`w-10 h-10 rounded-xl ${item.bg} flex items-center justify-center shrink-0`}>
-                    <item.icon className={`w-5 h-5 ${item.color}`} />
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                    <AlertCircle className="w-5 h-5 text-amber-600" />
                   </div>
+
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-slate-950">{item.title}</h4>
+                    <h4 className="text-sm font-semibold text-slate-950">
+                      {item.message}
+                    </h4>
+
                     <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-xs text-slate-500 font-medium">{item.prop}</span>
-                      <span className="w-1 h-1 rounded-full bg-slate-300" />
-                      <span className="text-xs text-slate-400">{item.time}</span>
+                      <span className="text-xs text-slate-400">
+                        {new Date(item.created_at).toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 </div>
-             ))}
+              ))}
            </div>
 <button className="w-full mt-6 py-2.5 text-sm font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors border border-slate-200/60">
                View All Alerts
