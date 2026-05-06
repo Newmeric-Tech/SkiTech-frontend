@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { CheckCircle2, Clock, AlertCircle, Calendar, Filter, Search, MapPin, Loader } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, Calendar, Filter, Search, MapPin, Loader, Camera } from "lucide-react";
 import { dashboardApi, type StaffStats, type TaskItem } from "@/lib/api";
 
 const statusConfig = {
@@ -10,6 +11,7 @@ const statusConfig = {
   pending: { color: "#F59E0B", bg: "bg-amber-50 text-amber-700 border border-amber-200/60", label: "In Progress", icon: Clock },
   upcoming: { color: "#3B82F6", bg: "bg-blue-50 text-blue-700 border border-blue-200/60", label: "Upcoming", icon: Calendar },
   overdue: { color: "#EF4444", bg: "bg-red-50 text-red-700 border border-red-200/60", label: "Overdue", icon: AlertCircle },
+  pending_approval: { color: "#8B5CF6", bg: "bg-purple-50 text-purple-700 border border-purple-200/60", label: "Pending Approval", icon: AlertCircle },
 };
 
 const priorityConfig = {
@@ -18,31 +20,67 @@ const priorityConfig = {
   low: { color: "#10B981", label: "Low" },
 };
 
+const demoTasks: TaskItem[] = [
+  {
+    id: "task-001",
+    task: "Clean and sanitize main lobby area",
+    location: "Main Lobby",
+    priority: "high",
+    status: "pending",
+    due: "Today, 6:00 PM",
+    assignee: "John Doe",
+  },
+  {
+    id: "task-002",
+    task: "Restock supplies in floor 2 bathroom",
+    location: "Floor 2 Restroom",
+    priority: "medium",
+    status: "pending",
+    due: "Today, 4:00 PM",
+    assignee: "John Doe",
+  },
+  {
+    id: "task-003",
+    task: "Check fire extinguishers in parking basement",
+    location: "Basement Parking",
+    priority: "high",
+    status: "upcoming",
+    due: "Tomorrow, 9:00 AM",
+    assignee: "John Doe",
+  },
+];
+
 export default function StaffTasksPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [taskList, setTaskList] = useState<TaskItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const response = await dashboardApi.getStaffStats();
-        const data = response.data as StaffStats;
-        setTaskList(data.todays_tasks || []);
-      } catch (err) {
-        console.error("Failed to fetch tasks:", err);
-        setError("Unable to load tasks. Please try again later.");
-        setTaskList([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const completedTaskId = searchParams.get("completed");
+    if (completedTaskId) {
+      setTaskList(prev => {
+        const updated = prev.map(t => 
+          t.id === completedTaskId ? { ...t, status: "done" as const } : t
+        );
+        localStorage.setItem("manager_tasks", JSON.stringify(updated));
+        return updated;
+      });
+      router.replace("/staff/tasks");
+    }
+  }, [searchParams, router]);
 
-    fetchTasks();
+  useEffect(() => {
+    const storedTasks = localStorage.getItem("manager_tasks");
+    if (storedTasks && JSON.parse(storedTasks).length > 0) {
+      setTaskList(JSON.parse(storedTasks));
+    } else {
+      setTaskList(demoTasks);
+      localStorage.setItem("manager_tasks", JSON.stringify(demoTasks));
+    }
   }, []);
 
   const filteredTasks = taskList.filter(t => {
@@ -53,9 +91,17 @@ export default function StaffTasksPage() {
   });
 
   const toggleTask = (id: string) => {
-    setTaskList(prev => prev.map(t =>
-      t.id === id ? { ...t, status: t.status === "done" ? "pending" : "done" } : t
-    ));
+    setTaskList(prev => {
+      const updated = prev.map(t =>
+        t.id === id ? { ...t, status: t.status === "done" ? "pending" : "done" } : t
+      );
+      localStorage.setItem("manager_tasks", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleSubmitProof = (taskId: string) => {
+    router.push(`/staff/tasks/proof?id=${taskId}`);
   };
 
   const completedCount = taskList.filter(t => t.status === "done").length;
@@ -179,9 +225,29 @@ export default function StaffTasksPage() {
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" /> {t.due}
                     </span>
+                    {t.priority && (
+                      <>
+                        <span>·</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          t.priority === "high" ? "bg-red-50 text-red-600" :
+                          t.priority === "medium" ? "bg-amber-50 text-amber-600" :
+                          "bg-emerald-50 text-emerald-600"
+                        }`}>
+                          {priorityConfig[t.priority as keyof typeof priorityConfig].label}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {t.status !== "done" && t.status !== "pending_approval" && (
+                    <button
+                      onClick={() => handleSubmitProof(t.id)}
+                      className="p-1.5 rounded-full font-medium bg-blue-50 text-blue-700 border border-blue-200/60 hover:bg-blue-100 transition-colors"
+                    >
+                      <Camera className="w-4 h-4" />
+                    </button>
+                  )}
                   <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${statusCfg.bg}`}>
                     {statusCfg.label}
                   </span>

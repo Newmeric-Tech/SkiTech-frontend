@@ -28,6 +28,7 @@ const statusConfig = {
   pending: { color: "#F59E0B", bg: "bg-black/[0.04] text-neutral-600", label: "In Progress", icon: Clock },
   upcoming: { color: "#3B82F6", bg: "bg-black/[0.04] text-black", label: "Upcoming", icon: Calendar },
   overdue: { color: "#EF4444", bg: "bg-black/[0.04] text-black", label: "Overdue", icon: AlertCircle },
+  pending_approval: { color: "#8B5CF6", bg: "bg-black/[0.04] text-black", label: "Pending Approval", icon: AlertCircle },
 };
 
 const priorityConfig = {
@@ -563,6 +564,25 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [propertyId, setPropertyId] = useState<string | null>(null);
+  const [proofModalTask, setProofModalTask] = useState<any>(null);
+
+  const handleApprove = (taskId: string) => {
+    const updated = taskList.map(t => 
+      t.id === taskId ? { ...t, status: "done" } : t
+    );
+    setTaskList(updated);
+    localStorage.setItem("manager_tasks", JSON.stringify(updated));
+    setProofModalTask(null);
+  };
+
+  const handleReject = (taskId: string) => {
+    const updated = taskList.map(t => 
+      t.id === taskId ? { ...t, status: "pending", proofImage: null, proofTimestamp: null } : t
+    );
+    setTaskList(updated);
+    localStorage.setItem("manager_tasks", JSON.stringify(updated));
+    setProofModalTask(null);
+  };
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -570,12 +590,17 @@ export default function TasksPage() {
         setLoading(true);
         setError(null);
 
-        // Step 1: Get first property
+        const storedTasks = localStorage.getItem("manager_tasks");
+        if (storedTasks) {
+          setTaskList(JSON.parse(storedTasks));
+          setLoading(false);
+          return;
+        }
+
         const propertiesRes = await dashboardApi.listProperties();
         const properties = propertiesRes.data;
 
         if (!properties || properties.length === 0) {
-          // No properties found - show empty state
           setTaskList([]);
           setPropertyId(null);
           setLoading(false);
@@ -585,22 +610,25 @@ export default function TasksPage() {
         const firstPropertyId = properties[0].id;
         setPropertyId(firstPropertyId);
 
-        // Step 2: Get manager stats for property (includes todays_tasks)
         const statsRes = await dashboardApi.getManagerStats(firstPropertyId);
         const stats: ManagerStats = statsRes.data;
 
-        // Map TaskItem to include optional fields for display
         const mappedTasks = (stats.todays_tasks || []).map(task => ({
           ...task,
-          priority: "medium", // Default priority (not in API response)
-          dept: "Ops", // Default dept (not in API response)
+          priority: "medium" as "high" | "medium" | "low",
+          dept: "Ops",
         }));
 
         setTaskList(mappedTasks);
       } catch (err) {
         console.error("Failed to fetch tasks:", err);
-        setError("Failed to load tasks");
-        setTaskList([]);
+        const storedTasks = localStorage.getItem("manager_tasks");
+        if (storedTasks) {
+          setTaskList(JSON.parse(storedTasks));
+        } else {
+          setError("Failed to load tasks");
+          setTaskList([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -620,16 +648,22 @@ export default function TasksPage() {
     const assigneeNames = data.selectedStaff
       .map((id: number) => staffList.find(s => s.id === id)?.name.split(" ")[0])
       .join(", ");
+    const assigneeIds = data.selectedStaff;
     const newTask = {
       id: String(Date.now()),
       task: data.title,
+      description: data.description,
       assignee: assigneeNames || "Unassigned",
+      assigneeIds: assigneeIds,
       dept: data.dept === "All Departments" ? "All" : data.dept,
-      due: data.dueTime,
-      priority: data.priority,
+      due: `${data.dueDate} ${data.dueTime}`,
+      priority: data.priority as "high" | "medium" | "low",
       status: "upcoming",
     };
     setTaskList(prev => [newTask, ...prev]);
+    
+    const existingTasks = JSON.parse(localStorage.getItem("manager_tasks") || "[]");
+    localStorage.setItem("manager_tasks", JSON.stringify([newTask, ...existingTasks]));
   };
 
   if (loading) {
@@ -727,6 +761,7 @@ export default function TasksPage() {
               className="bg-white/50 border border-black/10 rounded-lg px-4 py-2.5 text-sm text-black focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all"
             >
               <option value="all">All Status</option>
+              <option value="pending_approval">Pending Approval</option>
               <option value="done">Done</option>
               <option value="pending">In Progress</option>
               <option value="upcoming">Upcoming</option>
@@ -783,9 +818,18 @@ export default function TasksPage() {
                     <span className={`text-xs px-2.5 py-1 rounded-full ${priorityCfg.bg}`} style={{ fontWeight: 600, textTransform: "capitalize" }}>
                       {t.priority || "medium"}
                     </span>
-                    <span className={`text-xs px-2.5 py-1 rounded-full ${statusCfg.bg}`} style={{ fontWeight: 600 }}>
-                      {statusCfg.label}
-                    </span>
+                    {t.status === "pending_approval" ? (
+                      <button
+                        onClick={() => setProofModalTask(t)}
+                        className="text-xs px-3 py-1.5 rounded-full font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-colors"
+                      >
+                        View Proof
+                      </button>
+                    ) : (
+                      <span className={`text-xs px-2.5 py-1 rounded-full ${statusCfg.bg}`} style={{ fontWeight: 600 }}>
+                        {statusCfg.label}
+                      </span>
+                    )}
                   </div>
                 </motion.div>
               );
@@ -798,6 +842,67 @@ export default function TasksPage() {
       <AnimatePresence>
         {showNewTask && (
           <NewTaskPanel onClose={() => setShowNewTask(false)} onSubmit={handleNewTask} />
+        )}
+      </AnimatePresence>
+
+      {/* Proof Modal */}
+      <AnimatePresence>
+        {proofModalTask && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setProofModalTask(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-black/10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-black">Proof Verification</h3>
+                    <p className="text-sm text-neutral-500 mt-1">{proofModalTask.task}</p>
+                  </div>
+                  <button
+                    onClick={() => setProofModalTask(null)}
+                    className="w-8 h-8 rounded-lg bg-black/[0.04] flex items-center justify-center text-neutral-500 hover:bg-black/[0.08] transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-6">
+                {proofModalTask.proofImage && (
+                  <div className="rounded-xl overflow-hidden bg-black/[0.04] mb-6">
+                    <img
+                      src={proofModalTask.proofImage}
+                      alt="Proof"
+                      className="w-full h-64 object-cover"
+                    />
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleReject(proofModalTask.id)}
+                    className="flex-1 py-3 rounded-xl border border-red-200 text-red-600 font-semibold hover:bg-red-50 transition-colors"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => handleApprove(proofModalTask.id)}
+                    className="flex-1 py-3 rounded-xl bg-emerald-500 text-white font-semibold hover:bg-emerald-600 transition-colors"
+                  >
+                    Approve
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

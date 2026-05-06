@@ -33,6 +33,7 @@ const ownerConfigNav = [
 
 const managerNav = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/manager" },
+  { icon: Clock, label: "Punch In/Out", href: "/manager/punch" },
   { icon: ClipboardList, label: "Tasks", href: "/manager/tasks" },
   { icon: UserCheck, label: "Attendance", href: "/manager/attendance" },
   { icon: Truck, label: "Inventory", href: "/manager/inventory" },

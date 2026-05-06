@@ -119,7 +119,7 @@ export interface AlertItem {
   type: string; title: string; property_name: string; time_ago: string; severity: string;
 }
 export interface TaskItem {
-  id: string; task: string; assignee: string; due: string; status: string;
+  id: string; task: string; assignee: string; due: string; status: string; priority?: "high" | "medium" | "low"; location?: string;
 }
 export interface StaffAttendanceItem {
   name: string; dept: string; check_in: string | null; status: string; initials: string;
