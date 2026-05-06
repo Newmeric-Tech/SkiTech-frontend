@@ -4,6 +4,7 @@ import "./globals.css";
 import { SharedStoreProvider } from "../store/SharedStore";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
+import ChatWidgetGate from "@/components/chat/ChatWidgetGate";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -40,6 +41,7 @@ export default function RootLayout({
           <SharedStoreProvider>
             {children}
             <Toaster richColors position="top-right" />
+            <ChatWidgetGate />
           </SharedStoreProvider>
         </ThemeProvider>
       </body>
