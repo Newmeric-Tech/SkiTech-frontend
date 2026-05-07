@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { CheckCircle2, Clock, AlertCircle, Calendar, Filter, Search, MapPin, Loader, Camera } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, Calendar, Filter, Search, MapPin, Loader, Camera, AlertTriangle } from "lucide-react";
 import { dashboardApi, type StaffStats, type TaskItem } from "@/lib/api";
 
 const statusConfig = {
@@ -12,6 +12,7 @@ const statusConfig = {
   upcoming: { color: "#3B82F6", bg: "bg-blue-50 text-blue-700 border border-blue-200/60", label: "Upcoming", icon: Calendar },
   overdue: { color: "#EF4444", bg: "bg-red-50 text-red-700 border border-red-200/60", label: "Overdue", icon: AlertCircle },
   pending_approval: { color: "#8B5CF6", bg: "bg-purple-50 text-purple-700 border border-purple-200/60", label: "Pending Approval", icon: AlertCircle },
+  rejected: { color: "#EF4444", bg: "bg-red-50 text-red-700 border border-red-200/60", label: "Rejected", icon: AlertTriangle },
 };
 
 const priorityConfig = {
@@ -156,6 +157,7 @@ export default function StaffTasksPage() {
               className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-950/10 transition-all"
             >
               <option value="all">All Status</option>
+              <option value="rejected">Rejected</option>
               <option value="done">Done</option>
               <option value="pending">In Progress</option>
               <option value="upcoming">Upcoming</option>
@@ -238,6 +240,12 @@ export default function StaffTasksPage() {
                       </>
                     )}
                   </div>
+                  {(t as any).rejectionRemark && (
+                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-xs text-red-600 font-medium">Rejection Remark:</p>
+                      <p className="text-xs text-red-700 mt-0.5">{(t as any).rejectionRemark}</p>
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {t.status !== "done" && t.status !== "pending_approval" && (

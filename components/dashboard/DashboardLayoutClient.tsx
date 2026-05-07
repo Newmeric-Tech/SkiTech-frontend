@@ -21,6 +21,7 @@ const ownerNav = [
   { icon: BarChart2, label: "Analytics", href: "/owner/analytics" },
   { icon: Truck, label: "Inventory", href: "/owner/inventory" },
   { icon: FileText, label: "SOP Management", href: "/owner/sop" },
+  { icon: Zap, label: "Error and Complaint Log", href: "/operational" },
 ];
 
 const ownerConfigNav = [
@@ -40,6 +41,7 @@ const managerNav = [
   { icon: BarChart3, label: "Reports", href: "/manager/reports" },
   { icon: FileText, label: "SOP Management", href: "/manager/sop" },
   { icon: CalendarDays, label: "KRA Center", href: "/manager/kra" },
+  { icon: Zap, label: "Error and Complaint Log", href: "/operational/manager" },
 ];
 
 const staffNav = [

@@ -29,6 +29,7 @@ const statusConfig = {
   upcoming: { color: "#3B82F6", bg: "bg-black/[0.04] text-black", label: "Upcoming", icon: Calendar },
   overdue: { color: "#EF4444", bg: "bg-black/[0.04] text-black", label: "Overdue", icon: AlertCircle },
   pending_approval: { color: "#8B5CF6", bg: "bg-black/[0.04] text-black", label: "Pending Approval", icon: AlertCircle },
+  rejected: { color: "#EF4444", bg: "bg-black/[0.04] text-black", label: "Rejected", icon: AlertCircle },
 };
 
 const priorityConfig = {
@@ -565,6 +566,7 @@ export default function TasksPage() {
   const [error, setError] = useState<string | null>(null);
   const [propertyId, setPropertyId] = useState<string | null>(null);
   const [proofModalTask, setProofModalTask] = useState<any>(null);
+  const [rejectRemark, setRejectRemark] = useState("");
 
   const handleApprove = (taskId: string) => {
     const updated = taskList.map(t => 
@@ -577,11 +579,12 @@ export default function TasksPage() {
 
   const handleReject = (taskId: string) => {
     const updated = taskList.map(t => 
-      t.id === taskId ? { ...t, status: "pending", proofImage: null, proofTimestamp: null } : t
+      t.id === taskId ? { ...t, status: "rejected", proofImage: null, proofTimestamp: null, rejectionRemark: rejectRemark } : t
     );
     setTaskList(updated);
     localStorage.setItem("manager_tasks", JSON.stringify(updated));
     setProofModalTask(null);
+    setRejectRemark("");
   };
 
   useEffect(() => {
@@ -762,6 +765,7 @@ export default function TasksPage() {
             >
               <option value="all">All Status</option>
               <option value="pending_approval">Pending Approval</option>
+              <option value="rejected">Rejected</option>
               <option value="done">Done</option>
               <option value="pending">In Progress</option>
               <option value="upcoming">Upcoming</option>
@@ -886,6 +890,18 @@ export default function TasksPage() {
                     />
                   </div>
                 )}
+                <div className="mb-4">
+                  <label className="block text-neutral-700 text-sm mb-2" style={{ fontWeight: 600 }}>
+                    Rejection Remark <span className="text-neutral-400 font-normal">(optional)</span>
+                  </label>
+                  <textarea
+                    value={rejectRemark}
+                    onChange={e => setRejectRemark(e.target.value)}
+                    placeholder="Explain why the proof was rejected..."
+                    rows={2}
+                    className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black placeholder:text-neutral-400 focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all resize-none"
+                  />
+                </div>
                 <div className="flex gap-3">
                   <button
                     onClick={() => handleReject(proofModalTask.id)}
