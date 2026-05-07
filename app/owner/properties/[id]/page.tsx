@@ -331,7 +331,7 @@ export default function PropertyDetailPage() {
             <h3 className="font-bold text-slate-950 text-lg mb-4">Quick Actions</h3>
             <div className="space-y-2">
               <button
-                onClick={() => router.push("/owner/staff")}
+                onClick={() => router.push(`/owner/staff?property=${id}`)}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors text-left"
               >
                 <Users className="w-4 h-4 text-slate-500" />

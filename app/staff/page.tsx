@@ -9,6 +9,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 import { statsAPI } from "@/lib/api/stats";
+import { useAuthStore } from "@/store/authStore";
 
 const statusConfig = {
   done: { color: "#10B981", bg: "bg-emerald-50 text-emerald-700 border border-emerald-200/60", label: "Done" },
@@ -35,6 +36,7 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export default function StaffDashboard() {
+  const { user } = useAuthStore();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -100,8 +102,10 @@ export default function StaffDashboard() {
     <div className="p-6 lg:p-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-950 tracking-tight">My Dashboard</h1>
-          <p className="text-slate-500 text-sm mt-1">Welcome back — here's your day at a glance</p>
+          <h1 className="text-2xl font-bold text-slate-950 tracking-tight">
+            Welcome back, {user?.first_name || user?.email?.split("@")[0] || "Staff"}
+          </h1>
+          <p className="text-slate-500 text-sm mt-1">Here's your day at a glance</p>
         </div>
       </div>
 

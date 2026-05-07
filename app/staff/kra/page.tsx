@@ -2,10 +2,12 @@
 
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  CheckCircle2, Clock, TrendingUp, AlertCircle, 
-  Calendar, ClipboardCheck, DollarSign, Users, FileText, Upload, X 
+import { toast } from "sonner";
+import {
+  CheckCircle2, Clock, TrendingUp, AlertCircle,
+  Calendar, ClipboardCheck, DollarSign, Users, FileText, Upload, X
 } from "lucide-react";
+import { kraAPI, DailyKRAFormData, WeeklyKRAFormData, MonthlyKRAFormData, QuarterlyKRAFormData } from "@/lib/api/kra";
 
 type KRaType = "daily" | "weekly" | "monthly" | "quarterly";
 
@@ -146,10 +148,42 @@ export default function StaffKRAPage() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setIsSubmitting(false);
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
+    try {
+      if (activeTab === "daily") {
+        await kraAPI.submitDaily(dailyForm);
+      } else if (activeTab === "weekly") {
+        await kraAPI.submitWeekly(weeklyForm);
+      } else if (activeTab === "monthly") {
+        let reportUrl: string | undefined;
+        if (monthlyForm.revenueFile) {
+          const { upload_url, file_key } = await kraAPI.getUploadUrl(
+            monthlyForm.revenueFile.name,
+            monthlyForm.revenueFile.type,
+          );
+          await kraAPI.uploadFileToS3(upload_url, monthlyForm.revenueFile);
+          reportUrl = file_key;
+        }
+        await kraAPI.submitMonthly(monthlyForm, reportUrl);
+      } else if (activeTab === "quarterly") {
+        let reportUrl: string | undefined;
+        if (quarterlyForm.revenueFile) {
+          const { upload_url, file_key } = await kraAPI.getUploadUrl(
+            quarterlyForm.revenueFile.name,
+            quarterlyForm.revenueFile.type,
+          );
+          await kraAPI.uploadFileToS3(upload_url, quarterlyForm.revenueFile);
+          reportUrl = file_key;
+        }
+        await kraAPI.submitQuarterly(quarterlyForm, reportUrl);
+      }
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 3000);
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail ?? "Submission failed. Please try again.";
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderForm = () => {

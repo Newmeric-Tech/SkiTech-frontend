@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { usersAPI } from "@/lib/api/users";
 import { statsAPI } from "@/lib/api/stats";
+import { useAuthStore } from "@/store/authStore";
 
 const statusConfig = {
   done: { color: "#10B981", bg: "bg-emerald-50 text-emerald-700 border border-emerald-200/60", label: "Done" },
@@ -40,6 +41,7 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export default function ManagerDashboard() {
+  const { user } = useAuthStore();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [propertyName, setPropertyName] = useState("");
@@ -118,7 +120,9 @@ export default function ManagerDashboard() {
     <div className="p-6 lg:p-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-950 tracking-tight">Manager Dashboard</h1>
+          <h1 className="text-2xl font-bold text-slate-950 tracking-tight">
+            Welcome back, {user?.first_name || user?.email?.split("@")[0] || "Manager"}
+          </h1>
           <p className="text-slate-500 text-sm mt-1">{propertyName} — Today's operations</p>
         </div>
       </div>

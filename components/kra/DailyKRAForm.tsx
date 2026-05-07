@@ -9,6 +9,7 @@ import {
   Clock, DollarSign, Home, Star,
   Wrench, Users, ClipboardCheck,
 } from "lucide-react";
+import { kraAPI } from "@/lib/api/kra";
 
 interface DailyKraForm {
   shift: "Morning" | "Evening" | "Night" | "";
@@ -134,13 +135,30 @@ export default function DailyKRAForm({ backHref }: { backHref: string }) {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 1800));
-    setIsSubmitting(false);
-    toast.success("Daily KRA submitted successfully!", {
-      description: `${form.shift} shift · ${new Date(form.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`,
-      duration: 4000,
-    });
-    router.push(backHref);
+    try {
+      await kraAPI.submitDaily({
+        date: form.date,
+        shift: form.shift,
+        guestCheckIns: form.guestCheckIns,
+        guestCheckOuts: form.guestCheckOuts,
+        complaints: form.complaints,
+        complaintsResolved: form.complaintsResolved,
+        roomChecks: form.roomChecks,
+        maintenanceTasks: form.maintenanceTasks,
+        cashDeposits: form.cashDeposits,
+        googleReviews: form.googleReviews,
+      });
+      toast.success("Daily KRA submitted successfully!", {
+        description: `${form.shift} shift · ${new Date(form.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`,
+        duration: 4000,
+      });
+      router.push(backHref);
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail ?? "Submission failed. Please try again.";
+      toast.error("Submission failed", { description: msg });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const variants = {

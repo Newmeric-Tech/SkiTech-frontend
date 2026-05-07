@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Search, X, Users, CheckCircle2, Loader2,
@@ -156,7 +157,9 @@ function AddStaffPanel({ departments, onClose, onAdd }: {
   );
 }
 
-export default function StaffPage() {
+function StaffPageInner() {
+  const searchParams = useSearchParams();
+  const preselectedProperty = searchParams.get("property");
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState("");
   const [staff, setStaff] = useState<Employee[]>([]);
@@ -170,9 +173,10 @@ export default function StaffPage() {
   useEffect(() => {
     propertiesAPI.list().then(res => {
       setProperties(res.data);
-      if (res.data.length > 0) setSelectedPropertyId(res.data[0].id);
+      const match = preselectedProperty && res.data.find((p: Property) => p.id === preselectedProperty);
+      setSelectedPropertyId(match ? match.id : res.data[0]?.id ?? "");
     }).catch(() => toast.error("Failed to load properties")).finally(() => setPropsLoading(false));
-  }, []);
+  }, [preselectedProperty]);
 
   const fetchData = useCallback(async () => {
     if (!selectedPropertyId) return;
@@ -357,5 +361,13 @@ export default function StaffPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function StaffPage() {
+  return (
+    <Suspense>
+      <StaffPageInner />
+    </Suspense>
   );
 }

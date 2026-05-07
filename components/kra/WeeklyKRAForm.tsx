@@ -8,6 +8,7 @@ import {
   ArrowLeft, ArrowRight, CheckCircle2, Upload, X,
   Package, Globe, BarChart3, ClipboardList,
 } from "lucide-react";
+import { kraAPI } from "@/lib/api/kra";
 
 interface OtaPlatform {
   id: string; name: string; icon: string; color: string;
@@ -101,13 +102,36 @@ export default function WeeklyKRAForm({ backHref }: { backHref: string }) {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    setIsSubmitting(false);
-    toast.success("Weekly KRA submitted successfully!", {
-      description: `Week of ${new Date(form.weekStartDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · ${platforms.filter((p) => p.uploaded).length}/${platforms.length} OTA platforms updated`,
-      duration: 4500,
-    });
-    router.push(backHref);
+    try {
+      const supplyOK = String(supplies.filter((s) => s.status === "ok").length);
+      const supplyLow = String(supplies.filter((s) => s.status === "low").length);
+      const supplyOut = String(supplies.filter((s) => s.status === "out").length);
+
+      await kraAPI.submitWeekly({
+        weekStartDate: form.weekStartDate,
+        weekEndDate: form.weekEndDate,
+        otaGoogle: platforms.find((p) => p.id === "google")?.uploaded ?? false,
+        otaBooking: platforms.find((p) => p.id === "booking")?.uploaded ?? false,
+        otaMakemytrip: platforms.find((p) => p.id === "makemytrip")?.uploaded ?? false,
+        otaAirbnb: platforms.find((p) => p.id === "airbnb")?.uploaded ?? false,
+        otaExpedia: platforms.find((p) => p.id === "expedia")?.uploaded ?? false,
+        otaTripadvisor: platforms.find((p) => p.id === "tripadvisor")?.uploaded ?? false,
+        supplyOK,
+        supplyLow,
+        supplyOut,
+        overallNotes: form.overallNotes,
+      });
+      toast.success("Weekly KRA submitted successfully!", {
+        description: `Week of ${new Date(form.weekStartDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · ${platforms.filter((p) => p.uploaded).length}/${platforms.length} OTA platforms updated`,
+        duration: 4500,
+      });
+      router.push(backHref);
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail ?? "Submission failed. Please try again.";
+      toast.error("Submission failed", { description: msg });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const variants = {

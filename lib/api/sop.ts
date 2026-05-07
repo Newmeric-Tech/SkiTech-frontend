@@ -22,4 +22,21 @@ export const sopAPI = {
   myTasks: () => api.get("/v1/sop/my-tasks"),
   completeTask: (executionId: string) =>
     api.post(`/v1/sop/complete/${executionId}`),
+
+  // Proof of work
+  submitProof: (executionId: string, data: {
+    proof_image: string;
+    latitude?: number | null;
+    longitude?: number | null;
+    location_name?: string | null;
+  }) => api.post(`/v1/sop/executions/${executionId}/submit-proof`, data),
+
+  pendingApprovals: () =>
+    api.get("/v1/sop/executions/pending-approval"),
+
+  approveExecution: (executionId: string) =>
+    api.post(`/v1/sop/executions/${executionId}/approve`),
+
+  rejectExecution: (executionId: string, reason: string) =>
+    api.post(`/v1/sop/executions/${executionId}/reject`, { reason }),
 };

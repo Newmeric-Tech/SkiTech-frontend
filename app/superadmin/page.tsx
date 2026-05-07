@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Building2, Users, Shield, AlertTriangle, CheckCircle2, Clock, TrendingUp, Activity, TrendingDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { superadminAPI, OverviewResponse } from "@/lib/api/superadmin";
+import { useAuthStore } from "@/store/authStore";
 
 const ACTIVITY_ICONS: Record<string, typeof Shield> = {
   security: Shield, property: Building2, user: Users,
@@ -21,6 +22,7 @@ const ACTIVITY_STYLES: Record<string, { bg: string; iconColor: string }> = {
 const PROP_COLORS = ["#3B82F6", "#6366F1", "#10B981", "#F59E0B", "#8B5CF6"];
 
 export default function SuperadminDashboard() {
+  const { user } = useAuthStore();
   const [data, setData] = useState<OverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -57,8 +59,10 @@ export default function SuperadminDashboard() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-950 tracking-tight">Platform Overview</h1>
-          <p className="text-slate-500 text-sm mt-1">Real-time monitoring across all tenants</p>
+          <h1 className="text-2xl font-bold text-slate-950 tracking-tight">
+            Welcome back, {user?.first_name || user?.email?.split("@")[0] || "Admin"}
+          </h1>
+          <p className="text-slate-500 text-sm mt-1">Platform overview — real-time monitoring across all tenants</p>
         </div>
         <div className="flex gap-3">
           <button className="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 shadow-sm hover:shadow">Export Report</button>

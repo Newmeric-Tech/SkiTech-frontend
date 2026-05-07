@@ -4,16 +4,17 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   CheckCircle2, Clock, AlertCircle, Calendar,
-  Filter, Search, MapPin, Loader2, FileText,
+  Filter, Search, Camera, Loader2, FileText, XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { sopAPI } from "@/lib/api/sop";
 import { usersAPI } from "@/lib/api/users";
 
 interface SOPExecution {
   id: string; sop_id: string; user_id: string;
-  status: "pending" | "completed"; completed_at?: string;
-  created_at: string;
+  status: string; completed_at?: string;
+  rejection_reason?: string; created_at: string;
 }
 
 interface SOPItem {
@@ -24,24 +25,27 @@ interface SOPItem {
 interface Task {
   executionId: string; sopId: string; title: string;
   description?: string; priority: "low" | "medium" | "high";
-  status: "pending" | "completed"; due_date?: string;
+  status: string; due_date?: string; rejection_reason?: string;
 }
 
-const statusConfig = {
-  pending:   { color: "#F59E0B", bg: "bg-amber-50 text-amber-700 border border-amber-200/60",   label: "Pending",   icon: Clock },
-  completed: { color: "#10B981", bg: "bg-emerald-50 text-emerald-700 border border-emerald-200/60", label: "Done", icon: CheckCircle2 },
+const statusConfig: Record<string, { color: string; bg: string; label: string; icon: any }> = {
+  pending:          { color: "#F59E0B", bg: "bg-amber-50 text-amber-700 border border-amber-200/60",    label: "Pending",          icon: Clock },
+  proof_submitted:  { color: "#3B82F6", bg: "bg-blue-50 text-blue-700 border border-blue-200/60",       label: "Awaiting Approval", icon: Clock },
+  approved:         { color: "#10B981", bg: "bg-emerald-50 text-emerald-700 border border-emerald-200/60", label: "Approved",        icon: CheckCircle2 },
+  completed:        { color: "#10B981", bg: "bg-emerald-50 text-emerald-700 border border-emerald-200/60", label: "Done",            icon: CheckCircle2 },
+  rejected:         { color: "#EF4444", bg: "bg-red-50 text-red-700 border border-red-200/60",           label: "Rejected",         icon: XCircle },
 };
 
-const priorityConfig = {
+const priorityConfig: Record<string, { color: string; label: string }> = {
   high:   { color: "#EF4444", label: "High" },
   medium: { color: "#F59E0B", label: "Medium" },
   low:    { color: "#10B981", label: "Low" },
 };
 
 export default function StaffTasksPage() {
+  const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [completing, setCompleting] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
@@ -69,6 +73,7 @@ export default function StaffTasksPage() {
           priority: sop?.priority ?? "medium",
           status: exec.status,
           due_date: sop?.due_date,
+          rejection_reason: exec.rejection_reason,
         };
       });
 
@@ -82,21 +87,21 @@ export default function StaffTasksPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const completeTask = async (task: Task) => {
-    if (task.status === "completed") return;
-    setCompleting(task.executionId);
-    try {
-      await sopAPI.completeTask(task.executionId);
-      setTasks(prev => prev.map(t =>
-        t.executionId === task.executionId ? { ...t, status: "completed" } : t
-      ));
-      toast.success("Task marked as complete");
-    } catch {
-      toast.error("Failed to complete task");
-    } finally {
-      setCompleting(null);
-    }
+  const handleSubmitProof = (task: Task) => {
+    // Pass task data to proof page via localStorage so proof page can show context
+    const taskData = {
+      id: task.executionId,
+      task: task.title,
+      location: task.rejection_reason ? `Rejected: ${task.rejection_reason}` : "",
+      priority: task.priority,
+      status: task.status as any,
+      due: task.due_date ? new Date(task.due_date).toLocaleDateString() : "—",
+    };
+    localStorage.setItem("proof_task", JSON.stringify(taskData));
+    router.push(`/staff/tasks/proof?id=${task.executionId}`);
   };
+
+  const canSubmitProof = (status: string) => status === "pending" || status === "rejected";
 
   const filteredTasks = tasks.filter(t => {
     const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -104,7 +109,7 @@ export default function StaffTasksPage() {
     return matchesSearch && matchesFilter;
   });
 
-  const completedCount = tasks.filter(t => t.status === "completed").length;
+  const completedCount = tasks.filter(t => t.status === "approved" || t.status === "completed").length;
   const totalCount = tasks.length;
   const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
@@ -121,7 +126,7 @@ export default function StaffTasksPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-950 tracking-tight">My Tasks</h1>
-          <p className="text-slate-500 text-sm mt-1">Your assigned tasks</p>
+          <p className="text-slate-500 text-sm mt-1">Submit photo proof to complete tasks</p>
         </div>
         <div className="flex items-center gap-2.5 text-sm text-slate-600 bg-emerald-50 border border-emerald-200/60 px-4 py-2 rounded-xl">
           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -151,15 +156,17 @@ export default function StaffTasksPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search tasks..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-950/10 transition-all" />
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 transition-all" />
           </div>
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-slate-500" />
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-950/10 transition-all">
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-slate-300 transition-all">
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
-              <option value="completed">Done</option>
+              <option value="proof_submitted">Awaiting Approval</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
             </select>
           </div>
         </div>
@@ -179,42 +186,33 @@ export default function StaffTasksPage() {
             </div>
           ) : (
             filteredTasks.map((t, i) => {
-              const statusCfg = statusConfig[t.status];
+              const statusCfg = statusConfig[t.status] ?? statusConfig.pending;
               const priorityCfg = priorityConfig[t.priority] ?? priorityConfig.medium;
               const StatusIcon = statusCfg.icon;
-              const isCompleting = completing === t.executionId;
+              const canProof = canSubmitProof(t.status);
 
               return (
                 <motion.div key={t.executionId}
                   initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
                   className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50/60 transition-colors">
-                  <button
-                    onClick={() => completeTask(t)}
-                    disabled={t.status === "completed" || isCompleting}
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all disabled:cursor-not-allowed ${
-                      t.status === "completed"
-                        ? "bg-emerald-500 text-white"
-                        : "bg-slate-100 text-slate-400 hover:bg-slate-200"
-                    }`}>
-                    {isCompleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-                  </button>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${t.status === "completed" ? "line-through text-slate-400" : "text-slate-950"}`}>
+                    <p className={`text-sm font-medium ${t.status === "approved" || t.status === "completed" ? "line-through text-slate-400" : "text-slate-950"}`}>
                       {t.title}
                     </p>
-                    {(t.description || t.due_date) && (
-                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
-                        {t.due_date && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            Due {new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                          </span>
-                        )}
-                        {t.description && (
-                          <span className="truncate max-w-xs">{t.description}</span>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 flex-wrap">
+                      {t.due_date && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          Due {new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </span>
+                      )}
+                      {t.rejection_reason && (
+                        <span className="flex items-center gap-1 text-red-500">
+                          <AlertCircle className="w-3 h-3" />
+                          {t.rejection_reason}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium"
@@ -225,6 +223,14 @@ export default function StaffTasksPage() {
                       <StatusIcon className="w-3 h-3" />
                       {statusCfg.label}
                     </span>
+                    {canProof && (
+                      <button
+                        onClick={() => handleSubmitProof(t)}
+                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium bg-slate-900 text-white hover:bg-slate-700 transition-colors">
+                        <Camera className="w-3 h-3" />
+                        {t.status === "rejected" ? "Re-submit" : "Submit Proof"}
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               );

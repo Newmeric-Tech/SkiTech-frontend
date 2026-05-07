@@ -8,6 +8,7 @@ import {
   ArrowLeft, ArrowRight, CheckCircle2, Upload, X,
   DollarSign, Users, Calendar, ClipboardCheck, FileText,
 } from "lucide-react";
+import { kraAPI } from "@/lib/api/kra";
 
 interface MonthlyKraForm {
   month: string;
@@ -102,30 +103,36 @@ export default function MonthlyKRAForm({ backHref }: { backHref: string }) {
     setIsSubmitting(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append("submission_type", "monthly");
-      formData.append("period_month", form.month);
-      formData.append("period_year", form.year);
-      formData.append("revenue_amount", form.revenueAmount);
-      formData.append("guest_count", form.guestCount);
-      formData.append("occupancy_rate", form.occupancyRate);
-      formData.append("notes", form.notes);
+      let reportUrl: string | undefined;
       if (form.revenueFile) {
-        formData.append("file", form.revenueFile);
+        const { upload_url, file_key } = await kraAPI.getUploadUrl(
+          form.revenueFile.name,
+          form.revenueFile.type,
+        );
+        await kraAPI.uploadFileToS3(upload_url, form.revenueFile);
+        reportUrl = file_key;
       }
 
-      await new Promise((r) => setTimeout(r, 2000));
-      
+      const payload = {
+        month: form.month,
+        year: form.year,
+        revenueAmount: form.revenueAmount,
+        guestCount: form.guestCount,
+        occupancyRate: form.occupancyRate,
+        revenueFile: null,
+        revenueFilePreview: null,
+      };
+      await kraAPI.submitMonthly({ ...payload, notes: form.notes } as any, reportUrl);
+
       toast.success("Monthly KRA submitted successfully!", {
-        description: `${months.find(m => m.value === form.month)?.label} ${form.year}`,
+        description: `${months.find((m) => m.value === form.month)?.label} ${form.year}`,
         duration: 4500,
       });
       router.push(backHref);
-    } catch (err) {
-      setError("Failed to submit KRA. Please try again.");
-      toast.error("Submission failed", {
-        description: "Please check your connection and try again.",
-      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail ?? "Failed to submit KRA. Please try again.";
+      setError(msg);
+      toast.error("Submission failed", { description: msg });
     } finally {
       setIsSubmitting(false);
     }
