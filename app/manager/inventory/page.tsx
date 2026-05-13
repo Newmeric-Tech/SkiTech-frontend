@@ -7,8 +7,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { inventoryAPI } from "@/lib/api/inventory";
-import { featuresAPI } from "@/lib/api/features";
 import { usersAPI } from "@/lib/api/users";
+import { FeatureGate } from "@/components/ui/FeatureGate";
 
 interface InventoryItem {
   id: string; item_name: string; quantity: number;
@@ -30,7 +30,6 @@ const statusMap = {
 export default function ManagerInventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [featureEnabled, setFeatureEnabled] = useState<boolean | null>(null);
   const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
@@ -39,13 +38,7 @@ export default function ManagerInventoryPage() {
       const propId = meRes.data.property_id;
       if (!propId) { toast.error("No property assigned to your account"); setLoading(false); return; }
 
-      const [featRes, invRes] = await Promise.all([
-        featuresAPI.list(),
-        inventoryAPI.list(propId),
-      ]);
-
-      const features = featRes.data as Record<string, boolean>;
-      setFeatureEnabled(features.inventory === true);
+      const invRes = await inventoryAPI.list(propId);
       setItems(invRes.data as InventoryItem[]);
     } catch {
       toast.error("Failed to load inventory");
@@ -64,23 +57,12 @@ export default function ManagerInventoryPage() {
     );
   }
 
-  if (featureEnabled === false) {
-    return (
-      <div className="p-6 lg:p-8 flex flex-col items-center justify-center py-24 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-          <Package className="w-8 h-8 text-slate-400" />
-        </div>
-        <h2 className="text-slate-950 font-bold text-xl mb-2">Inventory Not Enabled</h2>
-        <p className="text-slate-500 text-sm max-w-sm">The inventory feature is not enabled for this property. Contact the owner to enable it.</p>
-      </div>
-    );
-  }
-
   const itemsWithStatus = items.map(i => ({ ...i, status: computeStatus(i.quantity, i.reorder_level) as "ok" | "low" | "critical" }));
   const filtered = itemsWithStatus.filter(i => i.item_name.toLowerCase().includes(search.toLowerCase()));
   const lowCount = itemsWithStatus.filter(i => i.status !== "ok").length;
 
   return (
+    <FeatureGate feature="inventory">
     <div className="p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -197,5 +179,6 @@ export default function ManagerInventoryPage() {
         </p>
       </div>
     </div>
+    </FeatureGate>
   );
 }

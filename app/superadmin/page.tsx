@@ -6,6 +6,7 @@ import { Building2, Users, Shield, AlertTriangle, CheckCircle2, Clock, TrendingU
 import { toast } from "sonner";
 import { superadminAPI, OverviewResponse } from "@/lib/api/superadmin";
 import { useAuthStore } from "@/store/authStore";
+import { downloadCSV, todayStr } from "@/lib/utils/export";
 
 const ACTIVITY_ICONS: Record<string, typeof Shield> = {
   security: Shield, property: Building2, user: Users,
@@ -40,6 +41,25 @@ export default function SuperadminDashboard() {
 
   useEffect(() => { fetchOverview(); }, [fetchOverview]);
 
+  const handleExport = () => {
+    if (!data) { toast.error("No data to export"); return; }
+    const statsRows = [{
+      "Total Properties": data.stats.total_properties ?? "",
+      "Active Users": data.stats.active_users ?? "",
+      "Open Tickets": data.stats.open_tickets ?? "",
+      "Platform Uptime (%)": data.stats.platform_uptime ?? "",
+    }];
+    downloadCSV(`platform-stats-${todayStr()}.csv`, statsRows);
+    if (data.top_properties?.length) {
+      downloadCSV(`top-properties-${todayStr()}.csv`, data.top_properties.map((p) => ({
+        Name: p.name,
+        Location: p.location,
+        Users: p.user_count,
+        "Health Score (%)": p.health_score,
+      })));
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -65,7 +85,7 @@ export default function SuperadminDashboard() {
           <p className="text-slate-500 text-sm mt-1">Platform overview — real-time monitoring across all tenants</p>
         </div>
         <div className="flex gap-3">
-          <button className="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 shadow-sm hover:shadow">Export Report</button>
+          <button onClick={handleExport} className="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 shadow-sm hover:shadow">Export Report</button>
           <button className="px-4 py-2.5 text-sm font-medium text-white bg-slate-950 rounded-xl hover:bg-slate-900 transition-all duration-200 shadow-lg shadow-slate-950/20">System Alert</button>
         </div>
       </div>

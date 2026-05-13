@@ -8,8 +8,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { inventoryAPI } from "@/lib/api/inventory";
-import { featuresAPI } from "@/lib/api/features";
 import { propertiesAPI, Property } from "@/lib/api/properties";
+import { FeatureGate } from "@/components/ui/FeatureGate";
 
 interface InventoryItem {
   id: string;
@@ -209,21 +209,19 @@ export default function InventoryPage() {
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [loading, setLoading] = useState(false);
   const [propsLoading, setPropsLoading] = useState(true);
-  const [featureEnabled, setFeatureEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
-    Promise.all([propertiesAPI.list(), featuresAPI.list()])
-      .then(([propsRes, featRes]) => {
+    propertiesAPI.list()
+      .then((propsRes) => {
         setProperties(propsRes.data);
         if (propsRes.data.length > 0) setSelectedPropertyId(propsRes.data[0].id);
-        setFeatureEnabled(featRes.data["inventory"] ?? false);
       })
-      .catch(() => toast.error("Failed to load data"))
+      .catch(() => toast.error("Failed to load properties"))
       .finally(() => setPropsLoading(false));
   }, []);
 
   const fetchItems = useCallback(async () => {
-    if (!selectedPropertyId || !featureEnabled) return;
+    if (!selectedPropertyId) return;
     setLoading(true);
     try {
       const res = await inventoryAPI.list(selectedPropertyId);
@@ -233,7 +231,7 @@ export default function InventoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedPropertyId, featureEnabled]);
+  }, [selectedPropertyId]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
@@ -272,18 +270,17 @@ export default function InventoryPage() {
   }
 
   return (
+    <FeatureGate feature="inventory">
     <div className="p-6 lg:p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-black" style={{ fontSize: "1.4rem", fontWeight: 800 }}>Inventory</h1>
           <p className="text-neutral-500 text-sm mt-0.5">{items.length} items tracked</p>
         </div>
-        {featureEnabled && (
-          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setShowAdd(true)} disabled={!selectedPropertyId}
-            className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded-xl text-sm shadow-md disabled:opacity-50" style={{ fontWeight: 600 }}>
-            <Plus className="w-4 h-4" /> Add Item
-          </motion.button>
-        )}
+        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setShowAdd(true)} disabled={!selectedPropertyId}
+          className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded-xl text-sm shadow-md disabled:opacity-50" style={{ fontWeight: 600 }}>
+          <Plus className="w-4 h-4" /> Add Item
+        </motion.button>
       </div>
 
       {/* Property selector */}
@@ -297,15 +294,7 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* Feature flag gate */}
-      {featureEnabled === false ? (
-        <div className="flex flex-col items-center justify-center py-20 text-neutral-400">
-          <Package className="w-12 h-12 mb-4 opacity-30" />
-          <p className="text-lg font-semibold text-neutral-600 mb-2">Inventory Feature Not Enabled</p>
-          <p className="text-sm text-center max-w-sm">The inventory module is not enabled for your account. Contact your administrator to enable it.</p>
-        </div>
-      ) : (
-        <>
+      <>
           {/* Alert banner */}
           {items.filter(i => computeStatus(i.quantity, i.reorder_level) !== "ok").length > 0 && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
@@ -401,13 +390,13 @@ export default function InventoryPage() {
               )}
             </div>
           )}
-        </>
-      )}
+      </>
 
       <AnimatePresence>
         {showAdd && <AddItemModal onClose={() => setShowAdd(false)} onAdd={handleAdd} />}
         {editingItem && <EditStockModal item={editingItem} onClose={() => setEditingItem(null)} onSave={(qty) => handleUpdateStock(editingItem, qty)} />}
       </AnimatePresence>
     </div>
+    </FeatureGate>
   );
 }

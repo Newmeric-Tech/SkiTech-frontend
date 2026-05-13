@@ -88,6 +88,21 @@ export default function PlatformSettings() {
     }
   };
 
+  const handleDataExport = async () => {
+    try {
+      const res = await superadminAPI.exportAudit();
+      const url = URL.createObjectURL(new Blob([res.data], { type: "text/csv;charset=utf-8;" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `audit-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Audit log exported");
+    } catch {
+      toast.error("Export failed");
+    }
+  };
+
   const renderSection = () => {
     switch (activeSection) {
       case "general":
@@ -338,7 +353,7 @@ export default function PlatformSettings() {
                   ))}
                 </div>
               </div>
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              <motion.button onClick={handleDataExport} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-black text-white rounded-lg text-sm font-medium">
                 <Database className="w-4 h-4" /> Export Data
               </motion.button>

@@ -11,6 +11,7 @@ export interface Property {
   postal_code: string | null;
   franchise_type: string | null;
   num_rooms: number | null;
+  room_number_start: number | null;
   has_restaurant: boolean | null;
   is_active: boolean;
   created_at: string;
@@ -37,6 +38,7 @@ export interface PropertyCreate {
   postal_code?: string;
   franchise_type?: string;
   num_rooms?: number;
+  room_number_start?: number;
   has_restaurant?: boolean;
 }
 
@@ -49,6 +51,7 @@ export interface PropertyUpdate {
   postal_code?: string;
   franchise_type?: string;
   num_rooms?: number;
+  room_number_start?: number;
   has_restaurant?: boolean;
   is_active?: boolean;
 }

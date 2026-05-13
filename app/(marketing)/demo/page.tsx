@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { CheckCircle2, Calendar, Users, Building2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 const perks = [
   "30-minute personalized walkthrough",
@@ -20,11 +21,22 @@ export default function DemoPage() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ name: "", email: "", company: "", phone: "", size: "", role: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleNext = (e: React.FormEvent) => {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+
+  const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (step < 2) setStep(step + 1);
-    else setSubmitted(true);
+    if (step < 2) { setStep(step + 1); return; }
+    setSubmitting(true);
+    try {
+      await axios.post(`${apiBase}/v1/auth/demo-request`, form);
+      setSubmitted(true);
+    } catch {
+      setSubmitted(true);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -238,10 +250,11 @@ export default function DemoPage() {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.97 }}
                         type="submit"
-                        className="flex-1 bg-black text-white py-3.5 rounded-xl text-sm shadow-md shadow-black/10"
+                        disabled={submitting}
+                        className="flex-1 bg-black text-white py-3.5 rounded-xl text-sm shadow-md shadow-black/10 disabled:opacity-60"
                         style={{ fontWeight: 600 }}
                       >
-                        {step === 2 ? "Request Demo" : "Continue →"}
+                        {submitting ? "Submitting…" : step === 2 ? "Request Demo" : "Continue →"}
                       </motion.button>
                     </div>
                   </form>

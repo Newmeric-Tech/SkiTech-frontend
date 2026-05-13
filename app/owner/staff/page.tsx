@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner";
 import { workforceAPI } from "@/lib/api/workforce";
 import { propertiesAPI, Property } from "@/lib/api/properties";
+import { usersAPI, User as ApiUser } from "@/lib/api/users";
 
 interface Employee {
   id: string;
@@ -182,11 +183,32 @@ function StaffPageInner() {
     if (!selectedPropertyId) return;
     setLoading(true);
     try {
-      const [empRes, deptRes] = await Promise.all([
+      const [empRes, deptRes, usersRes] = await Promise.all([
         workforceAPI.listEmployees(selectedPropertyId),
         workforceAPI.listDepartments(selectedPropertyId),
+        usersAPI.list(selectedPropertyId, "Staff").catch(() => ({ data: [] as ApiUser[] })),
       ]);
-      setStaff(empRes.data);
+
+      const employees: Employee[] = empRes.data;
+
+      // Merge Staff users that aren't already in the employees table (match by email)
+      const empEmails = new Set(employees.map((e) => e.email?.toLowerCase()).filter(Boolean));
+      const staffUsers: Employee[] = (usersRes.data as ApiUser[])
+        .filter((u) => !empEmails.has(u.email?.toLowerCase()))
+        .map((u) => ({
+          id: u.id,
+          property_id: selectedPropertyId,
+          first_name: u.first_name ?? "",
+          last_name: u.last_name ?? "",
+          email: u.email ?? null,
+          phone: null,
+          employee_code: null,
+          position: "Staff",
+          is_active: u.is_active,
+          created_at: "",
+        }));
+
+      setStaff([...employees, ...staffUsers]);
       setDepartments(deptRes.data);
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Failed to load staff");

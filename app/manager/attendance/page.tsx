@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Users, UserCheck, UserX, Clock, Download, MapPin } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { attendanceAPI, PropertyAttendanceEntry } from "@/lib/api/attendance";
+import { attendanceAPI, PropertyAttendanceEntry, AttendanceRecord } from "@/lib/api/attendance";
 import api from "@/lib/config/app";
+import { downloadCSV, todayStr } from "@/lib/utils/export";
 
 interface Property {
   id: string;
@@ -42,23 +43,40 @@ const ChartTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function buildWeeklyTrend(records: AttendanceRecord[], staffTotal: number) {
+  const today = new Date();
+  const buckets: Record<string, Set<string>> = {};
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    buckets[d.toDateString()] = new Set();
+  }
+  for (const r of records) {
+    if (!r.punch_in_time) continue;
+    const key = new Date(r.punch_in_time).toDateString();
+    if (key in buckets) buckets[key].add(r.user_id);
+  }
+  return Object.entries(buckets).map(([dateStr, userSet]) => {
+    const present = userSet.size;
+    return {
+      day: DAY_LABELS[new Date(dateStr).getDay()],
+      present,
+      absent: Math.max(0, staffTotal - present),
+    };
+  });
+}
+
 export default function AttendancePage() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [propertyId, setPropertyId] = useState<string>("");
   const [records, setRecords] = useState<PropertyAttendanceEntry[]>([]);
   const [totalStaff, setTotalStaff] = useState(0);
   const [isFetching, setIsFetching] = useState(true);
-
-  // Static weekly trend — would need a date-range endpoint to make dynamic
-  const weeklyAttendance = [
-    { day: "Mon", present: 0, absent: 0 },
-    { day: "Tue", present: 0, absent: 0 },
-    { day: "Wed", present: 0, absent: 0 },
-    { day: "Thu", present: 0, absent: 0 },
-    { day: "Fri", present: 0, absent: 0 },
-    { day: "Sat", present: 0, absent: 0 },
-    { day: "Sun", present: 0, absent: 0 },
-  ];
+  const [weeklyAttendance, setWeeklyAttendance] = useState(
+    DAY_LABELS.map((day) => ({ day, present: 0, absent: 0 }))
+  );
 
   // Load properties
   useEffect(() => {
@@ -69,15 +87,32 @@ export default function AttendancePage() {
     }).catch(() => {});
   }, []);
 
-  // Load today's attendance when property selected
+  // Load today's attendance + weekly trend when property selected
   useEffect(() => {
     if (!propertyId) return;
     setIsFetching(true);
-    attendanceAPI
-      .getPropertyAttendanceToday(propertyId)
-      .then((res) => {
-        setRecords(res.records);
-        setTotalStaff(res.total_staff);
+
+    const todayEnd = new Date();
+    const weekStart = new Date(todayEnd);
+    weekStart.setDate(todayEnd.getDate() - 6);
+    weekStart.setHours(0, 0, 0, 0);
+
+    Promise.all([
+      attendanceAPI.getPropertyAttendanceToday(propertyId),
+      api.get<{ records: AttendanceRecord[] }>("/v1/attendance/history", {
+        params: {
+          property_id: propertyId,
+          start_date: weekStart.toISOString(),
+          end_date: todayEnd.toISOString(),
+          limit: 500,
+        },
+      }),
+    ])
+      .then(([todayRes, historyRes]) => {
+        setRecords(todayRes.records);
+        setTotalStaff(todayRes.total_staff);
+        const historyRecords = historyRes.data?.records ?? [];
+        setWeeklyAttendance(buildWeeklyTrend(historyRecords, todayRes.total_staff));
       })
       .catch(() => {
         setRecords([]);
@@ -89,6 +124,18 @@ export default function AttendancePage() {
   const presentCount = records.filter((r) => r.status === "active" || r.status === "completed").length;
   const absentCount = totalStaff - presentCount;
   const attendanceRate = totalStaff > 0 ? Math.round((presentCount / totalStaff) * 100) : 0;
+
+  const handleExport = () => {
+    if (!records.length) { return; }
+    downloadCSV(`attendance-${todayStr()}.csv`, records.map((r) => ({
+      Name: r.user_name,
+      "Check In": r.punch_in_time ? new Date(r.punch_in_time).toLocaleTimeString() : "—",
+      "Check Out": r.punch_out_time ? new Date(r.punch_out_time).toLocaleTimeString() : "—",
+      "Hours Worked": r.hours_worked ?? "",
+      "Within Fence": r.is_within_fence ? "Yes" : "No",
+      Status: r.status,
+    })));
+  };
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
@@ -139,7 +186,7 @@ export default function AttendancePage() {
         ))}
       </div>
 
-      {/* Weekly trend chart (static layout — needs date-range endpoint for real data) */}
+      {/* Weekly trend chart — last 7 days from attendance history */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -174,6 +221,10 @@ export default function AttendancePage() {
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-3 py-1.5 rounded-full">{presentCount} Present</span>
               <span className="text-xs font-medium text-red-700 bg-red-50 border border-red-200/60 px-3 py-1.5 rounded-full">{absentCount} Absent</span>
+              <button onClick={handleExport} disabled={records.length === 0}
+                className="flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200/60 px-3 py-1.5 rounded-full hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                <Download className="w-3 h-3" /> Export CSV
+              </button>
             </div>
           </div>
         </div>

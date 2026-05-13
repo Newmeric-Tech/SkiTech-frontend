@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { statsAPI } from "@/lib/api/stats";
 import { useAuthStore } from "@/store/authStore";
 
@@ -37,6 +38,7 @@ function ChartTooltip({ active, payload, label }: any) {
 
 export default function StaffDashboard() {
   const { user } = useAuthStore();
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -166,15 +168,18 @@ export default function StaffDashboard() {
             <p className="text-slate-500 text-sm mt-0.5">Common tasks</p>
           </div>
           <div className="p-4 space-y-3">
-            <button className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors border border-emerald-200/60">
+            <button onClick={() => router.push("/staff/punch")}
+              className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors border border-emerald-200/60">
               <Clock className="w-5 h-5 text-emerald-600" />
               <span className="text-sm font-medium text-emerald-800">Punch In / Out</span>
             </button>
-            <button className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors border border-blue-200/60">
+            <button onClick={() => router.push("/staff/tasks")}
+              className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors border border-blue-200/60">
               <ClipboardList className="w-5 h-5 text-blue-600" />
               <span className="text-sm font-medium text-blue-800">View My Tasks</span>
             </button>
-            <button className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-purple-50 hover:bg-purple-100 transition-colors border border-purple-200/60">
+            <button onClick={() => router.push("/staff/sop")}
+              className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-purple-50 hover:bg-purple-100 transition-colors border border-purple-200/60">
               <FileText className="w-5 h-5 text-purple-600" />
               <span className="text-sm font-medium text-purple-800">Read SOPs</span>
             </button>

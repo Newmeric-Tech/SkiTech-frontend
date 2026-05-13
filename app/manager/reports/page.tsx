@@ -9,6 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { toast } from "sonner";
 import { reportsAPI } from "@/lib/api/reports";
 import { usersAPI } from "@/lib/api/users";
+import { downloadCSV, todayStr } from "@/lib/utils/export";
 
 interface OccupancyPropertyReport {
   property_id: string; property_name: string;
@@ -86,6 +87,20 @@ export default function ManagerReportsPage() {
           <h1 className="text-2xl font-bold text-slate-950 tracking-tight">Operational Reports</h1>
           <p className="text-slate-500 text-sm mt-1">Property performance metrics and analytics</p>
         </div>
+        {occupancy && (
+          <button
+            onClick={() => downloadCSV(`occupancy-${todayStr()}.csv`, [{
+              Property: occupancy.property_name,
+              "Total Rooms": occupancy.total_rooms,
+              Occupied: occupancy.occupied_rooms,
+              Available: occupancy.available_rooms,
+              Maintenance: occupancy.maintenance_rooms,
+              "Occupancy %": occupancy.occupancy_percentage,
+            }])}
+            className="flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
+            <Download className="w-4 h-4" /> Export Report
+          </button>
+        )}
       </div>
 
       {occupancy ? (

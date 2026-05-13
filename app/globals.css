@@ -152,10 +152,126 @@
     line-height: 1.5;
   }
 
-  input {
+  input,
+  textarea,
+  select {
     font-size: 1rem;
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+    color: #0a0a0a;
+  }
+
+  /* Fix browser autofill overlay which swallows the text color */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-text-fill-color: #0a0a0a !important;
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  /* Placeholder color */
+  ::placeholder {
+    color: #9ca3af;
+    opacity: 1;
+  }
+
+  /* Fix: table card wrappers with overflow-hidden clip dropdown menus on the last row.
+     Allow overflow on containers that hold a table so dropdowns aren't cut off. */
+  .overflow-hidden:has(table),
+  .overflow-hidden:has(.overflow-x-auto) {
+    overflow: visible;
+  }
+
+  /* The inner scroll wrapper still needs horizontal scrolling */
+  .overflow-x-auto {
+    overflow-x: auto;
+  }
+
+  /* Dropdown menus inside tables should always appear above everything */
+  table .absolute,
+  [class*="rounded-xl"][class*="absolute"][class*="shadow"] {
+    z-index: 50;
   }
 }
+
+/* ── Dark mode global overrides ─────────────────────────────────────────────
+   These target Tailwind utility classes so we don't have to add dark: to
+   every component individually. The layout structure handles its own dark
+   classes; these cover page-level cards, tables, and text. */
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #111111;
+  color: #e8e8e8;
+}
+
+/* Card / surface backgrounds — true matte black, no blue tint */
+html.dark .bg-white { background-color: #1c1c1c !important; }
+html.dark .bg-white\/80 { background-color: rgba(28,28,28,0.8) !important; }
+html.dark .bg-white\/70 { background-color: rgba(28,28,28,0.7) !important; }
+html.dark .bg-white\/50 { background-color: rgba(28,28,28,0.5) !important; }
+html.dark .bg-slate-50 { background-color: #161616 !important; }
+html.dark .bg-slate-50\/80 { background-color: rgba(22,22,22,0.8) !important; }
+html.dark .bg-slate-50\/60 { background-color: rgba(22,22,22,0.6) !important; }
+html.dark .bg-slate-100 { background-color: #222222 !important; }
+
+/* Page background (the cream colour) */
+html.dark .bg-\[\#f8f7f4\] { background-color: #111111 !important; }
+
+/* Text colours */
+html.dark .text-slate-950 { color: #f0f0f0 !important; }
+html.dark .text-slate-900 { color: #f0f0f0 !important; }
+html.dark .text-slate-800 { color: #e0e0e0 !important; }
+html.dark .text-slate-700 { color: #c8c8c8 !important; }
+html.dark .text-slate-600 { color: #a0a0a0 !important; }
+html.dark .text-slate-500 { color: #707070 !important; }
+html.dark .text-slate-400 { color: #555555 !important; }
+html.dark .text-black { color: #f0f0f0 !important; }
+html.dark .text-neutral-700 { color: #c8c8c8 !important; }
+html.dark .text-neutral-600 { color: #a0a0a0 !important; }
+html.dark .text-neutral-500 { color: #707070 !important; }
+html.dark .text-neutral-400 { color: #555555 !important; }
+
+/* Border colours */
+html.dark .border-slate-200 { border-color: #2e2e2e !important; }
+html.dark .border-slate-200\/60 { border-color: rgba(46,46,46,0.6) !important; }
+html.dark .border-slate-100 { border-color: #222222 !important; }
+html.dark .border-black\/10 { border-color: rgba(255,255,255,0.07) !important; }
+html.dark .divide-slate-100 > * + * { border-color: #222222 !important; }
+html.dark .divide-slate-50 > * + * { border-color: #191919 !important; }
+
+/* Hover backgrounds */
+html.dark .hover\:bg-slate-50\/60:hover { background-color: rgba(22,22,22,0.6) !important; }
+html.dark .hover\:bg-slate-50\/80:hover { background-color: rgba(22,22,22,0.8) !important; }
+html.dark .hover\:bg-slate-50:hover { background-color: #1a1a1a !important; }
+html.dark .hover\:bg-slate-100:hover { background-color: #232323 !important; }
+
+/* Table headers */
+html.dark thead tr,
+html.dark .bg-slate-50\/80 { background-color: #161616 !important; }
+
+/* Inputs / selects */
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark textarea,
+html.dark select {
+  background-color: #1c1c1c !important;
+  border-color: #2e2e2e !important;
+  color: #f0f0f0 !important;
+}
+
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:hover,
+html.dark input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f0f0f0 !important;
+  -webkit-box-shadow: 0 0 0 1000px #1c1c1c inset !important;
+}
+
+/* Shadows on cards (soften them in dark mode) */
+html.dark .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
+html.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important; }

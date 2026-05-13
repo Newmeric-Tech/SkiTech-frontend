@@ -9,6 +9,8 @@ export const roomsAPI = {
   update: (roomId: string, data: any) =>
     api.put(`/v1/rooms/${roomId}`, data),
   delete: (roomId: string) => api.delete(`/v1/rooms/${roomId}`),
+  regenerate: (propertyId: string) =>
+    api.post(`/v1/rooms/${propertyId}/regenerate`),
 
   // Bookings
   listBookings: (propertyId: string, status?: string) =>

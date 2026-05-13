@@ -4,21 +4,25 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   ClipboardList, Users, CheckCircle2, AlertCircle,
-  TrendingUp, TrendingDown, Loader2,
+  TrendingUp, TrendingDown, Loader2, IndianRupee,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
-import { dashboardAPI, DashboardSummary, TaskTrend, DashboardAlert } from "@/lib/api/dashboard";
+import { dashboardAPI, DashboardSummary, DashboardAlert } from "@/lib/api/dashboard";
+import { reportsAPI, RevenueMonth } from "@/lib/api/reports";
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const RevenueTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-[#0f172a] border border-slate-700/50 rounded-xl px-4 py-3 shadow-xl">
         <p className="text-slate-400 text-xs mb-1">{label}</p>
-        <p className="text-white font-semibold text-lg">{payload[0].value} tasks</p>
+        <p className="text-white font-semibold text-lg">
+          ₹{Number(payload[0].value).toLocaleString("en-IN")}
+        </p>
+        <p className="text-slate-400 text-xs">Total Revenue</p>
       </div>
     );
   }
@@ -28,20 +32,25 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function OwnerDashboard() {
   const { user } = useAuthStore();
   const [dashboard, setDashboard] = useState<DashboardSummary | null>(null);
-  const [trend, setTrend] = useState<TaskTrend[]>([]);
+  const [revenueTrend, setRevenueTrend] = useState<{ month: string; total: number }[]>([]);
   const [alerts, setAlerts] = useState<DashboardAlert[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
-      const [summaryRes, trendRes, alertsRes] = await Promise.all([
+      const [summaryRes, revenueRes, alertsRes] = await Promise.all([
         dashboardAPI.summary(),
-        dashboardAPI.tasksTrend(),
+        reportsAPI.revenue(6),
         dashboardAPI.alerts(),
       ]);
       setDashboard(summaryRes.data);
-      setTrend(trendRes.data);
+      setRevenueTrend(
+        (revenueRes.data.data as RevenueMonth[]).map((d) => ({
+          month: d.month,
+          total: d.total,
+        }))
+      );
       setAlerts(alertsRes.data);
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Failed to load dashboard");
@@ -52,11 +61,20 @@ export default function OwnerDashboard() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  const totalRevenue = revenueTrend.reduce((s, d) => s + d.total, 0);
+
   const stats = [
     { icon: ClipboardList, label: "Total SOPs", value: dashboard?.total_sops ?? 0, color: "#3B82F6", trend: "up", positive: true },
     { icon: Users, label: "Total Tasks", value: dashboard?.total_tasks ?? 0, color: "#6366F1", trend: "up", positive: true },
     { icon: CheckCircle2, label: "Completed Tasks", value: dashboard?.completed_tasks ?? 0, color: "#10B981", trend: "up", positive: true },
-    { icon: AlertCircle, label: "Pending Tasks", value: dashboard?.pending_tasks ?? 0, color: "#F59E0B", trend: "down", positive: false },
+    {
+      icon: IndianRupee,
+      label: "6-Month Revenue",
+      value: totalRevenue > 0 ? `₹${(totalRevenue / 1000).toFixed(0)}k` : "—",
+      color: "#F59E0B",
+      trend: "up",
+      positive: true,
+    },
   ];
 
   return (
@@ -114,31 +132,45 @@ export default function OwnerDashboard() {
             <div className="col-span-1 lg:col-span-2 bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="font-bold text-slate-950 text-lg">Tasks Trend</h3>
-                  <p className="text-slate-500 text-sm mt-0.5">Daily tasks for the past week</p>
+                  <h3 className="font-bold text-slate-950 text-lg">Revenue Trend</h3>
+                  <p className="text-slate-500 text-sm mt-0.5">Total booking revenue — last 6 months</p>
                 </div>
               </div>
               <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  {trend.length > 0 ? (
-                    <AreaChart data={trend}>
+                  {revenueTrend.length > 0 && revenueTrend.some((d) => d.total > 0) ? (
+                    <AreaChart data={revenueTrend}>
                       <defs>
-                        <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.15} />
-                          <stop offset="100%" stopColor="#3B82F6" stopOpacity={0} />
+                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.18} />
+                          <stop offset="100%" stopColor="#F59E0B" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="0" vertical={false} stroke="#E2E8F0" />
-                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#94A3B8", fontWeight: 500 }} dy={12} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#94A3B8", fontWeight: 500 }} width={40} />
-                      <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#94A3B8", strokeWidth: 1, strokeDasharray: "4 4" }} />
-                      <Area type="monotone" dataKey="tasks" stroke="#3B82F6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTasks)"
-                        dot={{ fill: "#3B82F6", strokeWidth: 0, r: 4 }}
-                        activeDot={{ fill: "#3B82F6", r: 6, stroke: "#fff", strokeWidth: 2 }}
+                      <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#94A3B8", fontWeight: 500 }} dy={12} />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 12, fill: "#94A3B8", fontWeight: 500 }}
+                        width={60}
+                        tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
+                      />
+                      <Tooltip content={<RevenueTooltip />} cursor={{ stroke: "#94A3B8", strokeWidth: 1, strokeDasharray: "4 4" }} />
+                      <Area
+                        type="monotone"
+                        dataKey="total"
+                        stroke="#F59E0B"
+                        strokeWidth={2.5}
+                        fillOpacity={1}
+                        fill="url(#colorRevenue)"
+                        dot={{ fill: "#F59E0B", strokeWidth: 0, r: 4 }}
+                        activeDot={{ fill: "#F59E0B", r: 6, stroke: "#fff", strokeWidth: 2 }}
                       />
                     </AreaChart>
                   ) : (
-                    <div className="flex items-center justify-center h-full text-slate-400 text-sm">No task data yet</div>
+                    <div className="flex items-center justify-center h-full text-slate-400 text-sm">
+                      No booking revenue yet
+                    </div>
                   )}
                 </ResponsiveContainer>
               </div>

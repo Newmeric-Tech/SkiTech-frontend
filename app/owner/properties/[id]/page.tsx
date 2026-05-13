@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useParams } from "next/navigation";
 import {
   ArrowLeft, Building2, MapPin, Users, Activity, Edit2, Trash2,
-  Loader2, X, UserCircle, Phone, Mail, Plus,
+  Loader2, X, UserCircle, Phone, Mail, Plus, BedDouble,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -70,6 +70,7 @@ export default function PropertyDetailPage() {
       postal_code: property.postal_code ?? "",
       franchise_type: property.franchise_type ?? "owner-operated",
       num_rooms: property.num_rooms ?? undefined,
+      room_number_start: property.room_number_start ?? 101,
       has_restaurant: property.has_restaurant ?? false,
       is_active: property.is_active,
     });
@@ -224,6 +225,7 @@ export default function PropertyDetailPage() {
               {[
                 { label: "Franchise Type", value: property.franchise_type ?? "—" },
                 { label: "Num. of Rooms", value: property.num_rooms ?? "—" },
+                { label: "Room Numbers Start", value: property.room_number_start ?? 101 },
                 { label: "Has Restaurant", value: property.has_restaurant ? "Yes" : "No" },
                 { label: "Postal Code", value: property.postal_code ?? "—" },
                 { label: "State / Province", value: property.state ?? "—" },
@@ -331,6 +333,13 @@ export default function PropertyDetailPage() {
             <h3 className="font-bold text-slate-950 text-lg mb-4">Quick Actions</h3>
             <div className="space-y-2">
               <button
+                onClick={() => router.push(`/owner/properties/${id}/rooms`)}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors text-left"
+              >
+                <BedDouble className="w-4 h-4 text-slate-500" />
+                <span className="text-sm font-medium text-slate-700">Manage Rooms</span>
+              </button>
+              <button
                 onClick={() => router.push(`/owner/staff?property=${id}`)}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors text-left"
               >
@@ -437,15 +446,27 @@ export default function PropertyDetailPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-neutral-700 text-sm mb-1.5 font-medium">Number of Rooms</label>
-                  <input
-                    value={editForm.num_rooms ?? ""}
-                    onChange={e => setEditForm(f => ({ ...f, num_rooms: e.target.value ? parseInt(e.target.value) : undefined }))}
-                    type="number"
-                    min={0}
-                    className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/30"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-neutral-700 text-sm mb-1.5 font-medium">Number of Rooms</label>
+                    <input
+                      value={editForm.num_rooms ?? ""}
+                      onChange={e => setEditForm(f => ({ ...f, num_rooms: e.target.value ? parseInt(e.target.value) : undefined }))}
+                      type="number"
+                      min={0}
+                      className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-700 text-sm mb-1.5 font-medium">Room Numbers Start From</label>
+                    <input
+                      value={editForm.room_number_start ?? 101}
+                      onChange={e => setEditForm(f => ({ ...f, room_number_start: e.target.value ? parseInt(e.target.value) : 101 }))}
+                      type="number"
+                      min={1}
+                      className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/30"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-6">

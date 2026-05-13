@@ -25,6 +25,7 @@ const EMPTY_FORM: PropertyCreate = {
   postal_code: "",
   franchise_type: "owner-operated",
   num_rooms: undefined,
+  room_number_start: 101,
   has_restaurant: false,
 };
 
@@ -341,16 +342,29 @@ export default function PropertiesPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-neutral-700 text-sm mb-1.5 font-medium">Number of Rooms</label>
-                  <input
-                    value={formData.num_rooms ?? ""}
-                    onChange={e => setFormData(f => ({ ...f, num_rooms: e.target.value ? parseInt(e.target.value) : undefined }))}
-                    type="number"
-                    min={0}
-                    className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/30"
-                    placeholder="142"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-neutral-700 text-sm mb-1.5 font-medium">Number of Rooms</label>
+                    <input
+                      value={formData.num_rooms ?? ""}
+                      onChange={e => setFormData(f => ({ ...f, num_rooms: e.target.value ? parseInt(e.target.value) : undefined }))}
+                      type="number"
+                      min={0}
+                      className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/30"
+                      placeholder="100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-700 text-sm mb-1.5 font-medium">Room Numbers Start From</label>
+                    <input
+                      value={formData.room_number_start ?? 101}
+                      onChange={e => setFormData(f => ({ ...f, room_number_start: e.target.value ? parseInt(e.target.value) : 101 }))}
+                      type="number"
+                      min={1}
+                      className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/30"
+                      placeholder="101"
+                    />
+                  </div>
                 </div>
 
                 <label className="flex items-center gap-3 cursor-pointer select-none">
