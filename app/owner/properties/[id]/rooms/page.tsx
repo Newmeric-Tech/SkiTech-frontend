@@ -40,6 +40,10 @@ export default function RoomsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [selectedRooms, setSelectedRooms] = useState<Set<string>>(new Set());
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState(EMPTY_FORM);
   const [addSubmitting, setAddSubmitting] = useState(false);
@@ -154,8 +158,40 @@ export default function RoomsPage() {
     const matchSearch = r.room_number.toLowerCase().includes(search.toLowerCase())
       || (r.room_type ?? "").toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || r.status === statusFilter;
-    return matchSearch && matchStatus;
+    const matchType = typeFilter === "all" || (r.room_type ?? "").toLowerCase() === typeFilter.toLowerCase();
+    return matchSearch && matchStatus && matchType;
   });
+
+  const handleBulkStatus = async (newStatus: string) => {
+    if (selectedRooms.size === 0) return;
+    try {
+      setBulkSubmitting(true);
+      await roomsAPI.bulkUpdateStatus(id, Array.from(selectedRooms), newStatus);
+      setRooms(prev => prev.map(r => selectedRooms.has(r.id) ? { ...r, status: newStatus as Room["status"] } : r));
+      setSelectedRooms(new Set());
+      toast.success(`${selectedRooms.size} room(s) updated to ${newStatus}`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Bulk update failed");
+    } finally {
+      setBulkSubmitting(false);
+    }
+  };
+
+  const toggleSelect = (roomId: string) => {
+    setSelectedRooms(prev => {
+      const next = new Set(prev);
+      if (next.has(roomId)) next.delete(roomId); else next.add(roomId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedRooms.size === filtered.length) {
+      setSelectedRooms(new Set());
+    } else {
+      setSelectedRooms(new Set(filtered.map(r => r.id)));
+    }
+  };
 
   const counts = {
     total: rooms.length,
@@ -309,33 +345,86 @@ export default function RoomsPage() {
       </AnimatePresence>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search by room number or type…"
-            className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-slate-300"
-          />
+      <div className="space-y-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-[200px] max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by room number or type…"
+              className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-slate-300"
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="w-4 h-4 text-slate-400" />
+            {["all", ...STATUSES].map(s => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  statusFilter === s
+                    ? "bg-slate-950 text-white"
+                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-400" />
-          {["all", ...STATUSES].map(s => (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-slate-400 font-medium">Type:</span>
+          {["all", ...ROOM_TYPES].map(t => (
             <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
+              key={t}
+              onClick={() => setTypeFilter(t)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                statusFilter === s
-                  ? "bg-slate-950 text-white"
+                typeFilter === t
+                  ? "bg-indigo-600 text-white"
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
               }`}
             >
-              {s.charAt(0).toUpperCase() + s.slice(1)}
+              {t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
         </div>
       </div>
+
+      {/* Bulk action bar */}
+      <AnimatePresence>
+        {selectedRooms.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-200 rounded-2xl flex-wrap"
+          >
+            <span className="text-indigo-700 text-sm font-semibold">{selectedRooms.size} room(s) selected</span>
+            <span className="text-indigo-400 text-xs">Set status to:</span>
+            {STATUSES.map(s => (
+              <button
+                key={s}
+                onClick={() => handleBulkStatus(s)}
+                disabled={bulkSubmitting}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
+                  s === "available" ? "bg-emerald-600 text-white hover:bg-emerald-700" :
+                  s === "occupied" ? "bg-blue-600 text-white hover:bg-blue-700" :
+                  "bg-amber-600 text-white hover:bg-amber-700"
+                }`}
+              >
+                {bulkSubmitting ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+            <button
+              onClick={() => setSelectedRooms(new Set())}
+              className="ml-auto text-indigo-500 hover:text-indigo-700 text-xs"
+            >
+              Clear selection
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Rooms table */}
       {loading ? (
@@ -356,6 +445,14 @@ export default function RoomsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
+                    <th className="px-4 py-3.5 w-10">
+                      <input
+                        type="checkbox"
+                        checked={filtered.length > 0 && selectedRooms.size === filtered.length}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded accent-indigo-600"
+                      />
+                    </th>
                     {["Room #", "Type", "Price / Night", "Status", "Actions"].map(h => (
                       <th key={h} className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
                     ))}
@@ -364,7 +461,16 @@ export default function RoomsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {filtered.map((room, i) => (
                     <motion.tr key={room.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.02 }} className="hover:bg-slate-50/60 transition-colors">
+                      transition={{ delay: i * 0.02 }}
+                      className={`hover:bg-slate-50/60 transition-colors ${selectedRooms.has(room.id) ? "bg-indigo-50/40" : ""}`}>
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedRooms.has(room.id)}
+                          onChange={() => toggleSelect(room.id)}
+                          className="w-4 h-4 rounded accent-indigo-600"
+                        />
+                      </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">

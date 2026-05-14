@@ -56,6 +56,7 @@ export interface PunchStatusResponse {
   punch_in_time?: string;
   hours_so_far?: number;
   is_within_fence?: boolean;
+  current_status?: string | null;
   punch_in_location?: { latitude: number; longitude: number };
 }
 
@@ -81,6 +82,7 @@ export interface PropertyAttendanceEntry {
   punch_out_time: string | null;
   hours_worked: number | null;
   status: string;
+  current_status?: string | null;
   is_within_fence: boolean;
 }
 
@@ -180,6 +182,26 @@ export const attendanceAPI = {
   ): Promise<PropertyAttendanceTodayResponse> => {
     const { data } = await api.get<PropertyAttendanceTodayResponse>(
       `/v1/attendance/property/${propertyId}/today`,
+    );
+    return data;
+  },
+
+  getPropertyAttendanceWeek: async (propertyId: string): Promise<{
+    property_id: string;
+    records: PropertyAttendanceEntry[];
+  }> => {
+    const { data } = await api.get(`/v1/attendance/property/${propertyId}/week`);
+    return data;
+  },
+
+  updateCurrentStatus: async (
+    propertyId: string,
+    currentStatus: string | null,
+  ): Promise<{ success: boolean; current_status: string | null; message: string }> => {
+    const { data } = await api.patch(
+      "/v1/attendance/current-status",
+      { current_status: currentStatus },
+      { params: { property_id: propertyId } },
     );
     return data;
   },

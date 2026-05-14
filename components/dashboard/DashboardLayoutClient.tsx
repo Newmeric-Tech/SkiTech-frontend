@@ -9,8 +9,9 @@ import {
   Zap, LayoutDashboard, Building2, Users, UserCheck, BarChart3,
   Shield, Truck, FileText, Settings, LogOut, ChevronLeft, ChevronRight,
   Bell, Search, Briefcase, Menu, ClipboardList, Clock, Package,
-  ShieldCheck, Layers, Lock, X, Sun, Moon
+  ShieldCheck, Layers, Lock, X, Sun, Moon, BedDouble,
 } from "lucide-react";
+import NotificationPanel from "@/components/dashboard/NotificationPanel";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
 type NavItem = {
@@ -41,6 +42,8 @@ const ownerConfigNav: NavItem[] = [
 
 const managerNav: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/manager" },
+  { icon: Clock, label: "Punch In/Out", href: "/manager/punch" },
+  { icon: BedDouble, label: "Room Management", href: "/manager/rooms" },
   { icon: ClipboardList, label: "Tasks", href: "/manager/tasks" },
   { icon: UserCheck, label: "Attendance", href: "/manager/attendance" },
   { icon: Truck, label: "Inventory", href: "/manager/inventory", feature: "inventory" },
@@ -58,6 +61,7 @@ const staffNav = [
 export function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const { dark, toggle: toggleDark } = useDarkMode();
+  const [notifOpen, setNotifOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -269,10 +273,16 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
               {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            <button className="relative text-neutral-500 dark:text-[#a0a0a0] hover:text-black dark:hover:text-white transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-black dark:bg-white rounded-full border-2 border-white dark:border-[#111111]" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setNotifOpen(o => !o)}
+                className="relative text-neutral-500 dark:text-[#a0a0a0] hover:text-black dark:hover:text-white transition-colors"
+              >
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-0 right-0 w-2 h-2 bg-black dark:bg-white rounded-full border-2 border-white dark:border-[#111111]" />
+              </button>
+              <NotificationPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
+            </div>
 
             <div className="h-8 w-[1px] bg-black/10 dark:bg-white/10 hidden sm:block" />
 

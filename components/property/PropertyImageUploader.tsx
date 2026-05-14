@@ -5,8 +5,9 @@ import { Upload, X, Image as ImageIcon, Plus } from "lucide-react";
 
 export interface PropertyImage {
   id: string;
-  file: File;
+  file?: File;
   preview: string;
+  url?: string; // already-uploaded S3 URL
 }
 
 interface PropertyImageUploaderProps {
@@ -48,6 +49,7 @@ export default function PropertyImageUploader({
       id: generateId(),
       file,
       preview: URL.createObjectURL(file),
+      url: undefined,
     }));
 
     onChange([...images, ...newImages]);
@@ -185,7 +187,7 @@ export default function PropertyImageUploader({
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
             {images.map((image, index) => (
               <div
                 key={image.id}

@@ -3,9 +3,21 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Users, UserCheck, UserX, Clock, Download, MapPin } from "lucide-react";
+
+const STATUS_MAP: Record<string, { emoji: string; label: string; color: string }> = {
+  lunch_break: { emoji: "🍱", label: "Lunch Break", color: "#F59E0B" },
+  tea_break:   { emoji: "☕", label: "Tea Break",   color: "#8B5CF6" },
+  in_meeting:  { emoji: "💬", label: "In Meeting",  color: "#3B82F6" },
+  on_call:     { emoji: "📱", label: "On a Call",   color: "#6366F1" },
+  on_errand:   { emoji: "🛒", label: "On Errand",   color: "#10B981" },
+  sick_leave:  { emoji: "🤒", label: "Sick Leave",  color: "#EF4444" },
+  on_leave:    { emoji: "🌴", label: "On Leave",    color: "#06B6D4" },
+  maintenance: { emoji: "🔨", label: "Maintenance", color: "#94A3B8" },
+};
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { attendanceAPI, PropertyAttendanceEntry, AttendanceRecord } from "@/lib/api/attendance";
 import api from "@/lib/config/app";
+import { usersAPI } from "@/lib/api/users";
 import { downloadCSV, todayStr } from "@/lib/utils/export";
 
 interface Property {
@@ -78,47 +90,49 @@ export default function AttendancePage() {
     DAY_LABELS.map((day) => ({ day, present: 0, absent: 0 }))
   );
 
-  // Load properties
+  // Load properties and default to the manager's own assigned property
   useEffect(() => {
-    api.get("/v1/properties/").then((res) => {
-      const list = res.data?.data ?? res.data ?? [];
+    Promise.all([
+      api.get("/v1/properties/"),
+      usersAPI.me(),
+    ]).then(([propsRes, meRes]) => {
+      const list: Property[] = propsRes.data?.data ?? propsRes.data ?? [];
       setProperties(list);
-      if (list.length > 0) setPropertyId(list[0].id);
-    }).catch(() => {});
+      if (list.length === 0) return;
+      // Prefer the manager's own property_id; fall back to first in list
+      const myPropId = meRes.data?.property_id;
+      const matched = myPropId && list.find((p) => p.id === myPropId);
+      setPropertyId(matched ? myPropId : list[0].id);
+    }).catch(() => {
+      // If properties fail, try to at least get the manager's property from their profile
+      usersAPI.me().then((r) => {
+        if (r.data?.property_id) setPropertyId(r.data.property_id);
+      }).catch(() => {});
+    });
   }, []);
 
-  // Load today's attendance + weekly trend when property selected
+  // Load today's attendance independently from weekly trend
   useEffect(() => {
     if (!propertyId) return;
     setIsFetching(true);
-
-    const todayEnd = new Date();
-    const weekStart = new Date(todayEnd);
-    weekStart.setDate(todayEnd.getDate() - 6);
-    weekStart.setHours(0, 0, 0, 0);
-
-    Promise.all([
-      attendanceAPI.getPropertyAttendanceToday(propertyId),
-      api.get<{ records: AttendanceRecord[] }>("/v1/attendance/history", {
-        params: {
-          property_id: propertyId,
-          start_date: weekStart.toISOString(),
-          end_date: todayEnd.toISOString(),
-          limit: 500,
-        },
-      }),
-    ])
-      .then(([todayRes, historyRes]) => {
-        setRecords(todayRes.records);
-        setTotalStaff(todayRes.total_staff);
-        const historyRecords = historyRes.data?.records ?? [];
-        setWeeklyAttendance(buildWeeklyTrend(historyRecords, todayRes.total_staff));
+    attendanceAPI.getPropertyAttendanceToday(propertyId)
+      .then((res) => {
+        setRecords(res.records);
+        setTotalStaff(res.total_staff);
       })
-      .catch(() => {
-        setRecords([]);
-        setTotalStaff(0);
-      })
+      .catch(() => { setRecords([]); setTotalStaff(0); })
       .finally(() => setIsFetching(false));
+  }, [propertyId]);
+
+  // Load weekly trend independently (uses all staff records for property)
+  useEffect(() => {
+    if (!propertyId) return;
+    attendanceAPI.getPropertyAttendanceWeek(propertyId)
+      .then((res) => {
+        setWeeklyAttendance(buildWeeklyTrend(res.records as AttendanceRecord[], totalStaff));
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId]);
 
   const presentCount = records.filter((r) => r.status === "active" || r.status === "completed").length;
@@ -147,7 +161,7 @@ export default function AttendancePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {properties.length > 1 && (
+          {properties.length > 0 && (
             <div className="flex items-center gap-2 bg-white border border-slate-200/60 px-3 py-2 rounded-xl">
               <MapPin className="w-4 h-4 text-slate-400" />
               <select
@@ -237,14 +251,15 @@ export default function AttendancePage() {
                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Check Out</th>
                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Hours</th>
                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Fence</th>
+                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Activity</th>
                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isFetching ? (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400 text-sm">Loading attendance data…</td></tr>
+                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-400 text-sm">Loading attendance data…</td></tr>
               ) : records.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400 text-sm">No punch-in records for today</td></tr>
+                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-400 text-sm">No punch-in records for today</td></tr>
               ) : (
                 records.map((r, i) => (
                   <motion.tr key={r.user_id + i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
@@ -269,6 +284,23 @@ export default function AttendancePage() {
                       }`}>
                         {r.is_within_fence ? "Inside" : "Outside"}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {r.current_status && STATUS_MAP[r.current_status] ? (
+                        <span
+                          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium"
+                          style={{
+                            borderColor: `${STATUS_MAP[r.current_status].color}40`,
+                            backgroundColor: `${STATUS_MAP[r.current_status].color}12`,
+                            color: STATUS_MAP[r.current_status].color,
+                          }}
+                        >
+                          <span>{STATUS_MAP[r.current_status].emoji}</span>
+                          {STATUS_MAP[r.current_status].label}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`text-xs px-3 py-1.5 rounded-full font-semibold ${

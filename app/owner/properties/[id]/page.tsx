@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useParams } from "next/navigation";
 import {
   ArrowLeft, Building2, MapPin, Users, Activity, Edit2, Trash2,
-  Loader2, X, UserCircle, Phone, Mail, Plus, BedDouble,
+  Loader2, X, UserCircle, Phone, Mail, Plus, BedDouble, Images,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -15,6 +15,7 @@ import {
   PropertyUpdate,
   OwnerDetailsCreate,
 } from "@/lib/api/properties";
+import PropertyImageUploader, { PropertyImage } from "@/components/property/PropertyImageUploader";
 
 const FRANCHISE_TYPES = ["owner-operated", "franchise", "managed", "leased"];
 const OWNERSHIP_TYPES = ["sole proprietor", "partnership", "corporation", "trust"];
@@ -34,6 +35,7 @@ export default function PropertyDetailPage() {
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState<PropertyUpdate>({});
   const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editImages, setEditImages] = useState<PropertyImage[]>([]);
 
   const [showAddOwner, setShowAddOwner] = useState(false);
   const [ownerForm, setOwnerForm] = useState<OwnerDetailsCreate>({ owner_name: "" });
@@ -74,13 +76,36 @@ export default function PropertyDetailPage() {
       has_restaurant: property.has_restaurant ?? false,
       is_active: property.is_active,
     });
+    // Load existing images as PropertyImage objects with url set
+    const existing: PropertyImage[] = (property.image_urls ?? []).map((url, i) => ({
+      id: `existing-${i}`,
+      preview: url,
+      url,
+    }));
+    setEditImages(existing);
     setShowEdit(true);
   };
 
   const handleUpdate = async () => {
     try {
       setEditSubmitting(true);
-      const res = await propertiesAPI.update(id, editForm);
+
+      // Upload any new (local file) images
+      const finalUrls: string[] = [];
+      for (const img of editImages) {
+        if (img.url) {
+          finalUrls.push(img.url);
+        } else if (img.file) {
+          try {
+            const { data } = await propertiesAPI.uploadImage(id, img.file);
+            finalUrls.push(data.url);
+          } catch {
+            toast.error(`Failed to upload ${img.file.name}`);
+          }
+        }
+      }
+
+      const res = await propertiesAPI.update(id, { ...editForm, image_urls: finalUrls });
       setProperty(res.data);
       setShowEdit(false);
       toast.success("Property updated");
@@ -301,8 +326,16 @@ export default function PropertyDetailPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-            <div className="h-36 bg-gradient-to-br from-neutral-800 to-neutral-950 flex items-center justify-center">
-              <Building2 className="w-14 h-14 text-white/10" />
+            <div className="h-36 bg-gradient-to-br from-neutral-800 to-neutral-950 flex items-center justify-center relative overflow-hidden">
+              {property.image_urls && property.image_urls.length > 0 ? (
+                <img
+                  src={property.image_urls[0]}
+                  alt={property.name}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <Building2 className="w-14 h-14 text-white/10" />
+              )}
             </div>
             <div className="p-6 space-y-4">
               <div>
@@ -488,6 +521,20 @@ export default function PropertyDetailPage() {
                     />
                     <span className="text-neutral-700 text-sm font-medium">Active</span>
                   </label>
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-2 text-neutral-700 text-sm mb-2 font-medium">
+                    <Images className="w-4 h-4" /> Property Photos
+                  </label>
+                  <PropertyImageUploader
+                    images={editImages}
+                    onChange={setEditImages}
+                    maxImages={5}
+                  />
+                  <p className="text-neutral-400 text-xs mt-1.5">
+                    Up to 5 photos • Stored in cloud • Shown on property card
+                  </p>
                 </div>
               </div>
 

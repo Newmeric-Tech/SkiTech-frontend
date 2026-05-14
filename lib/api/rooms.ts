@@ -12,6 +12,9 @@ export const roomsAPI = {
   regenerate: (propertyId: string) =>
     api.post(`/v1/rooms/${propertyId}/regenerate`),
 
+  bulkUpdateStatus: (propertyId: string, roomIds: string[], roomStatus: string) =>
+    api.post(`/v1/rooms/${propertyId}/bulk-status`, { room_ids: roomIds, status: roomStatus }),
+
   // Bookings
   listBookings: (propertyId: string, status?: string) =>
     api.get(`/v1/rooms/${propertyId}/bookings`, { params: { status } }),

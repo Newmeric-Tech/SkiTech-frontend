@@ -14,6 +14,7 @@ export interface Property {
   room_number_start: number | null;
   has_restaurant: boolean | null;
   is_active: boolean;
+  image_urls: string[] | null;
   created_at: string;
 }
 
@@ -54,6 +55,7 @@ export interface PropertyUpdate {
   room_number_start?: number;
   has_restaurant?: boolean;
   is_active?: boolean;
+  image_urls?: string[];
 }
 
 export interface OwnerDetailsCreate {
@@ -83,4 +85,19 @@ export const propertiesAPI = {
     api.post<OwnerDetails>(`/v1/properties/${propertyId}/owner`, data),
   updateOwner: (propertyId: string, ownerId: string, data: OwnerDetailsUpdate) =>
     api.put<OwnerDetails>(`/v1/properties/${propertyId}/owner/${ownerId}`, data),
+
+  uploadImage: (propertyId: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api.post<{ url: string; storage: string }>(
+      `/v1/properties/${propertyId}/images/upload`,
+      form,
+    );
+  },
+
+  getImageUploadUrl: (propertyId: string, filename: string, fileType: string) =>
+    api.get<{ upload_url: string; file_key: string; public_url: string }>(
+      `/v1/properties/${propertyId}/images/upload-url`,
+      { params: { filename, file_type: fileType } },
+    ),
 };
