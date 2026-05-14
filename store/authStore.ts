@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -14,6 +14,38 @@ interface User {
   last_name?: string;
 }
 
+export interface PlanFeatures {
+  // Core
+  reports: boolean;
+  kra: boolean;
+  sop: boolean;
+  // Operational
+  attendance: boolean;
+  vendor_management: boolean;
+  inventory: boolean;
+  governance: boolean;
+  // Upcoming
+  employee_scheduling: boolean;
+  chat: boolean;
+  employee_ranking: boolean;
+  master_log: boolean;
+  [key: string]: boolean;
+}
+
+const DEFAULT_FEATURES: PlanFeatures = {
+  reports: false,
+  kra: false,
+  sop: false,
+  attendance: false,
+  vendor_management: false,
+  inventory: false,
+  governance: false,
+  employee_scheduling: false,
+  chat: false,
+  employee_ranking: false,
+  master_log: false,
+};
+
 interface AuthState {
   user: User | null;
   access_token: string | null;
@@ -21,10 +53,12 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  features: PlanFeatures;
 
   login: (email: string, password: string, selectedRole?: string) => Promise<string>;
   logout: () => void;
   clearError: () => void;
+  refreshFeatures: () => Promise<void>;
 }
 
 // ── JWT Decoder (SAFE) ─────────────────────────────────────────────────────────
@@ -42,6 +76,8 @@ function decodeJWT(token: string): User | null {
       tenant_id: decoded.tenant_id,
       email: decoded.email,
       role: decoded.role,
+      first_name: decoded.first_name, 
+      last_name: decoded.last_name,
     };
   } catch (err) {
     console.error("JWT decode failed:", err);
@@ -85,13 +121,14 @@ function setAuthCookie(user: User) {
 // ── Auth Store ────────────────────────────────────────────────────────────────
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       access_token: null,
       refresh_token: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      features: DEFAULT_FEATURES,
 
       login: async (email: string, password: string, selectedRole?: string) => {
         set({ isLoading: true, error: null });
@@ -105,11 +142,9 @@ export const useAuthStore = create<AuthState>()(
 
           const { access_token, refresh_token } = res.data;
 
-          // 🔥 CRITICAL: Store tokens FIRST
-          localStorage.setItem("skitech_access_token", access_token);
-          localStorage.setItem("skitech_refresh_token", refresh_token);
-
-          console.log("✅ Access token stored:", access_token);
+          // Store tokens FIRST so subsequent API calls are authenticated
+          localStorage.setItem("skitech_access_token", res.data.access_token);
+          localStorage.setItem("skitech_refresh_token", res.data.refresh_token);
 
           const user = decodeJWT(access_token);
           if (!user) {
@@ -117,10 +152,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // Store role for layout checks
-          localStorage.setItem(
-            "skitech_role",
-            getRoleStorageKey(user.role)
-          );
+          localStorage.setItem("skitech_role", getRoleStorageKey(user.role));
 
           // Set cookie for middleware
           setAuthCookie(user);
@@ -133,6 +165,25 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
+
+          // Fetch subscription features (non-blocking — fail gracefully)
+          if (user.role === "Super Admin") {
+            // Super admins have unrestricted access to all features
+            const allEnabled: PlanFeatures = {
+              reports: true, kra: true, sop: true,
+              attendance: true, vendor_management: true, inventory: true, governance: true,
+              employee_scheduling: true, chat: true, employee_ranking: true, master_log: true,
+            };
+            set({ features: allEnabled });
+          } else {
+            try {
+              const planRes = await api.get("/v1/subscriptions/my-plan");
+              const features = planRes.data?.features ?? DEFAULT_FEATURES;
+              set({ features });
+            } catch {
+              set({ features: DEFAULT_FEATURES });
+            }
+          }
 
           return ROLE_ROUTES[user.role] || "/staff";
         } catch (err: any) {
@@ -153,6 +204,25 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
+      refreshFeatures: async () => {
+        const { user } = get();
+        if (user?.role === "Super Admin") {
+          set({ features: {
+            reports: true, kra: true, sop: true,
+            attendance: true, vendor_management: true, inventory: true, governance: true,
+            employee_scheduling: true, chat: true, employee_ranking: true, master_log: true,
+          }});
+          return;
+        }
+        try {
+          const planRes = await api.get("/v1/subscriptions/my-plan");
+          const features = planRes.data?.features ?? DEFAULT_FEATURES;
+          set({ features });
+        } catch {
+          set({ features: DEFAULT_FEATURES });
+        }
+      },
+
       logout: () => {
         localStorage.removeItem("skitech_access_token");
         localStorage.removeItem("skitech_refresh_token");
@@ -166,6 +236,7 @@ export const useAuthStore = create<AuthState>()(
           refresh_token: null,
           isAuthenticated: false,
           error: null,
+          features: DEFAULT_FEATURES,
         });
 
         window.location.href = "/auth/login";
@@ -180,6 +251,7 @@ export const useAuthStore = create<AuthState>()(
         access_token: state.access_token,
         refresh_token: state.refresh_token,
         isAuthenticated: state.isAuthenticated,
+        features: state.features,
       }),
     }
   )

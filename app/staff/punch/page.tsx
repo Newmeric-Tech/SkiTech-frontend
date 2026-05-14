@@ -1,81 +1,327 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Clock, Sun, Moon, Coffee, TrendingUp, TrendingDown, UserCheck, UserX, Download, LogIn, LogOut } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import {
+  Clock, UserCheck, UserX, LogIn, LogOut, MapPin, AlertTriangle,
+  Smile, X, Check,
+} from "lucide-react";
+import {
+  attendanceAPI,
+  getCurrentPosition,
+  AttendanceRecord,
+} from "@/lib/api/attendance";
+import { usersAPI } from "@/lib/api/users";
 
-const shifts = [
-  { id: 1, label: "Morning Shift", time: "06:00 AM – 02:00 PM", icon: Sun, color: "#F59E0B" },
-  { id: 2, label: "Evening Shift", time: "02:00 PM – 10:00 PM", icon: Moon, color: "#6366F1" },
-  { id: 3, label: "Night Shift", time: "10:00 PM – 06:00 AM", icon: Moon, color: "#3B82F6" },
+// ── Status presets ──────────────────────────────────────────
+const STATUS_PRESETS = [
+  { emoji: "🍱", label: "Lunch Break",  value: "lunch_break",  color: "#F59E0B" },
+  { emoji: "☕", label: "Tea Break",    value: "tea_break",    color: "#8B5CF6" },
+  { emoji: "💬", label: "In Meeting",  value: "in_meeting",   color: "#3B82F6" },
+  { emoji: "📱", label: "On a Call",   value: "on_call",      color: "#6366F1" },
+  { emoji: "🛒", label: "On Errand",   value: "on_errand",    color: "#10B981" },
+  { emoji: "🤒", label: "Sick Leave",  value: "sick_leave",   color: "#EF4444" },
+  { emoji: "🌴", label: "On Leave",    value: "on_leave",     color: "#06B6D4" },
+  { emoji: "🔨", label: "Maintenance", value: "maintenance",  color: "#94A3B8" },
 ];
 
-const recentPunches = [
-  { date: "Thu, Mar 26", punchIn: "08:57 AM", punchOut: "05:02 PM", hours: "8h 05m", status: "complete" },
-  { date: "Wed, Mar 25", punchIn: "08:45 AM", punchOut: "05:30 PM", hours: "8h 45m", status: "complete" },
-  { date: "Tue, Mar 24", punchIn: "09:10 AM", punchOut: "—", hours: "Incomplete", status: "incomplete" },
-  { date: "Mon, Mar 23", punchIn: "08:30 AM", punchOut: "04:55 PM", hours: "8h 25m", status: "complete" },
-  { date: "Fri, Mar 20", punchIn: "08:55 AM", punchOut: "05:10 PM", hours: "8h 15m", status: "complete" },
-];
+function getPreset(value: string | null | undefined) {
+  if (!value) return null;
+  return STATUS_PRESETS.find((p) => p.value === value) ?? null;
+}
 
+// ── Format helpers ──────────────────────────────────────────
+function fmt(iso: string | null | undefined, opts?: Intl.DateTimeFormatOptions) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleTimeString("en-US", opts ?? { hour: "2-digit", minute: "2-digit" });
+}
+
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+function fmtHours(h: number | null) {
+  if (!h) return "—";
+  const hrs = Math.floor(h);
+  const mins = Math.round((h - hrs) * 60);
+  return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+}
+
+// ── Status Picker ────────────────────────────────────────────
+function StatusPicker({
+  propertyId,
+  currentStatus,
+  onStatusChange,
+  disabled,
+}: {
+  propertyId: string;
+  currentStatus: string | null;
+  onStatusChange: (v: string | null) => void;
+  disabled: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const preset = getPreset(currentStatus);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
+
+  const select = async (value: string | null) => {
+    setSaving(true);
+    try {
+      await attendanceAPI.updateCurrentStatus(propertyId, value);
+      onStatusChange(value);
+      setOpen(false);
+      toast.success(value ? `Status set: ${getPreset(value)?.label}` : "Status cleared");
+    } catch {
+      toast.error("Could not update status");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="relative" ref={panelRef}>
+      {/* Trigger button */}
+      <button
+        onClick={() => !disabled && setOpen((p) => !p)}
+        disabled={disabled}
+        title={disabled ? "Punch in first to set a status" : "Set your status"}
+        className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl border text-sm font-medium transition-all
+          ${disabled
+            ? "border-slate-200/60 text-slate-300 bg-slate-50 cursor-not-allowed"
+            : preset
+              ? "border-slate-200/60 bg-white text-slate-800 hover:border-slate-300 hover:shadow-sm"
+              : "border-slate-200/60 bg-white text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:shadow-sm"
+          }`}
+      >
+        {preset ? (
+          <>
+            <span className="text-base leading-none">{preset.emoji}</span>
+            <span style={{ color: preset.color }} className="font-semibold">{preset.label}</span>
+            {saving && <div className="w-3 h-3 border border-current/40 border-t-current rounded-full animate-spin ml-1" />}
+          </>
+        ) : (
+          <>
+            <Smile className="w-4 h-4" />
+            <span>Set Status</span>
+          </>
+        )}
+      </button>
+
+      {/* Floating panel */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.97 }}
+            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute bottom-full mb-2 left-0 z-50 w-72 bg-white rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100">
+              <p className="text-sm font-bold text-slate-900">Set a status</p>
+              <button
+                onClick={() => setOpen(false)}
+                className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-3.5 h-3.5 text-slate-500" />
+              </button>
+            </div>
+
+            {/* Preset grid */}
+            <div className="p-3 grid grid-cols-1 gap-0.5">
+              {STATUS_PRESETS.map((p) => {
+                const isActive = currentStatus === p.value;
+                return (
+                  <button
+                    key={p.value}
+                    onClick={() => select(isActive ? null : p.value)}
+                    disabled={saving}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all
+                      ${isActive
+                        ? "bg-slate-950 text-white"
+                        : "hover:bg-slate-50 text-slate-700"
+                      }`}
+                  >
+                    <span className="text-xl leading-none w-7 text-center">{p.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium">{p.label}</span>
+                    </div>
+                    {isActive && <Check className="w-4 h-4 shrink-0 text-emerald-400" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Clear footer */}
+            {currentStatus && (
+              <div className="px-3 pb-3">
+                <button
+                  onClick={() => select(null)}
+                  disabled={saving}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200/60 text-sm text-red-500 hover:bg-red-50 hover:border-red-200/60 transition-all"
+                >
+                  <X className="w-3.5 h-3.5" /> Clear Status
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Main Page ────────────────────────────────────────────────
 export default function PunchPage() {
-  const [selectedShift, setSelectedShift] = useState(1);
-  const [punchedIn, setPunchedIn] = useState(true);
-  const [punchTime, setPunchTime] = useState("08:32 AM");
-  const [breakActive, setBreakActive] = useState(false);
-  const [breakTime, setBreakTime] = useState<string | null>(null);
+  const [propertyId, setPropertyId] = useState<string>("");
+  const [punchedIn, setPunchedIn] = useState(false);
+  const [punchInTime, setPunchInTime] = useState<string | null>(null);
+  const [hoursSoFar, setHoursSoFar] = useState<number>(0);
+  const [currentStatus, setCurrentStatus] = useState<string | null>(null);
+  const [history, setHistory] = useState<AttendanceRecord[]>([]);
+  const [totalHoursWeek, setTotalHoursWeek] = useState<number>(0);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const currentShift = shifts.find(s => s.id === selectedShift);
-  const ShiftIcon = currentShift?.icon || Sun;
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
+  // Clock
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const handlePunch = () => {
-    if (breakActive) {
-      setBreakActive(false);
-      setPunchTime(currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }));
-    } else if (!punchedIn) {
-      setPunchedIn(true);
-      setPunchTime(currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }));
-    } else {
-      setPunchedIn(false);
+  // Get property from staff profile
+  useEffect(() => {
+    usersAPI.me().then((res) => {
+      const propId = res.data.property_id;
+      if (propId) setPropertyId(propId);
+      else setIsFetching(false);
+    }).catch(() => setIsFetching(false));
+  }, []);
+
+  const loadStatus = useCallback(async () => {
+    if (!propertyId) return;
+    setIsFetching(true);
+    try {
+      const [statusRes, histRes] = await Promise.all([
+        attendanceAPI.getStatus(propertyId),
+        attendanceAPI.getHistory({ property_id: propertyId, limit: 10 }),
+      ]);
+      setPunchedIn(statusRes.punched_in);
+      setPunchInTime(statusRes.punch_in_time ?? null);
+      setHoursSoFar(statusRes.hours_so_far ?? 0);
+      setCurrentStatus(statusRes.current_status ?? null);
+      setHistory(histRes.records);
+      setTotalHoursWeek(histRes.records.reduce((acc, r) => acc + (r.hours_worked ?? 0), 0));
+    } catch {
+      // user may not have punched in yet
+    } finally {
+      setIsFetching(false);
+    }
+  }, [propertyId]);
+
+  useEffect(() => { loadStatus(); }, [loadStatus]);
+
+  const handlePunch = async () => {
+    if (!propertyId) { toast.error("No property assigned to your account"); return; }
+    setLocationError(null);
+    setIsLoading(true);
+    try {
+      const coords = await getCurrentPosition();
+      if (punchedIn) {
+        const res = await attendanceAPI.punchOut(propertyId, coords);
+        setPunchedIn(false);
+        setPunchInTime(null);
+        setCurrentStatus(null);
+        toast.success("Punched out successfully", { description: `Hours worked: ${fmtHours(res.hours_worked)}` });
+        if (res.warning) toast.warning(res.warning);
+      } else {
+        const res = await attendanceAPI.punchIn(propertyId, coords);
+        setPunchedIn(true);
+        setPunchInTime(new Date().toISOString());
+        setHoursSoFar(0);
+        toast.success("Punched in successfully");
+        if (res.warning) toast.warning(res.warning);
+      }
+      await loadStatus();
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail ?? err?.message ?? "Action failed";
+      if (msg.toLowerCase().includes("location") || msg.toLowerCase().includes("permission")) {
+        setLocationError(msg);
+      } else {
+        toast.error(msg);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleBreak = () => {
-    if (!breakActive) {
-      setBreakActive(true);
-      setBreakTime(currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }));
-    }
-  };
-
+  const preset = getPreset(currentStatus);
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 
   const stats = [
-    { icon: Clock, label: "Shift Start", value: punchTime, color: "#3B82F6", trend: punchedIn && !breakActive ? "up" : "neutral" },
-    { icon: Clock, label: "Hours Worked", value: "4h 28m", color: "#10B981", trend: "up" },
-    { icon: Coffee, label: "Break Time", value: breakActive ? "On break" : "0m", color: "#F59E0B", trend: breakActive ? "down" : "neutral" },
-    { icon: UserCheck, label: "Status", value: punchedIn ? (breakActive ? "Break" : "Working") : "Off", color: punchedIn ? (breakActive ? "#F59E0B" : "#10B981") : "#EF4444", trend: "neutral" },
+    { icon: Clock,     label: "Shift Start",  value: punchedIn && punchInTime ? fmt(punchInTime) : "—",   color: "#3B82F6" },
+    { icon: Clock,     label: "Hours Today",  value: fmtHours(hoursSoFar),                                  color: "#10B981" },
+    { icon: UserCheck, label: "This Week",    value: fmtHours(totalHoursWeek),                              color: "#6366F1" },
+    { icon: UserCheck, label: "Status",       value: punchedIn ? (preset?.label ?? "Working") : "Off",
+      color: punchedIn ? (preset?.color ?? "#10B981") : "#EF4444" },
   ];
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-950 tracking-tight">Time Clock</h1>
           <p className="text-slate-500 text-sm mt-1">{today}</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Status badge in header when punched in */}
+          {punchedIn && preset && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-full border"
+              style={{ borderColor: `${preset.color}40`, backgroundColor: `${preset.color}12`, color: preset.color }}
+            >
+              <span>{preset.emoji}</span>
+              <span>{preset.label}</span>
+            </motion.div>
+          )}
           <div className="flex items-center gap-2.5 text-sm text-slate-600 bg-white border border-slate-200/60 px-4 py-2 rounded-xl">
-            <div className={`w-2 h-2 rounded-full ${punchedIn && !breakActive ? "bg-emerald-500 animate-pulse" : breakActive ? "bg-amber-500 animate-pulse" : "bg-slate-400"}`} />
-            {punchedIn ? breakActive ? "On Break" : "On Shift" : "Off Shift"}
+            <div className={`w-2 h-2 rounded-full ${punchedIn ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
+            {punchedIn ? "On Shift" : "Off Shift"}
           </div>
         </div>
       </div>
 
+      {/* Location error */}
+      {locationError && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200/60 rounded-xl p-4">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">Location Required</p>
+            <p className="text-xs text-amber-600 mt-0.5">{locationError}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         {stats.map((stat, i) => (
           <motion.div
@@ -83,215 +329,199 @@ export default function PunchPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.08, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="relative bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm hover:shadow-md hover:border-slate-300/80 transition-all duration-300 group overflow-hidden"
+            className="relative bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300 group overflow-hidden"
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${stat.color}15` }}>
-                <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
-              </div>
-              {stat.trend === "up" ? (
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
-              ) : stat.trend === "down" ? (
-                <TrendingDown className="w-4 h-4 text-amber-500" />
-              ) : null}
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: `${stat.color}15` }}>
+              <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
             </div>
             <div className="text-2xl font-bold text-slate-950 tracking-tight">{stat.value}</div>
             <div className="text-slate-500 text-sm mt-1">{stat.label}</div>
-            <div
-              className="absolute bottom-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              style={{ background: `linear-gradient(90deg, ${stat.color}, ${stat.color}80)` }}
-            />
+            <div className="absolute bottom-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              style={{ background: `linear-gradient(90deg, ${stat.color}, ${stat.color}80)` }} />
           </motion.div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+        {/* Punch card */}
+        <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200/60 shadow-sm">
           <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
             <div>
               <h3 className="font-bold text-slate-950 text-lg">Current Shift</h3>
-              <p className="text-slate-500 text-sm mt-0.5">Punch in / out for {currentShift?.label}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              {shifts.map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => setSelectedShift(s.id)}
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                    selectedShift === s.id
-                      ? "bg-slate-950 text-white"
-                      : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                  }`}
-                >
-                  <s.icon className="w-4 h-4" />
-                </button>
-              ))}
+              <p className="text-slate-500 text-sm mt-0.5">Tap to punch in or out</p>
             </div>
           </div>
-
           <div className="p-8">
+            {/* Clock */}
             <div className="text-center mb-8">
               <div className="text-5xl font-bold text-slate-950 tracking-tight mb-2">
                 {currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
               </div>
-              <p className="text-slate-500 text-sm">{currentShift?.time}</p>
-            </div>
-
-            <div className="flex gap-4">
-              <button
-                onClick={handlePunch}
-                className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl text-white font-semibold text-lg transition-all shadow-lg hover:opacity-90 ${
-                  punchedIn && !breakActive
-                    ? "bg-red-500 hover:bg-red-600"
-                    : "bg-emerald-500 hover:bg-emerald-600"
-                }`}
-              >
-                {punchedIn && !breakActive ? (
-                  <>
-                    <LogOut className="w-5 h-5" /> Punch Out
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="w-5 h-5" /> Punch In
-                  </>
-                )}
-              </button>
-
-              {punchedIn && !breakActive && (
-                <motion.button
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  onClick={handleBreak}
-                  className="px-6 py-4 rounded-2xl bg-amber-50 text-amber-700 font-semibold text-lg hover:bg-amber-100 transition-all border border-amber-200/60"
-                >
-                  <Coffee className="w-5 h-5" />
-                </motion.button>
+              {punchedIn && punchInTime && (
+                <p className="text-slate-500 text-sm">Since {fmt(punchInTime)}</p>
               )}
             </div>
 
-            {breakActive && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="mt-4 p-4 bg-amber-50 border border-amber-200/60 rounded-xl flex items-center justify-between"
+            {/* Punch + Status row */}
+            <div className="flex gap-3 items-stretch">
+              {/* Punch button */}
+              <button
+                onClick={handlePunch}
+                disabled={isLoading || isFetching}
+                className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl text-white font-semibold text-lg transition-all shadow-lg hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed ${
+                  punchedIn ? "bg-red-500 hover:bg-red-600" : "bg-emerald-500 hover:bg-emerald-600"
+                }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                    <Coffee className="w-4 h-4 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="text-amber-800 text-sm font-semibold">Break in progress</p>
-                    <p className="text-amber-600 text-xs">Started at {breakTime}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={handlePunch}
-                  className="text-xs font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition-colors"
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                ) : punchedIn ? (
+                  <><LogOut className="w-5 h-5" /> Punch Out</>
+                ) : (
+                  <><LogIn className="w-5 h-5" /> Punch In</>
+                )}
+              </button>
+
+              {/* Status picker */}
+              <StatusPicker
+                propertyId={propertyId}
+                currentStatus={currentStatus}
+                onStatusChange={setCurrentStatus}
+                disabled={!punchedIn || isFetching}
+              />
+            </div>
+
+            <p className="text-center text-xs text-slate-400 mt-3 flex items-center justify-center gap-1">
+              <MapPin className="w-3 h-3" /> Location required for punch
+            </p>
+
+            {/* Current status strip */}
+            <AnimatePresence>
+              {punchedIn && preset && (
+                <motion.div
+                  key={preset.value}
+                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, height: "auto", marginTop: 16 }}
+                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
                 >
-                  End Break
-                </button>
-              </motion.div>
-            )}
+                  <div
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 border"
+                    style={{ borderColor: `${preset.color}30`, backgroundColor: `${preset.color}10` }}
+                  >
+                    <span className="text-xl">{preset.emoji}</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold" style={{ color: preset.color }}>{preset.label}</p>
+                      <p className="text-xs text-slate-500">Your current status is visible to your manager</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
+        {/* Recent shifts */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
           <div className="px-6 py-5 border-b border-slate-100">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-slate-950 text-lg">This Week</h3>
+                <h3 className="font-bold text-slate-950 text-lg">Recent</h3>
                 <p className="text-slate-500 text-sm mt-0.5">Shift summary</p>
               </div>
-              <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-3 py-1.5 rounded-full">40h 30m total</span>
+              <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-3 py-1.5 rounded-full">
+                {fmtHours(totalHoursWeek)} total
+              </span>
             </div>
           </div>
           <div className="divide-y divide-slate-100">
-            {recentPunches.slice(0, 4).map((shift, i) => (
-              <div key={i} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50/60 transition-colors">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${shift.status === "complete" ? "#10B981" : "#F59E0B"}15` }}>
-                  {shift.status === "complete" ? (
-                    <UserCheck className="w-5 h-5 text-emerald-600" />
-                  ) : (
-                    <UserX className="w-5 h-5 text-amber-600" />
-                  )}
+            {isFetching ? (
+              <div className="px-6 py-8 text-center text-slate-400 text-sm">Loading…</div>
+            ) : history.length === 0 ? (
+              <div className="px-6 py-8 text-center text-slate-400 text-sm">No records yet</div>
+            ) : (
+              history.slice(0, 4).map((r) => (
+                <div key={r.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50/60 transition-colors">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: r.status === "completed" ? "#10B98115" : "#F59E0B15" }}>
+                    {r.status === "completed" ? (
+                      <UserCheck className="w-5 h-5 text-emerald-600" />
+                    ) : (
+                      <UserX className="w-5 h-5 text-amber-600" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-slate-950 text-sm font-medium">{fmtDate(r.punch_in_time)}</p>
+                    <p className="text-slate-400 text-xs mt-0.5">
+                      {fmt(r.punch_in_time)} → {fmt(r.punch_out_time)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-slate-950">{fmtHours(r.hours_worked)}</p>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      r.status === "completed"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                        : "bg-amber-50 text-amber-700 border border-amber-200/60"
+                    }`}>
+                      {r.status === "completed" ? "Complete" : "Active"}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-slate-950 text-sm font-medium">{shift.date}</p>
-                  <p className="text-slate-400 text-xs mt-0.5">
-                    {shift.punchIn} → {shift.punchOut}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-slate-950">{shift.hours}</p>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    shift.status === "complete"
-                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
-                      : "bg-amber-50 text-amber-700 border border-amber-200/60"
-                  }`}>
-                    {shift.status === "complete" ? "Complete" : "Partial"}
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
 
+      {/* Punch history table */}
       <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-slate-950 text-lg">Punch History</h3>
-              <p className="text-slate-500 text-sm mt-0.5">Recent attendance records</p>
-            </div>
-            <button className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl transition-colors">
-              <Download className="w-4 h-4" /> Export
-            </button>
-          </div>
+          <h3 className="font-bold text-slate-950 text-lg">Punch History</h3>
+          <p className="text-slate-500 text-sm mt-0.5">Recent attendance records</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-100">
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Check In</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Check Out</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Total Hours</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                {["Date", "Check In", "Check Out", "Total Hours", "Fence", "Status"].map((h) => (
+                  <th key={h} className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {recentPunches.map((shift, i) => (
-                <motion.tr
-                  key={i}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.03, duration: 0.3 }}
-                  className="hover:bg-slate-50/60 transition-colors"
-                >
-                  <td className="px-6 py-4">
-                    <span className="text-slate-950 text-sm font-medium">{shift.date}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-medium text-slate-700">{shift.punchIn}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-slate-500">{shift.punchOut}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-semibold text-slate-950">{shift.hours}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`text-xs px-3 py-1.5 rounded-full font-semibold ${
-                      shift.status === "complete"
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
-                        : "bg-amber-50 text-amber-700 border border-amber-200/60"
-                    }`}>
-                      {shift.status === "complete" ? "Complete" : "Partial"}
-                    </span>
-                  </td>
-                </motion.tr>
-              ))}
+              {isFetching ? (
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-400 text-sm">Loading…</td></tr>
+              ) : history.length === 0 ? (
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-400 text-sm">No punch records found</td></tr>
+              ) : (
+                history.map((r, i) => (
+                  <motion.tr key={r.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.03 }} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="px-6 py-4"><span className="text-slate-950 text-sm font-medium">{fmtDate(r.punch_in_time)}</span></td>
+                    <td className="px-6 py-4"><span className="text-sm font-medium text-slate-700">{fmt(r.punch_in_time)}</span></td>
+                    <td className="px-6 py-4"><span className="text-sm text-slate-500">{fmt(r.punch_out_time)}</span></td>
+                    <td className="px-6 py-4"><span className="text-sm font-semibold text-slate-950">{fmtHours(r.hours_worked)}</span></td>
+                    <td className="px-6 py-4">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        r.is_within_fence
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                          : "bg-amber-50 text-amber-700 border border-amber-200/60"
+                      }`}>
+                        {r.is_within_fence ? "Inside" : "Outside"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`text-xs px-3 py-1.5 rounded-full font-semibold ${
+                        r.status === "completed"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                          : "bg-blue-50 text-blue-700 border border-blue-200/60"
+                      }`}>
+                        {r.status === "completed" ? "Complete" : "Active"}
+                      </span>
+                    </td>
+                  </motion.tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

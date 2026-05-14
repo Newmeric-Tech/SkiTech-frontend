@@ -10,7 +10,7 @@ const testimonials = [
   {
     stars: 5,
     quote:
-      "Skitec transformed how we manage our three properties. The centralized dashboard gives me clarity I never had before.",
+      "SkiTech transformed how we manage our three properties. The centralized dashboard gives me clarity I never had before.",
     name: "Sarah Mitchell",
     role: "General Manager, Grand Horizon Property",
     initials: "SM",
@@ -95,7 +95,7 @@ export function Testimonials() {
             className="text-white/55 mt-5 max-w-sm mx-auto leading-relaxed"
             style={{ fontSize: "0.88rem", fontFamily: font }}
           >
-            Hear from the operations teams already running on Skitec.
+            Hear from the operations teams already running on SkiTech.
           </motion.p>
 
           <motion.div

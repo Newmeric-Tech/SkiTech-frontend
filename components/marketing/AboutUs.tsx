@@ -159,7 +159,7 @@ export default function AboutUs() {
             className="text-white/30 text-[10px] uppercase tracking-[0.25em] mb-10 font-light"
             style={{ fontFamily: "'Merriweather', Georgia, serif" }}
           >
-            About Skitec
+            About SkiTech
           </motion.p>
 
           {/* Hero heading */}
@@ -225,7 +225,7 @@ export default function AboutUs() {
             className="text-white/60 leading-[1.9] text-center"
             style={{ fontSize: "clamp(1.05rem, 2.2vw, 1.35rem)", fontWeight: 300 }}
           >
-            Skitec is redefining how modern property operations are managed —
+            SkiTech is redefining how modern property operations are managed —
             combining{" "}
             <span className="text-white font-normal">automation</span>,{" "}
             <span className="text-white font-normal">intelligence</span>, and{" "}
@@ -241,7 +241,7 @@ export default function AboutUs() {
           >
             In today&apos;s fast-paced world, property management is often
             fragmented — multiple tools, manual processes, and limited
-            visibility slowing down growth. Skitec solves this by bringing
+            visibility slowing down growth. SkiTech solves this by bringing
             everything together into a single AI-powered operating layer
             designed for efficiency and scale.
           </p>
@@ -265,17 +265,17 @@ export default function AboutUs() {
               number: "02",
               label: "The Solution",
               heading: "One unified platform",
-              body: "Skitec consolidates operations, analytics, communication, and automation into a single AI-powered workspace — purpose-built for property teams.",
+              body: "SkiTech consolidates operations, analytics, communication, and automation into a single AI-powered workspace — purpose-built for property teams.",
             },
             {
               number: "03",
               label: "The Difference",
               heading: "Intelligence at the core",
-              body: "Beyond management. Skitec surfaces smart insights, automates repetitive workflows, and unlocks growth opportunities that traditional tools simply miss.",
+              body: "Beyond management. SkiTech surfaces smart insights, automates repetitive workflows, and unlocks growth opportunities that traditional tools simply miss.",
             },
           ].map((item, i) => (
             <GlassCard key={i} delay={i * 0.12} className="p-8 lg:p-10">
-              <p className="font-mono text-[10px] tracking-[0.3em] text-white/20 uppercase mb-6">
+              <p className="text-[10px] tracking-[0.3em] text-white/20 uppercase mb-6">
                 {item.number} — {item.label}
               </p>
               <h3
@@ -325,7 +325,7 @@ export default function AboutUs() {
           {/* Mission */}
           <GlassCard delay={0} className="p-10 lg:p-14 relative overflow-hidden">
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/[0.02] rounded-full blur-2xl pointer-events-none" />
-            <p className="font-mono text-[10px] tracking-[0.3em] text-white/20 uppercase mb-8">Mission</p>
+            <p className="text-[10px] tracking-[0.3em] text-white/20 uppercase mb-8">Mission</p>
             <h2
               className="text-white mb-6 leading-snug"
               style={{ fontSize: "clamp(1.6rem, 3vw, 2.2rem)", fontWeight: 900, letterSpacing: "-0.03em" }}
@@ -343,7 +343,7 @@ export default function AboutUs() {
           {/* Vision */}
           <GlassCard delay={0.12} className="p-10 lg:p-14 relative overflow-hidden">
             <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/[0.02] rounded-full blur-2xl pointer-events-none" />
-            <p className="font-mono text-[10px] tracking-[0.3em] text-white/20 uppercase mb-8">Vision</p>
+            <p className="text-[10px] tracking-[0.3em] text-white/20 uppercase mb-8">Vision</p>
             <h2
               className="text-white mb-6 leading-snug"
               style={{ fontSize: "clamp(1.6rem, 3vw, 2.2rem)", fontWeight: 900, letterSpacing: "-0.03em" }}
@@ -363,7 +363,7 @@ export default function AboutUs() {
       {/* ════════════════════════════════════════════════════ PILLARS */}
       <section className="border-t border-white/[0.07] py-28 max-w-7xl mx-auto px-6 lg:px-10">
         <FadeUp className="mb-16 text-center">
-          <p className="font-mono text-[10px] tracking-[0.3em] text-white/20 uppercase mb-4">
+          <p className="text-[10px] tracking-[0.3em] text-white/20 uppercase mb-4">
             What we stand for
           </p>
           <h2
@@ -410,7 +410,7 @@ export default function AboutUs() {
 
         <div className="relative z-10 max-w-3xl mx-auto">
           <FadeUp>
-            <p className="font-mono text-[10px] tracking-[0.3em] text-white/20 uppercase mb-10">
+            <p className="text-[10px] tracking-[0.3em] text-white/20 uppercase mb-10">
               The bottom line
             </p>
             <h2
@@ -422,11 +422,11 @@ export default function AboutUs() {
                 fontStyle: "italic",
               }}
             >
-              "Skitec isn&apos;t just a tool —<br className="hidden md:block" />
+              "SkiTech isn&apos;t just a tool —<br className="hidden md:block" />
               it&apos;s your growth partner."
             </h2>
             <p className="text-white/30 text-sm leading-relaxed max-w-xl mx-auto mb-14" style={{ fontWeight: 300 }}>
-              Built for owners and teams who aim to grow. Skitec goes beyond
+              Built for owners and teams who aim to grow. SkiTech goes beyond
               management — empowering smarter decisions, streamlined workflows,
               and intelligent insights at every step.
             </p>

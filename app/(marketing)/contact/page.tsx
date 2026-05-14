@@ -29,7 +29,7 @@ export default function ContactPage() {
               </span>
             </h1>
             <p className="text-slate-400 mt-5 text-sm max-w-md mx-auto">
-              Our team is ready to help you with any questions about Skitec.
+              Our team is ready to help you with any questions about SkiTech.
             </p>
           </motion.div>
         </div>
@@ -50,7 +50,7 @@ export default function ContactPage() {
                 <h3 className="text-slate-900 mb-6" style={{ fontWeight: 700, fontSize: "1.1rem" }}>Get in touch</h3>
                 <div className="space-y-5">
                   {[
-                    { icon: Mail, label: "Email", value: "hello@skitec.io" },
+                    { icon: Mail, label: "Email", value: "hello@SkiTech.io" },
                     { icon: Phone, label: "Phone", value: "+1 (555) 000-0000" },
                     { icon: MapPin, label: "Address", value: "Dubai, UAE & Remote" },
                   ].map((item, i) => (

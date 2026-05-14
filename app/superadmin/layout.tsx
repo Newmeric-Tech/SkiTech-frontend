@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, LayoutDashboard, Building2, Users, Shield, BarChart3,
   Settings, LogOut, ChevronLeft, ChevronRight, Menu, X,
-  Eye, AlertTriangle, Bell, Search,
+  Eye, AlertTriangle, Bell, Search, FileText, Sun, Moon,
 } from "lucide-react";
 
 const superadminNav = [
@@ -18,6 +18,7 @@ const superadminNav = [
   { icon: BarChart3, label: "Platform Analytics", href: "/superadmin/analytics" },
   { icon: AlertTriangle, label: "Audit Log", href: "/superadmin/audit" },
   { icon: Eye, label: "System Health", href: "/superadmin/health" },
+  { icon: FileText, label: "Demo Requests", href: "/superadmin/demo-requests" },
 ];
 
 const configNav = [
@@ -28,8 +29,26 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authorized, setAuthorized] = useState(false);
+  const [dark, setDark] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = saved ? saved === "dark" : prefersDark;
+    setDark(isDark);
+    document.documentElement.classList.toggle("dark", isDark);
+  }, []);
+
+  const toggleDark = () => {
+    setDark((prev) => {
+      const next = !prev;
+      document.documentElement.classList.toggle("dark", next);
+      localStorage.setItem("theme", next ? "dark" : "light");
+      return next;
+    });
+  };
 
   useEffect(() => {
     const role = localStorage.getItem("skitech_role");
@@ -43,7 +62,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
   if (!authorized) return null;
 
   return (
-    <div className="flex h-screen bg-[#f8f7f4] overflow-hidden">
+    <div className="flex h-screen bg-[#f8f7f4] dark:bg-[#111111] overflow-hidden">
       {/* Mobile Overlay */}
       <AnimatePresence>
         {mobileOpen && (
@@ -159,12 +178,12 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-full relative z-0">
         {/* Header */}
-        <header className="h-20 bg-white/70 backdrop-blur-xl border-b border-black/10 flex items-center justify-between px-6 lg:px-10 shrink-0">
+        <header className="h-20 bg-white/70 dark:bg-[#1c1c1c]/80 backdrop-blur-xl border-b border-black/10 dark:border-white/10 flex items-center justify-between px-6 lg:px-10 shrink-0">
           <div className="flex items-center gap-4">
-            <button onClick={() => setMobileOpen(true)} className="md:hidden text-neutral-500 hover:text-black">
+            <button onClick={() => setMobileOpen(true)} className="md:hidden text-neutral-500 dark:text-[#a0a0a0] hover:text-black dark:hover:text-white">
               <Menu className="w-6 h-6" />
             </button>
-            <h2 className="text-xl font-bold text-black hidden sm:block" style={{ fontFamily: "'Merriweather', Georgia, serif" }}>
+            <h2 className="text-xl font-bold text-black dark:text-white hidden sm:block" style={{ fontFamily: "'Merriweather', Georgia, serif" }}>
               Platform Administration
             </h2>
           </div>
@@ -175,27 +194,36 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
               <input
                 type="text"
                 placeholder="Search platform..."
-                className="w-full pl-10 pr-4 py-2 bg-white/50 border border-black/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20 transition-all backdrop-blur"
+                className="w-full pl-10 pr-4 py-2 bg-white/50 dark:bg-[#252525]/50 border border-black/10 dark:border-white/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 transition-all backdrop-blur"
               />
             </div>
-            <button className="relative text-neutral-500 hover:text-black transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-black rounded-full border-2 border-white" />
+
+            <button
+              onClick={toggleDark}
+              className="flex items-center justify-center w-9 h-9 rounded-lg border border-black/10 dark:border-white/15 bg-white/60 dark:bg-white/5 text-neutral-600 dark:text-[#c0c0c0] hover:bg-black/5 dark:hover:bg-white/10 transition-all"
+              title={dark ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <div className="h-8 w-[1px] bg-black/10 hidden sm:block" />
+
+            <button className="relative text-neutral-500 dark:text-[#a0a0a0] hover:text-black dark:hover:text-white transition-colors">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-0 right-0 w-2 h-2 bg-black dark:bg-white rounded-full border-2 border-white dark:border-[#1c1c1c]" />
+            </button>
+            <div className="h-8 w-[1px] bg-black/10 dark:bg-white/10 hidden sm:block" />
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold text-black">Super Admin</p>
-                <p className="text-xs text-neutral-500">Platform Owner</p>
+                <p className="text-sm font-semibold text-black dark:text-white">Super Admin</p>
+                <p className="text-xs text-neutral-500 dark:text-[#707070]">Platform Owner</p>
               </div>
-              <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white font-bold shadow-sm">
+              <div className="w-10 h-10 bg-black dark:bg-[#2a2a2a] rounded-full flex items-center justify-center text-white font-bold shadow-sm">
                 SA
               </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-[#f8f7f4] p-6 lg:p-10">
+        <main className="flex-1 overflow-y-auto bg-[#f8f7f4] dark:bg-[#111111] p-6 lg:p-10">
           {children}
         </main>
       </div>

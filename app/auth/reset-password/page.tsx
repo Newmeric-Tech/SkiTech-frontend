@@ -33,7 +33,7 @@ export default function ResetPasswordPage() {
           {!done ? (
             <>
               <h1 className="text-black mb-1 font-extrabold text-[1.4rem]">Set new password</h1>
-              <p className="text-neutral-500 text-sm mb-7">Choose a strong password for your Skitec account.</p>
+              <p className="text-neutral-500 text-sm mb-7">Choose a strong password for your SkiTech account.</p>
               <form onSubmit={handleSubmit} className="space-y-5">
                 {[
                   { key: "password", label: "New Password", showKey: "p" as const },

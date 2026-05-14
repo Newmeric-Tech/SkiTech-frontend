@@ -1,37 +1,129 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "motion/react";
-import { Plus, Search, Mail, Phone, Building2, CheckCircle2 } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Plus, Search, Mail, Phone, Building2, CheckCircle2,
+  Loader2, X, MoreHorizontal, UserX, UserCheck, AlertCircle,
+} from "lucide-react";
+import { toast } from "sonner";
+import { usersAPI, User, UserInvite } from "@/lib/api/users";
+import { propertiesAPI, Property } from "@/lib/api/properties";
 
-const managers = [
-  { id: 1, name: "Sarah Mitchell", email: "sarah@grandhoriz.com", phone: "+971 50 111 2222", property: "Grand Horizon property", dept: "Operations", kra: 94, status: "active", initials: "SM", color: "#3B82F6" },
-  { id: 2, name: "James Chen", email: "james@skylinesuits.com", phone: "+971 50 333 4444", property: "Skyline Suites", dept: "Front Desk", kra: 88, status: "active", initials: "JC", color: "#6366F1" },
-  { id: 3, name: "Priya Sharma", email: "priya@amiras.com", phone: "+971 50 555 6666", property: "The Amiras Residence", dept: "F&B", kra: 91, status: "active", initials: "PS", color: "#10B981" },
-  { id: 4, name: "Omar Al Rashid", email: "omar@grandhoriz.com", phone: "+971 50 777 8888", property: "Grand Horizon property", dept: "Housekeeping", kra: 82, status: "active", initials: "OA", color: "#F59E0B" },
-];
+const AVATAR_COLORS = ["#3B82F6", "#6366F1", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
+
+function avatarColor(id: string): string {
+  let hash = 0;
+  for (const c of id) hash = (hash * 31 + c.charCodeAt(0)) & 0xffffffff;
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function getInitials(first?: string | null, last?: string | null): string {
+  return [(first?.[0] ?? ""), (last?.[0] ?? "")].join("").toUpperCase() || "?";
+}
+
+const EMPTY_INVITE: UserInvite = { email: "", first_name: "", last_name: "", role: "Manager" };
 
 export default function ManagersPage() {
   const [search, setSearch] = useState("");
-  const [showAdd, setShowAdd] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [managers, setManagers] = useState<User[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [inviteForm, setInviteForm] = useState<UserInvite>(EMPTY_INVITE);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Fix: filter logic was a bit loose, ensure safe access
-  const filtered = managers.filter(m =>
-    m.name.toLowerCase().includes(search.toLowerCase()) ||
-    m.property.toLowerCase().includes(search.toLowerCase())
-  );
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [usersRes, propsRes] = await Promise.all([
+        usersAPI.list(undefined, "Manager"),
+        propertiesAPI.list(),
+      ]);
+      setManagers(usersRes.data);
+      setProperties(propsRes.data);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to load managers");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const propertyMap = Object.fromEntries(properties.map(p => [p.id, p.name]));
+
+  const filtered = managers.filter(m => {
+    const name = `${m.first_name ?? ""} ${m.last_name ?? ""}`.toLowerCase();
+    const prop = m.property_id ? (propertyMap[m.property_id] ?? "") : "";
+    const q = search.toLowerCase();
+    return name.includes(q) || m.email.toLowerCase().includes(q) || prop.toLowerCase().includes(q);
+  });
+
+  const handleInvite = async () => {
+    if (!inviteForm.email.trim()) return;
+    try {
+      setSubmitting(true);
+      const res = await usersAPI.invite(inviteForm);
+      setManagers(prev => [res.data, ...prev]);
+      setShowInvite(false);
+      setInviteForm(EMPTY_INVITE);
+      toast.success("Manager invited — a temporary password was sent to their email.");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to invite manager");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeactivate = async (userId: string) => {
+    try {
+      const res = await usersAPI.deactivate(userId);
+      setManagers(prev => prev.map(m => m.id === userId ? res.data : m));
+      toast.success("Manager deactivated");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to deactivate");
+    }
+  };
+
+  const handleActivate = async (userId: string) => {
+    try {
+      const res = await usersAPI.activate(userId);
+      setManagers(prev => prev.map(m => m.id === userId ? res.data : m));
+      toast.success("Manager activated");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to activate");
+    }
+  };
 
   return (
     <div className="p-6 lg:p-8">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-black" style={{ fontSize: "1.4rem", fontWeight: 800 }}>Managers</h1>
-          <p className="text-neutral-500 text-sm mt-0.5">{managers.length} managers across all properties</p>
+          <p className="text-neutral-500 text-sm mt-0.5">
+            {loading
+              ? "Loading…"
+              : `${managers.length} manager${managers.length === 1 ? "" : "s"} across all properties`}
+          </p>
         </div>
         <motion.button
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
-          onClick={() => setShowAdd(true)}
+          onClick={() => setShowInvite(true)}
           className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded-xl text-sm shadow-md"
           style={{ fontWeight: 600 }}
         >
@@ -39,99 +131,216 @@ export default function ManagersPage() {
         </motion.button>
       </div>
 
+      {/* Search */}
       <div className="relative mb-6 max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Search managers..."
+          placeholder="Search managers…"
           className="w-full bg-white border border-black/10 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-black/20 transition-colors"
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {filtered.map((m, i) => (
-          <motion.div
-            key={m.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-            className="bg-white/70 backdrop-blur rounded-2xl p-6 border border-black/10 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-start gap-4">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md"
-                style={{ background: `linear-gradient(135deg, ${m.color}, ${m.color}99)`, fontWeight: 700 }}
+      {/* Grid */}
+      {loading ? (
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="w-8 h-8 animate-spin text-neutral-300" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20 text-neutral-400">
+          <p className="text-sm">{search ? "No managers match your search." : "No managers yet. Invite one to get started."}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {filtered.map((m, i) => {
+            const color = avatarColor(m.id);
+            const initials = getInitials(m.first_name, m.last_name);
+            const fullName = [m.first_name, m.last_name].filter(Boolean).join(" ") || m.email;
+            const propertyName = m.property_id ? (propertyMap[m.property_id] ?? "—") : "—";
+
+            return (
+              <motion.div
+                key={m.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.07 }}
+                className="bg-white/70 backdrop-blur rounded-2xl p-6 border border-black/10 shadow-sm hover:shadow-md transition-shadow"
               >
-                {m.initials}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-black" style={{ fontWeight: 700 }}>{m.name}</h3>
-                  <span className="bg-black/[0.04] text-black text-xs px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>Active</span>
+                <div className="flex items-start gap-4">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md text-sm font-bold"
+                    style={{ background: `linear-gradient(135deg, ${color}, ${color}99)` }}
+                  >
+                    {initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="text-black font-bold truncate">{fullName}</h3>
+                        <p className="text-neutral-500 text-xs mt-0.5">Manager</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+                          m.is_active
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                            : "bg-red-50 text-red-700 border border-red-200/60"
+                        }`}>
+                          {m.is_active ? "Active" : "Inactive"}
+                        </span>
+                        <div className="relative" ref={menuOpen === m.id ? menuRef : null}>
+                          <button
+                            onClick={() => setMenuOpen(menuOpen === m.id ? null : m.id)}
+                            className="text-neutral-400 hover:text-neutral-600 p-1 rounded-lg hover:bg-black/[0.04]"
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </button>
+                          <AnimatePresence>
+                            {menuOpen === m.id && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                                transition={{ duration: 0.12 }}
+                                className="absolute right-0 top-8 bg-white border border-black/10 rounded-xl shadow-lg z-10 w-40 overflow-hidden"
+                              >
+                                {m.is_active ? (
+                                  <button
+                                    onClick={() => { setMenuOpen(null); handleDeactivate(m.id); }}
+                                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 text-left"
+                                  >
+                                    <UserX className="w-3.5 h-3.5" /> Deactivate
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => { setMenuOpen(null); handleActivate(m.id); }}
+                                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-emerald-700 hover:bg-emerald-50 text-left"
+                                  >
+                                    <UserCheck className="w-3.5 h-3.5" /> Activate
+                                  </button>
+                                )}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-neutral-500 text-xs mt-0.5">{m.dept}</p>
-              </div>
-            </div>
 
-            <div className="mt-5 space-y-2.5">
-              <div className="flex items-center gap-2 text-neutral-600 text-sm">
-                <Building2 className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-                {m.property}
-              </div>
-              <div className="flex items-center gap-2 text-neutral-600 text-sm">
-                <Mail className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-                {m.email}
-              </div>
-              <div className="flex items-center gap-2 text-neutral-600 text-sm">
-                <Phone className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-                {m.phone}
-              </div>
-            </div>
-
-            <div className="mt-5 pt-4 border-t border-black/10">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5 text-neutral-500 text-xs">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-black" /> KRA Compliance
+                <div className="mt-5 space-y-2.5">
+                  <div className="flex items-center gap-2 text-neutral-600 text-sm">
+                    <Building2 className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                    <span className="truncate">{propertyName}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-neutral-600 text-sm">
+                    <Mail className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                    <span className="truncate">{m.email}</span>
+                  </div>
+                  {m.phone_number && (
+                    <div className="flex items-center gap-2 text-neutral-600 text-sm">
+                      <Phone className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                      <span>{m.phone_number}</span>
+                    </div>
+                  )}
                 </div>
-                <span className="text-black text-sm" style={{ fontWeight: 700 }}>{m.kra}%</span>
-              </div>
-              <div className="h-1.5 bg-black/[0.04] rounded-full">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${m.kra}%` }}
-                  transition={{ duration: 0.8, delay: i * 0.1 }}
-                  className="h-1.5 rounded-full bg-black"
-                />
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
 
-      {showAdd && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-black/10"
-          >
-            <h2 className="text-black mb-6" style={{ fontWeight: 800, fontSize: "1.2rem" }}>Add Manager</h2>
-            <div className="space-y-4">
-              {["Full Name", "Email Address", "Phone Number", "Assign Property", "Department"].map((f, i) => (
-                <div key={i}>
-                  <label className="block text-neutral-700 text-sm mb-1.5" style={{ fontWeight: 500 }}>{f}</label>
-                  <input className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-black/20 transition-colors" />
+                <div className="mt-5 pt-4 border-t border-black/10">
+                  <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+                    {m.is_verified ? (
+                      <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Email verified</>
+                    ) : (
+                      <><AlertCircle className="w-3.5 h-3.5 text-amber-500" /> Pending verification</>
+                    )}
+                  </div>
                 </div>
-              ))}
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowAdd(false)} className="flex-1 py-3 rounded-xl border border-black/10 text-neutral-600 text-sm hover:bg-white/50 transition-colors">Cancel</button>
-              <button onClick={() => setShowAdd(false)} className="flex-1 py-3 rounded-xl bg-black text-white text-sm shadow-md" style={{ fontWeight: 600 }}>Add Manager</button>
-            </div>
-          </motion.div>
+              </motion.div>
+            );
+          })}
         </div>
       )}
+
+      {/* Invite Modal */}
+      <AnimatePresence>
+        {showInvite && (
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => { setShowInvite(false); setInviteForm(EMPTY_INVITE); }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-black/10"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-black font-extrabold text-xl">Invite Manager</h2>
+                <button
+                  onClick={() => { setShowInvite(false); setInviteForm(EMPTY_INVITE); }}
+                  className="text-neutral-400 hover:text-neutral-600 p-1"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-neutral-500 text-sm mb-6">
+                A temporary password will be emailed to the manager to complete setup.
+              </p>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-neutral-700 text-sm mb-1.5 font-medium">First Name</label>
+                    <input
+                      value={inviteForm.first_name ?? ""}
+                      onChange={e => setInviteForm(f => ({ ...f, first_name: e.target.value }))}
+                      className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/30"
+                      placeholder="Sarah"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-700 text-sm mb-1.5 font-medium">Last Name</label>
+                    <input
+                      value={inviteForm.last_name ?? ""}
+                      onChange={e => setInviteForm(f => ({ ...f, last_name: e.target.value }))}
+                      className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/30"
+                      placeholder="Mitchell"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-neutral-700 text-sm mb-1.5 font-medium">Email Address *</label>
+                  <input
+                    value={inviteForm.email}
+                    onChange={e => setInviteForm(f => ({ ...f, email: e.target.value }))}
+                    type="email"
+                    className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/30"
+                    placeholder="manager@yourproperty.com"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => { setShowInvite(false); setInviteForm(EMPTY_INVITE); }}
+                  className="flex-1 py-3 rounded-xl border border-black/10 text-neutral-600 text-sm hover:bg-black/[0.03] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleInvite}
+                  disabled={submitting || !inviteForm.email.trim()}
+                  className="flex-1 py-3 rounded-xl bg-black text-white text-sm font-semibold shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Send Invite
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

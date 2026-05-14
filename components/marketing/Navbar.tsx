@@ -2,14 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap } from "lucide-react";
+import { Zap, Sun, Moon } from "lucide-react";
 import Link from "next/link";
-
-// ─── IMPORTANT ───────────────────────────────────────────────────────────────
-// Replace these image URLs with your own hosted images for production.
-// Using next/image with a proper domain whitelist is recommended.
-// The URLs below use images.unsplash.com with crossOrigin-safe parameters.
-// ─────────────────────────────────────────────────────────────────────────────
 
 const menuLinks = [
   {
@@ -28,7 +22,7 @@ const menuLinks = [
     tag: "Our story",
     img: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=900&q=80",
     caption: "Our story",
-    sub: "The people behind Skitec",
+    sub: "The people behind SkiTech",
   },
   {
     label: "Features",
@@ -49,7 +43,7 @@ const menuLinks = [
     sub: "Tailored to your needs",
   },
   {
-    label: "Why Skitec",
+    label: "Why SkiTech",
     href: "/why-skitec",
     number: "05",
     tag: "The case",
@@ -80,7 +74,6 @@ const menuLinks = [
 const DEFAULT_IMG =
   "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=900&q=80";
 
-// ── Preload all images as soon as the module loads ────────────────────────────
 if (typeof window !== "undefined") {
   [DEFAULT_IMG, ...menuLinks.map((l) => l.img)].forEach((src) => {
     const img = new Image();
@@ -88,7 +81,6 @@ if (typeof window !== "undefined") {
   });
 }
 
-// ── Single image slide ────────────────────────────────────────────────────────
 function ImageSlide({
   src,
   alt,
@@ -108,7 +100,6 @@ function ImageSlide({
       animate={{ opacity: visible ? 1 : 0 }}
       transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
     >
-      {/* Image with zoom-out on activate */}
       <motion.img
         src={src}
         alt={alt}
@@ -117,8 +108,6 @@ function ImageSlide({
         transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
         loading="eager"
       />
-
-      {/* Caption overlay — only for named slides */}
       {caption && sub && (
         <motion.div
           className="absolute inset-0 flex flex-col justify-end"
@@ -131,7 +120,7 @@ function ImageSlide({
         >
           <div className="px-7 pb-7">
             <motion.p
-              className="font-mono text-[10px] tracking-[0.25em] uppercase text-white/60 mb-[5px]"
+              className="text-[10px] tracking-[0.25em] uppercase text-white/60 mb-[5px]"
               animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : 7 }}
               transition={{ duration: 0.35, delay: visible ? 0.18 : 0 }}
             >
@@ -139,11 +128,7 @@ function ImageSlide({
             </motion.p>
             <motion.p
               className="text-white font-light leading-snug"
-              style={{
-                fontFamily: "'Playfair Display', Georgia, serif",
-                fontSize: "clamp(1.1rem, 1.6vw, 1.5rem)",
-                letterSpacing: "-0.01em",
-              }}
+              style={{ fontSize: "clamp(1.1rem, 1.6vw, 1.5rem)", letterSpacing: "-0.01em" }}
               animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : 9 }}
               transition={{ duration: 0.4, delay: visible ? 0.22 : 0 }}
             >
@@ -156,11 +141,23 @@ function ImageSlide({
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hovered, setHovered] = useState<number | null>(null);
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    setDark(saved ? saved === "dark" : prefersDark);
+
+    const observer = new MutationObserver(() => {
+      setDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -179,16 +176,23 @@ export function Navbar() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const menuTextColor = (i: number) => {
+    if (dark) {
+      return hovered === null ? "#f0f0f0" : hovered === i ? "#ffffff" : "rgba(255,255,255,0.12)";
+    }
+    return hovered === null ? "#0a0a0a" : hovered === i ? "#000" : "rgba(0,0,0,0.15)";
+  };
+
   return (
     <>
-      {/* ══════════════════════════════════════════════════════════ NAVBAR */}
+      {/* NAVBAR */}
       <motion.nav
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           scrolled
-            ? "bg-white/95 backdrop-blur-xl shadow-[0_1px_0_0_rgba(0,0,0,0.07)]"
+            ? "bg-white/95 dark:bg-[#1c1c1c]/95 backdrop-blur-xl shadow-[0_1px_0_0_rgba(0,0,0,0.07)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.05)]"
             : "bg-transparent"
         }`}
       >
@@ -197,14 +201,11 @@ export function Navbar() {
 
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-8 h-8 bg-black rounded-[10px] flex items-center justify-center transition-all duration-300 group-hover:rounded-full group-hover:scale-105">
-                <Zap className="w-[15px] h-[15px]" fill="white" strokeWidth={0} />
+              <div className="w-8 h-8 bg-black dark:bg-white rounded-[10px] flex items-center justify-center transition-all duration-300 group-hover:rounded-full group-hover:scale-105">
+                <Zap className="w-[15px] h-[15px] text-white dark:text-black" fill="currentColor" strokeWidth={0} />
               </div>
-              <span
-                className="text-black font-semibold text-[17px] tracking-[-0.01em]"
-                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-              >
-                Skitec
+              <span className="text-black dark:text-white font-semibold text-[17px] tracking-[-0.01em]">
+                SkiTech
               </span>
             </Link>
 
@@ -212,12 +213,25 @@ export function Navbar() {
             <div className="flex items-center gap-4">
               <Link
                 href="/auth/login"
-                className="hidden md:inline-flex items-center text-black/40 hover:text-black text-[13px] font-medium transition-colors duration-200"
-                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                className="hidden md:inline-flex items-center text-black/40 dark:text-white/60 hover:text-black dark:hover:text-white text-[13px] font-medium transition-colors duration-200"
               >
                 Sign Up
               </Link>
-              <span className="hidden md:block w-px h-3.5 bg-black/12" />
+              <span className="hidden md:block w-px h-3.5 bg-black/12 dark:bg-white/12" />
+
+              {/* Theme toggle */}
+              <button
+                onClick={() => {
+                  const next = !dark;
+                  setDark(next);
+                  document.documentElement.classList.toggle("dark", next);
+                  localStorage.setItem("theme", next ? "dark" : "light");
+                }}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-black/10 dark:border-white/15 bg-white/60 dark:bg-white/5 text-neutral-500 dark:text-[#c0c0c0] hover:bg-black/5 dark:hover:bg-white/10 transition-all backdrop-blur"
+                title={dark ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {dark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+              </button>
 
               {/* Menu button */}
               <motion.button
@@ -225,17 +239,14 @@ export function Navbar() {
                 whileTap={{ scale: 0.96 }}
                 onClick={() => setIsOpen(true)}
                 aria-label="Open menu"
-                className="group relative flex items-center gap-3 px-[18px] py-[9px] rounded-full bg-black text-white overflow-hidden"
+                className="group relative flex items-center gap-3 px-[18px] py-[9px] rounded-full bg-black dark:bg-white text-white dark:text-black overflow-hidden"
               >
-                <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out bg-gradient-to-r from-transparent via-white/10 dark:via-black/10 to-transparent" />
                 <span className="flex flex-col justify-center gap-[4.5px] w-[16px] relative z-10">
-                  <span className="block h-[1.5px] w-full bg-white rounded-full" />
-                  <span className="block h-[1.5px] w-[10px] bg-white/60 rounded-full" />
+                  <span className="block h-[1.5px] w-full bg-white dark:bg-black rounded-full" />
+                  <span className="block h-[1.5px] w-[10px] bg-white/60 dark:bg-black/60 rounded-full" />
                 </span>
-                <span
-                  className="text-[10.5px] font-semibold tracking-[0.2em] uppercase relative z-10"
-                  style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-                >
+                <span className="text-[10.5px] font-semibold tracking-[0.2em] uppercase relative z-10">
                   Menu
                 </span>
               </motion.button>
@@ -244,7 +255,7 @@ export function Navbar() {
         </div>
       </motion.nav>
 
-      {/* ══════════════════════════════════════════════ FULLSCREEN MENU */}
+      {/* FULLSCREEN MENU */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -253,43 +264,57 @@ export function Navbar() {
             animate={{ clipPath: "inset(0 0 0% 0)" }}
             exit={{ clipPath: "inset(0 0 100% 0)" }}
             transition={{ duration: 0.6, ease: [0.76, 0, 0.24, 1] }}
-            className="fixed inset-0 z-[100] bg-white flex flex-col overflow-hidden"
+            className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
+            style={{ backgroundColor: dark ? "#111111" : "#ffffff" }}
           >
-
-            {/* ── TOP BAR ── */}
+            {/* TOP BAR */}
             <div className="flex items-center justify-between px-8 md:px-16 pt-6 pb-4 shrink-0">
               <Link
                 href="/"
                 onClick={() => setIsOpen(false)}
                 className="flex items-center gap-3 group"
               >
-                <div className="w-7 h-7 bg-black rounded-[8px] flex items-center justify-center transition-all duration-300 group-hover:rounded-full">
-                  <Zap className="w-[13px] h-[13px]" fill="white" strokeWidth={0} />
+                <div className={`w-7 h-7 rounded-[8px] flex items-center justify-center transition-all duration-300 group-hover:rounded-full ${dark ? "bg-white" : "bg-black"}`}>
+                  <Zap className={`w-[13px] h-[13px] ${dark ? "text-black" : "text-white"}`} fill="currentColor" strokeWidth={0} />
                 </div>
-                <span
-                  className="text-black font-semibold text-[15px]"
-                  style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-                >
-                  Skitec
+                <span className={`font-semibold text-[15px] ${dark ? "text-white" : "text-black"}`}>
+                  SkiTech
                 </span>
               </Link>
+
+              <div className="flex items-center gap-3">
+                {/* Theme toggle inside menu */}
+                <button
+                  onClick={() => {
+                    const next = !dark;
+                    setDark(next);
+                    document.documentElement.classList.toggle("dark", next);
+                    localStorage.setItem("theme", next ? "dark" : "light");
+                  }}
+                  className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all ${
+                    dark ? "border-white/15 bg-white/5 text-[#c0c0c0] hover:bg-white/10" : "border-black/10 bg-black/5 text-neutral-500 hover:bg-black/10"
+                  }`}
+                  title={dark ? "Switch to light mode" : "Switch to dark mode"}
+                >
+                  {dark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                </button>
 
               <motion.button
                 onClick={() => setIsOpen(false)}
                 whileTap={{ scale: 0.95 }}
-                className="group flex items-center gap-2 px-4 py-2 rounded-full border border-black/12 hover:border-black/30 transition-all duration-200"
+                className={`group flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200 ${
+                  dark ? "border-white/12 hover:border-white/30" : "border-black/12 hover:border-black/30"
+                }`}
               >
                 <span className="relative w-3 h-3 flex items-center justify-center">
-                  <span className="block w-3 h-[1.5px] bg-black/40 group-hover:bg-black rotate-45 absolute transition-colors duration-200" />
-                  <span className="block w-3 h-[1.5px] bg-black/40 group-hover:bg-black -rotate-45 absolute transition-colors duration-200" />
+                  <span className={`block w-3 h-[1.5px] rotate-45 absolute transition-colors duration-200 ${dark ? "bg-white/40 group-hover:bg-white" : "bg-black/40 group-hover:bg-black"}`} />
+                  <span className={`block w-3 h-[1.5px] -rotate-45 absolute transition-colors duration-200 ${dark ? "bg-white/40 group-hover:bg-white" : "bg-black/40 group-hover:bg-black"}`} />
                 </span>
-                <span
-                  className="text-[10px] font-semibold tracking-[0.2em] uppercase text-black/40 group-hover:text-black transition-colors duration-200"
-                  style={{ fontFamily: "'Playfair Display', serif" }}
-                >
+                <span className={`text-[10px] font-semibold tracking-[0.2em] uppercase transition-colors duration-200 ${dark ? "text-white/40 group-hover:text-white" : "text-black/40 group-hover:text-black"}`}>
                   Close
                 </span>
               </motion.button>
+              </div>
             </div>
 
             {/* top rule */}
@@ -297,10 +322,10 @@ export function Navbar() {
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
-              className="h-px bg-black/8 mx-8 md:mx-16 origin-left shrink-0"
+              className={`h-px mx-8 md:mx-16 origin-left shrink-0 ${dark ? "bg-white/8" : "bg-black/8"}`}
             />
 
-            {/* ── BODY ── */}
+            {/* BODY */}
             <div className="flex-1 flex min-h-0 overflow-hidden">
 
               {/* LEFT — links */}
@@ -308,15 +333,14 @@ export function Navbar() {
                 <div className="w-full px-8 md:px-16">
                   {menuLinks.map((link, i) => (
                     <div key={link.label} className="relative">
-
-                      {/* hover fill bg */}
                       <motion.div
                         className="absolute inset-y-0 -inset-x-8 md:-inset-x-16 pointer-events-none"
                         animate={{ opacity: hovered === i ? 1 : 0 }}
                         transition={{ duration: 0.18 }}
                         style={{
-                          background:
-                            "linear-gradient(90deg, rgba(0,0,0,0.025) 0%, transparent 80%)",
+                          background: dark
+                            ? "linear-gradient(90deg, rgba(255,255,255,0.04) 0%, transparent 80%)"
+                            : "linear-gradient(90deg, rgba(0,0,0,0.025) 0%, transparent 80%)",
                         }}
                       />
 
@@ -332,15 +356,14 @@ export function Navbar() {
                           <motion.span
                             animate={{ opacity: hovered === i ? 0.7 : 0.2 }}
                             transition={{ duration: 0.2 }}
-                            className="font-mono text-[10px] tracking-[0.25em] text-black tabular-nums"
+                            className={`text-[10px] tracking-[0.25em] tabular-nums ${dark ? "text-white" : "text-black"}`}
                           >
                             {link.number}
                           </motion.span>
                           <motion.span
                             animate={{ opacity: hovered === i ? 0.4 : 0 }}
                             transition={{ duration: 0.2 }}
-                            className="hidden md:block text-[9px] tracking-widest uppercase text-black/50 mt-0.5 whitespace-nowrap"
-                            style={{ fontFamily: "'Playfair Display', serif" }}
+                            className={`hidden md:block text-[9px] tracking-widest uppercase mt-0.5 whitespace-nowrap ${dark ? "text-white/50" : "text-black/50"}`}
                           >
                             {link.tag}
                           </motion.span>
@@ -350,8 +373,9 @@ export function Navbar() {
                         <motion.div
                           className="hidden md:block w-px self-stretch"
                           animate={{
-                            background:
-                              hovered === i ? "rgba(0,0,0,0.18)" : "rgba(0,0,0,0.07)",
+                            background: dark
+                              ? hovered === i ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.07)"
+                              : hovered === i ? "rgba(0,0,0,0.18)" : "rgba(0,0,0,0.07)",
                           }}
                           transition={{ duration: 0.2 }}
                         />
@@ -367,15 +391,9 @@ export function Navbar() {
                           }}
                           className="flex-1 leading-none font-light transition-all duration-300"
                           style={{
-                            fontFamily: "'Playfair Display', Georgia, serif",
                             fontSize: "clamp(1.65rem, 3.8vw, 3.4rem)",
                             letterSpacing: "-0.02em",
-                            color:
-                              hovered === null
-                                ? "#0a0a0a"
-                                : hovered === i
-                                ? "#000"
-                                : "rgba(0,0,0,0.15)",
+                            color: menuTextColor(i),
                           }}
                         >
                           {link.label}
@@ -383,14 +401,14 @@ export function Navbar() {
 
                         {/* arrow circle */}
                         <motion.div
-                          className="shrink-0 w-9 h-9 rounded-full border border-black/20 flex items-center justify-center"
+                          className={`shrink-0 w-9 h-9 rounded-full border flex items-center justify-center ${dark ? "border-white/20" : "border-black/20"}`}
                           animate={{
                             opacity: hovered === i ? 1 : 0,
                             scale: hovered === i ? 1 : 0.6,
                           }}
                           transition={{ duration: 0.2 }}
                         >
-                          <span className="text-black/50 text-base leading-none">→</span>
+                          <span className={`text-base leading-none ${dark ? "text-white/50" : "text-black/50"}`}>→</span>
                         </motion.div>
                       </Link>
 
@@ -403,14 +421,14 @@ export function Navbar() {
                           duration: 0.45,
                           ease: [0.22, 1, 0.36, 1],
                         }}
-                        className="h-px bg-black/7 origin-left"
+                        className={`h-px origin-left ${dark ? "bg-white/7" : "bg-black/7"}`}
                       />
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* RIGHT — image panel (lg screens only) */}
+              {/* RIGHT — image panel */}
               <motion.div
                 initial={{ opacity: 0, x: 40 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -418,17 +436,8 @@ export function Navbar() {
                 transition={{ duration: 0.6, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
                 className="hidden lg:flex w-[38%] shrink-0 items-center justify-center py-8 pr-12"
               >
-                {/* card */}
                 <div className="relative w-full h-full rounded-2xl overflow-hidden bg-neutral-100 shadow-[0_24px_64px_rgba(0,0,0,0.10),0_4px_16px_rgba(0,0,0,0.06)]">
-
-                  {/* Default ambient image */}
-                  <ImageSlide
-                    src={DEFAULT_IMG}
-                    alt="Skitec"
-                    visible={hovered === null}
-                  />
-
-                  {/* Per-item images — all 7 including Home */}
+                  <ImageSlide src={DEFAULT_IMG} alt="SkiTech" visible={hovered === null} />
                   {menuLinks.map((link, i) => (
                     <ImageSlide
                       key={link.label}
@@ -439,37 +448,31 @@ export function Navbar() {
                       sub={link.sub}
                     />
                   ))}
-
-                  {/* Brand pill top-right */}
                   <motion.div
                     className="absolute top-5 right-5 z-10 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25"
                     initial={{ opacity: 0, scale: 0.85 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.45, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <span
-                      className="text-white/80 text-[9px] tracking-[0.2em] uppercase font-semibold"
-                      style={{ fontFamily: "'Playfair Display', serif" }}
-                    >
-                      Skitec
+                    <span className="text-white/80 text-[9px] tracking-[0.2em] uppercase font-semibold">
+                      SkiTech
                     </span>
                   </motion.div>
-
                 </div>
               </motion.div>
             </div>
 
-            {/* ── BOTTOM BAR ── */}
+            {/* BOTTOM BAR */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.55, duration: 0.35 }}
               className="shrink-0"
             >
-              <div className="h-px bg-black/7 mx-8 md:mx-16" />
+              <div className={`h-px mx-8 md:mx-16 ${dark ? "bg-white/7" : "bg-black/7"}`} />
               <div className="flex items-center justify-between px-8 md:px-16 py-4">
-                <span className="text-[10px] font-mono tracking-[0.2em] uppercase text-black/25">
-                  © 2026 Skitec
+                <span className={`text-[10px] tracking-[0.2em] uppercase ${dark ? "text-white/25" : "text-black/25"}`}>
+                  © 2026 SkiTech
                 </span>
                 <div className="flex items-center gap-5">
                   {["Instagram ↗", "Twitter ↗", "LinkedIn ↗"].map((s) => (
@@ -478,7 +481,7 @@ export function Navbar() {
                       href="#"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[10px] font-mono tracking-[0.18em] uppercase text-black/25 hover:text-black/60 transition-colors duration-200"
+                      className={`text-[10px] tracking-[0.18em] uppercase transition-colors duration-200 ${dark ? "text-white/25 hover:text-white/60" : "text-black/25 hover:text-black/60"}`}
                     >
                       {s}
                     </a>
@@ -486,7 +489,6 @@ export function Navbar() {
                 </div>
               </div>
             </motion.div>
-
           </motion.div>
         )}
       </AnimatePresence>

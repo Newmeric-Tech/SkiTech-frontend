@@ -1,7 +1,7 @@
 "use client";
 
-import { WhySkitec } from "@/components/marketing/WhySkitec";
+import { WhySkiTech } from "@/components/marketing/WhySkiTech";
 
-export default function WhySkitecPage() {
-  return <WhySkitec />;
+export default function WhySkiTechPage() {
+  return <WhySkiTech />;
 }

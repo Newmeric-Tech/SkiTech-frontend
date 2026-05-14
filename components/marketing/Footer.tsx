@@ -84,7 +84,7 @@ export function Footer() {
                 className="text-white"
                 style={{ fontWeight: 800, fontSize: "1.1rem", fontFamily: font }}
               >
-                Skitec
+                SkiTech
               </span>
             </Link>
 
@@ -212,7 +212,7 @@ export function Footer() {
             lineHeight: 0.85,
           }}
         >
-          skitec
+          SkiTech
         </div>
 
         <div className="relative max-w-6xl mx-auto px-6 lg:px-10 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -226,7 +226,7 @@ export function Footer() {
             className="text-white/20 text-[11px]"
             style={{ fontFamily: font }}
           >
-            © 2025 Skitec. All rights reserved.
+            © 2025 SkiTech. All rights reserved.
           </p>
         </div>
       </div>

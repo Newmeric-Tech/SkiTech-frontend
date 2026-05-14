@@ -9,6 +9,11 @@ export const roomsAPI = {
   update: (roomId: string, data: any) =>
     api.put(`/v1/rooms/${roomId}`, data),
   delete: (roomId: string) => api.delete(`/v1/rooms/${roomId}`),
+  regenerate: (propertyId: string) =>
+    api.post(`/v1/rooms/${propertyId}/regenerate`),
+
+  bulkUpdateStatus: (propertyId: string, roomIds: string[], roomStatus: string) =>
+    api.post(`/v1/rooms/${propertyId}/bulk-status`, { room_ids: roomIds, status: roomStatus }),
 
   // Bookings
   listBookings: (propertyId: string, status?: string) =>
