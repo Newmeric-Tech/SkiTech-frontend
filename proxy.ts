@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Routes that don't need authentication
@@ -19,7 +19,7 @@ const ROLE_ACCESS: Record<string, string[]> = {
   "Staff": ["/staff"],
 };
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public routes
