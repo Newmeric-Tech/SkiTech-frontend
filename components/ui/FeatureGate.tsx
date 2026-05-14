@@ -38,7 +38,7 @@ export function FeatureGate({ feature, children, planName }: FeatureGateProps) {
         </div>
         <div className="flex items-center justify-center gap-2 text-xs text-neutral-400">
           <Zap className="w-3.5 h-3.5" />
-          <span>Powered by Skitec Subscription Plans</span>
+          <span>Powered by SkiTech Subscription Plans</span>
         </div>
       </div>
     </div>

@@ -10,7 +10,7 @@ const benefits = [
   {
     icon: Zap,
     title: "Automated Workflows",
-    desc: "Stop wasting hours on repetitive tasks. Skitec automates your SOPs, triggers low-stock alerts, and tracks KRAs in real time — so your team stays focused on what actually matters.",
+    desc: "Stop wasting hours on repetitive tasks. SkiTech automates your SOPs, triggers low-stock alerts, and tracks KRAs in real time — so your team stays focused on what actually matters.",
     stat: "70% less manual work",
     img: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=900&q=85",
     tag: "Automation",
@@ -34,7 +34,7 @@ const benefits = [
   {
     icon: Layers,
     title: "Built for Scale",
-    desc: "Whether you're running a single boutique property or a portfolio of 50+, Skitec scales with you. Add properties, onboard teams, and expand operations — without ever changing your tools.",
+    desc: "Whether you're running a single boutique property or a portfolio of 50+, SkiTech scales with you. Add properties, onboard teams, and expand operations — without ever changing your tools.",
     stat: "From 1 to 50+ properties",
     img: "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=900&q=85",
     tag: "Scale",
@@ -64,7 +64,7 @@ const steps = [
   },
 ];
 
-export function WhySkitec() {
+export function WhySkiTech() {
   const ref = useRef(null);
   const stepsRef = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-60px" });
@@ -85,7 +85,7 @@ export function WhySkitec() {
               className="text-black/60 text-[11px] uppercase tracking-[0.2em] mb-4"
               style={{ fontWeight: 700, fontFamily: font }}
             >
-              Why Skitec
+              Why SkiTech
             </motion.p>
 
             <motion.h2

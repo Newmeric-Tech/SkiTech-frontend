@@ -373,7 +373,7 @@ export default function SettingsPage() {
                               </div>
                               {!isCurrent && (
                                 <button
-                                  onClick={() => toast.info("Contact support at skitec@newmerictech.com to change your plan.")}
+                                  onClick={() => toast.info("Contact support at SkiTech@newmerictech.com to change your plan.")}
                                   className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm transition-all ${isUpgrade ? "bg-black text-white hover:bg-neutral-800" : "bg-black/5 text-neutral-500 hover:bg-black/10"}`}
                                   style={{ fontWeight: 600 }}>
                                   {isUpgrade ? <><ArrowUpRight className="w-4 h-4" /> Upgrade</> : "Downgrade"}
@@ -385,7 +385,7 @@ export default function SettingsPage() {
                       </div>
                       <p className="text-center text-xs text-neutral-400 mt-6">
                         To change your subscription plan, contact us at{" "}
-                        <a href="mailto:skitec@newmerictech.com" className="text-black underline underline-offset-2">skitec@newmerictech.com</a>
+                        <a href="mailto:SkiTech@newmerictech.com" className="text-black underline underline-offset-2">SkiTech@newmerictech.com</a>
                       </p>
                     </div>
                   )}

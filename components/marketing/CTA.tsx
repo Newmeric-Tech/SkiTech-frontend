@@ -26,7 +26,7 @@ export function CTA() {
         }}
       />
 
-      {/* Large ghost "Skitec" text in background */}
+      {/* Large ghost "SkiTech" text in background */}
       <div
         className="absolute inset-0 flex items-center justify-center select-none pointer-events-none overflow-hidden"
         aria-hidden
@@ -43,7 +43,7 @@ export function CTA() {
             whiteSpace: "nowrap",
           }}
         >
-          Skitec
+          SkiTech
         </span>
       </div>
 
@@ -86,7 +86,7 @@ export function CTA() {
           className="text-black/45 mt-6 max-w-lg mx-auto leading-[1.85]"
           style={{ fontSize: "0.9rem", fontFamily: font }}
         >
-          Join property teams who have simplified their daily operations with Skitec's
+          Join property teams who have simplified their daily operations with SkiTech's
           centralized management platform. Start your free 14-day trial today.
         </motion.p>
 

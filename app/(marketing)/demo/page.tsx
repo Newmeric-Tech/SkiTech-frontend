@@ -63,7 +63,7 @@ export default function DemoPage() {
               </span>
             </h1>
             <p className="text-neutral-500 text-sm leading-relaxed mb-8">
-              See how Skitec can transform your property operations. Our team will walk you through the platform tailored to your needs.
+              See how SkiTech can transform your property operations. Our team will walk you through the platform tailored to your needs.
             </p>
             <ul className="space-y-3">
               {perks.map((p, i) => (

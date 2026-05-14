@@ -807,7 +807,7 @@ export function Solutions() {
             transition={{ duration: 0.55, delay: 0.26 }}
             className="text-base md:text-lg text-black/40 max-w-2xl mx-auto leading-relaxed font-light"
           >
-            Whether you manage a single property or an entire portfolio, Skitec gives you the tools
+            Whether you manage a single property or an entire portfolio, SkiTech gives you the tools
             to simplify operations, boost efficiency, and drive consistent growth.
           </motion.p>
         </div>

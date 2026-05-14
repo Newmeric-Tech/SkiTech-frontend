@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
@@ -313,7 +313,7 @@ export default function PlatformSettings() {
                       </button>
                     </div>
                   </div>
-                  <div className="mt-3 px-4 py-2 bg-neutral-100 rounded-lg font-mono text-sm">
+                  <div className="mt-3 px-4 py-2 bg-neutral-100 rounded-lg text-sm">
                     {showKey === apiKey.id ? apiKey.key : `${apiKey.key.slice(0, 12)}${"•".repeat(20)}${apiKey.key.slice(-4)}`}
                   </div>
                 </div>

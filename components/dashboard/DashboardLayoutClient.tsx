@@ -149,7 +149,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                 animate={{ opacity: 1 }}
                 className="text-black dark:text-white font-bold text-xl tracking-tight"
               >
-                Skitec
+                SkiTech
               </motion.span>
             )}
           </div>

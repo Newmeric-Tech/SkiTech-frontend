@@ -8,8 +8,8 @@ const font = "Merriweather, serif";
 
 const faqs = [
   {
-    q: "What is Skitec?",
-    a: "Skitec is a Property Operations Management System that centralizes property management, staff operations, SOPs, task tracking, attendance, and reporting into one powerful dashboard.",
+    q: "What is SkiTech?",
+    a: "SkiTech is a Property Operations Management System that centralizes property management, staff operations, SOPs, task tracking, attendance, and reporting into one powerful dashboard.",
   },
   {
     q: "How many properties can I manage?",
@@ -21,7 +21,7 @@ const faqs = [
   },
   {
     q: "Can I import existing data?",
-    a: "Absolutely. Skitec supports CSV import for properties, employees, inventory, and SOPs. Our onboarding team can also assist with bulk data migration for Enterprise customers.",
+    a: "Absolutely. SkiTech supports CSV import for properties, employees, inventory, and SOPs. Our onboarding team can also assist with bulk data migration for Enterprise customers.",
   },
   {
     q: "What kind of support do you offer?",
@@ -29,7 +29,7 @@ const faqs = [
   },
   {
     q: "Is my data secure?",
-    a: "Yes. Skitec uses enterprise-grade encryption, role-based access control, and regular security audits. All data is stored in compliant data centers with 99.9% uptime SLA.",
+    a: "Yes. SkiTech uses enterprise-grade encryption, role-based access control, and regular security audits. All data is stored in compliant data centers with 99.9% uptime SLA.",
   },
 ];
 

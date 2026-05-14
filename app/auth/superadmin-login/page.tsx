@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -139,7 +139,7 @@ export default function SuperAdminLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="sa-input w-full rounded-xl px-4 py-3.5 text-sm"
-                placeholder="admin@skitec.com"
+                placeholder="admin@SkiTech.com"
                 style={{ fontFamily: "'Merriweather', serif" }}
               />
             </div>

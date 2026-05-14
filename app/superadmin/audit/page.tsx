@@ -138,7 +138,7 @@ export default function AuditLog() {
                 {events.map((event, i) => (
                   <motion.tr key={event.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
                     className="border-b border-black/5 hover:bg-black/5 transition-colors">
-                    <td className="p-4 text-sm text-neutral-600 font-mono">{event.timestamp}</td>
+                    <td className="p-4 text-sm text-neutral-600">{event.timestamp}</td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-gradient-to-br from-neutral-700 to-neutral-900 rounded-full flex items-center justify-center text-white text-xs font-medium">

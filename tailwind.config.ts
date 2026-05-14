@@ -10,7 +10,7 @@ const config: Config = {
   theme: {
   	extend: {
    		fontFamily: {
-			inter: ['Inter', 'sans-serif'],
+			sans: ['var(--font-merriweather)', 'Georgia', 'serif'],
 			merriweather: ['var(--font-merriweather)', 'Georgia', 'serif'],
 		},
   		colors: {
