@@ -15,7 +15,7 @@ const STATUS_MAP: Record<string, { emoji: string; label: string; color: string }
   maintenance: { emoji: "🔨", label: "Maintenance", color: "#94A3B8" },
 };
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { attendanceAPI, PropertyAttendanceEntry, AttendanceRecord } from "@/lib/api/attendance";
+import { attendanceAPI, PropertyAttendanceEntry } from "@/lib/api/attendance";
 import api from "@/lib/config/app";
 import { usersAPI } from "@/lib/api/users";
 import { downloadCSV, todayStr } from "@/lib/utils/export";
@@ -57,7 +57,10 @@ const ChartTooltip = ({ active, payload, label }: any) => {
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function buildWeeklyTrend(records: AttendanceRecord[], staffTotal: number) {
+function buildWeeklyTrend(
+  records: Array<{ punch_in_time: string | null; user_id: string }>,
+  staffTotal: number,
+) {
   const today = new Date();
   const buckets: Record<string, Set<string>> = {};
   for (let i = 6; i >= 0; i--) {
@@ -129,7 +132,7 @@ export default function AttendancePage() {
     if (!propertyId) return;
     attendanceAPI.getPropertyAttendanceWeek(propertyId)
       .then((res) => {
-        setWeeklyAttendance(buildWeeklyTrend(res.records as AttendanceRecord[], totalStaff));
+        setWeeklyAttendance(buildWeeklyTrend(res.records, totalStaff));
       })
       .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
