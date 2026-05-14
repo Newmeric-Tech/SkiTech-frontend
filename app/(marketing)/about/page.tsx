@@ -1,5 +1,3 @@
-"use client";
-
 import AboutUs from "@/components/marketing/AboutUs";
 
 export default function AboutPage() {
