@@ -1,83 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Search, Building2, Mail, Phone, MapPin, Eye,
-  Edit2, X, ChevronDown, TrendingUp, CheckCircle2, ArrowUpRight
+  Edit2, X, Loader2, ChevronDown,
 } from "lucide-react";
+import { toast } from "sonner";
+import { propertiesAPI, OwnerDetails, OwnerDetailsCreate, OwnerDetailsUpdate, Property } from "@/lib/api/properties";
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-const propertiesPool = [
-  { id: 1, name: "Grand Horizon Property", location: "Dubai Marina, UAE", units: 142, status: "active" },
-  { id: 2, name: "Skyline Suites", location: "Business Bay, UAE", units: 68, status: "active" },
-  { id: 3, name: "The Amiras Residence", location: "Palm Jumeirah, UAE", units: 55, status: "active" },
-  { id: 4, name: "Pearl Tower Residences", location: "Downtown Dubai, UAE", units: 200, status: "inactive" },
-];
+const AVATAR_COLORS = ["#3B82F6", "#6366F1", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
 
-const initOwners = [
-  {
-    id: 1,
-    name: "Khalid Al Mansouri",
-    email: "khalid.m@mansion-group.ae",
-    phone: "+971 50 123 4567",
-    address: "Emirates Hills Villa 22, Dubai, UAE",
-    avatar: "KM",
-    color: "#3B82F6",
-    propertyIds: [1, 2],
-    joinedDate: "Mar 2022",
-    revenue: "$12,380",
-    portfolioValue: "$4.2M",
-    activity: [
-      { text: "Revenue report reviewed", date: "2 days ago" },
-      { text: "New property linked: Skyline Suites", date: "1 week ago" },
-      { text: "Manager assigned: Sarah M.", date: "2 weeks ago" },
-    ],
-  },
-  {
-    id: 2,
-    name: "Fatima Al Zarouni",
-    email: "fatima.z@zarouni-re.ae",
-    phone: "+971 55 987 6543",
-    address: "Palm Jumeirah Frond K, Dubai, UAE",
-    avatar: "FZ",
-    color: "#6366F1",
-    propertyIds: [3],
-    joinedDate: "Jun 2022",
-    revenue: "$4,200",
-    portfolioValue: "$1.8M",
-    activity: [
-      { text: "Occupancy hit 91% — Q1 record", date: "Yesterday" },
-      { text: "SPA renovation approved", date: "3 days ago" },
-    ],
-  },
-  {
-    id: 3,
-    name: "Ahmed Bin Rashid",
-    email: "ahmed@rashid-holdings.ae",
-    phone: "+971 50 222 3333",
-    address: "DIFC Tower 5, Dubai, UAE",
-    avatar: "AR",
-    color: "#10B981",
-    propertyIds: [4],
-    joinedDate: "Sep 2023",
-    revenue: "$0",
-    portfolioValue: "$6.1M",
-    activity: [
-      { text: "Property setup in progress", date: "Today" },
-      { text: "Owner onboarding completed", date: "1 week ago" },
-    ],
-  },
-];
+function avatarColor(id: string): string {
+  let hash = 0;
+  for (const c of id) hash = (hash * 31 + c.charCodeAt(0)) & 0xffffffff;
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
-type Owner = typeof initOwners[0];
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map(n => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "OW";
+}
+
+const OWNERSHIP_TYPES = ["sole", "partnership", "company", "trust", "other"];
+
+type OwnerWithProperty = OwnerDetails & { propertyName: string };
 
 // ─── Owner Profile Modal ──────────────────────────────────────────────────────
-function OwnerProfileModal({ owner, onClose }: { owner: Owner; onClose: () => void }) {
-  const ownedProperties = propertiesPool.filter(p => owner.propertyIds.includes(p.id));
-  const [linkedIds, setLinkedIds] = useState(owner.propertyIds);
-
-  const toggleProp = (id: number) => setLinkedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+function OwnerProfileModal({ owner, onClose }: { owner: OwnerWithProperty; onClose: () => void }) {
+  const color = avatarColor(owner.id);
+  const initials = getInitials(owner.owner_name);
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -85,112 +41,67 @@ function OwnerProfileModal({ owner, onClose }: { owner: Owner; onClose: () => vo
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col border border-black/10"
+        className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-black/10"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-black/10 bg-white/80 backdrop-blur border-b border-black/10">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-black/10 bg-white/80 backdrop-blur">
           <h2 className="text-black" style={{ fontWeight: 700 }}>Owner Profile</h2>
           <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1">
-          {/* Profile card */}
-          <div className="p-6 border-b border-black/10">
-            <div className="flex items-start gap-5">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl flex-shrink-0 shadow-lg"
-                style={{ background: `linear-gradient(135deg, ${owner.color}, ${owner.color}99)`, fontWeight: 800 }}>
-                {owner.avatar}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-black" style={{ fontWeight: 800, fontSize: "1.1rem" }}>{owner.name}</h3>
-                    <p className="text-neutral-400 text-xs mt-0.5">Member since {owner.joinedDate}</p>
-                  </div>
-                  <span className="bg-black/[0.04] text-black text-xs px-2.5 py-1 rounded-full" style={{ fontWeight: 600 }}>Active Owner</span>
-                </div>
-                <div className="mt-3 space-y-1.5">
-                  <div className="flex items-center gap-2 text-neutral-600 text-sm"><Mail className="w-3.5 h-3.5 text-neutral-400" />{owner.email}</div>
-                  <div className="flex items-center gap-2 text-neutral-600 text-sm"><Phone className="w-3.5 h-3.5 text-neutral-400" />{owner.phone}</div>
-                  <div className="flex items-center gap-2 text-neutral-600 text-sm"><MapPin className="w-3.5 h-3.5 text-neutral-400" />{owner.address}</div>
-                </div>
-              </div>
+        <div className="p-6 space-y-5">
+          <div className="flex items-start gap-5">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl flex-shrink-0 shadow-lg"
+              style={{ background: `linear-gradient(135deg, ${color}, ${color}99)`, fontWeight: 800 }}>
+              {initials}
             </div>
-
-            {/* Summary stats */}
-            <div className="grid grid-cols-3 gap-3 mt-5">
-              {[
-                { label: "Properties", value: owner.propertyIds.length, icon: Building2, color: "#3B82F6" },
-                { label: "Monthly Rev.", value: owner.revenue, icon: TrendingUp, color: "#10B981" },
-                { label: "Portfolio Value", value: owner.portfolioValue, icon: ArrowUpRight, color: "#6366F1" },
-              ].map((s, i) => (
-                <div key={i} className="bg-white/50 rounded-xl p-3 text-center">
-                  <s.icon className="w-4 h-4 mx-auto mb-1" style={{ color: s.color }} />
-                  <p className="text-black text-sm" style={{ fontWeight: 800 }}>{s.value}</p>
-                  <p className="text-neutral-400 text-xs">{s.label}</p>
-                </div>
-              ))}
+            <div className="flex-1">
+              <h3 className="text-black" style={{ fontWeight: 800, fontSize: "1.1rem" }}>{owner.owner_name}</h3>
+              {owner.ownership_type && (
+                <span className="inline-block mt-1 bg-black/[0.04] text-black text-xs px-2.5 py-1 rounded-full capitalize" style={{ fontWeight: 600 }}>
+                  {owner.ownership_type}
+                </span>
+              )}
+              <div className="mt-3 space-y-2">
+                {owner.email && (
+                  <div className="flex items-center gap-2 text-neutral-600 text-sm">
+                    <Mail className="w-3.5 h-3.5 text-neutral-400" />
+                    {owner.email}
+                  </div>
+                )}
+                {owner.phone && (
+                  <div className="flex items-center gap-2 text-neutral-600 text-sm">
+                    <Phone className="w-3.5 h-3.5 text-neutral-400" />
+                    {owner.phone}
+                  </div>
+                )}
+                {owner.address && (
+                  <div className="flex items-center gap-2 text-neutral-600 text-sm">
+                    <MapPin className="w-3.5 h-3.5 text-neutral-400" />
+                    {owner.address}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Property Mapping */}
-          <div className="p-6 border-b border-black/10">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-black text-sm" style={{ fontWeight: 700 }}>Property Mapping</h4>
-              <span className="text-neutral-400 text-xs">{linkedIds.length} linked</span>
-            </div>
-            <div className="overflow-hidden rounded-xl border border-black/10">
-              <div className="grid grid-cols-[2fr,1.5fr,1fr,auto] gap-4 px-4 py-2.5 bg-white/50 border-b border-black/10">
-                {["Property Name", "Location", "Units", "Status"].map(h => (
-                  <span key={h} className="text-neutral-500 text-xs" style={{ fontWeight: 600 }}>{h}</span>
-                ))}
-              </div>
-              {propertiesPool.map((p, i) => {
-                const isLinked = linkedIds.includes(p.id);
-                return (
-                  <div key={p.id} className={`grid grid-cols-[2fr,1.5fr,1fr,auto] gap-4 px-4 py-3 items-center ${i < propertiesPool.length - 1 ? "border-b border-black/10" : ""} ${isLinked ? "bg-black/[0.04]/40" : ""} hover:bg-white/50 transition-colors`}>
-                    <div className="flex items-center gap-2">
-                      <Building2 className={`w-4 h-4 ${isLinked ? "text-black" : "text-neutral-300"}`} />
-                      <span className="text-black text-sm" style={{ fontWeight: isLinked ? 600 : 400 }}>{p.name}</span>
-                    </div>
-                    <span className="text-neutral-500 text-xs">{p.location}</span>
-                    <span className="text-neutral-600 text-sm">{p.units}</span>
-                    <button
-                      onClick={() => toggleProp(p.id)}
-                      className={`text-xs px-3 py-1 rounded-lg transition-colors ${isLinked ? "bg-red-50 text-red-500 hover:bg-red-100" : "bg-black/[0.04] text-black hover:bg-[#DBEAFE]"}`}
-                      style={{ fontWeight: 500 }}
-                    >
-                      {isLinked ? "Remove" : "Add"}
-                    </button>
-                  </div>
-                );
-              })}
+          <div className="bg-black/[0.03] rounded-xl p-4">
+            <p className="text-neutral-500 text-xs mb-1">Associated Property</p>
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-neutral-500" />
+              <span className="text-black text-sm" style={{ fontWeight: 600 }}>{owner.propertyName}</span>
             </div>
           </div>
 
-          {/* Activity Summary */}
-          <div className="p-6">
-            <h4 className="text-black text-sm mb-4" style={{ fontWeight: 700 }}>Owner Activity</h4>
-            <div className="space-y-3">
-              {owner.activity.map((act, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-[#3B82F6] mt-1.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-neutral-700 text-sm">{act.text}</p>
-                    <p className="text-neutral-400 text-xs mt-0.5">{act.date}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <p className="text-neutral-400 text-xs">
+            Added {new Date(owner.created_at).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" })}
+          </p>
         </div>
 
-        <div className="px-6 py-4 border-t border-black/10 bg-white/50 flex gap-3">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-black/10 text-neutral-600 text-sm hover:bg-black/[0.04] transition-colors">Close</button>
-          <button className="flex-1 py-2.5 rounded-xl bg-black text-white text-sm shadow-md" style={{ fontWeight: 600 }}>
-            Save Property Mapping
+        <div className="px-6 py-4 border-t border-black/10 bg-white/50">
+          <button onClick={onClose} className="w-full px-5 py-2.5 rounded-xl border border-black/10 text-neutral-600 text-sm hover:bg-black/[0.04] transition-colors">
+            Close
           </button>
         </div>
       </motion.div>
@@ -199,55 +110,126 @@ function OwnerProfileModal({ owner, onClose }: { owner: Owner; onClose: () => vo
 }
 
 // ─── Add/Edit Modal ───────────────────────────────────────────────────────────
-function OwnerFormModal({ owner, onClose, onSave }: {
-  owner: Owner | null;
+function OwnerFormModal({ owner, properties, onClose, onSaved }: {
+  owner: OwnerWithProperty | null;
+  properties: Property[];
   onClose: () => void;
-  onSave: (o: Owner) => void;
+  onSaved: () => void;
 }) {
-  const blank: Owner = { id: Date.now(), name: "", email: "", phone: "", address: "", avatar: "OW", color: "#3B82F6", propertyIds: [], joinedDate: "Mar 2026", revenue: "$0", portfolioValue: "$0M", activity: [] };
-  const [form, setForm] = useState<Owner>(owner ?? blank);
+  const [form, setForm] = useState({
+    owner_name: owner?.owner_name ?? "",
+    email: owner?.email ?? "",
+    phone: owner?.phone ?? "",
+    address: owner?.address ?? "",
+    ownership_type: owner?.ownership_type ?? "",
+    property_id: owner?.property_id ?? (properties[0]?.id ?? ""),
+  });
+  const [submitting, setSubmitting] = useState(false);
 
-  const toggleProp = (id: number) => setForm(f => ({ ...f, propertyIds: f.propertyIds.includes(id) ? f.propertyIds.filter(x => x !== id) : [...f.propertyIds, id] }));
+  const handleSave = async () => {
+    if (!form.owner_name.trim() || !form.property_id) return;
+    try {
+      setSubmitting(true);
+      if (owner) {
+        const update: OwnerDetailsUpdate = {
+          owner_name: form.owner_name,
+          email: form.email || undefined,
+          phone: form.phone || undefined,
+          address: form.address || undefined,
+          ownership_type: form.ownership_type || undefined,
+        };
+        await propertiesAPI.updateOwner(owner.property_id, owner.id, update);
+        toast.success("Owner updated");
+      } else {
+        const create: OwnerDetailsCreate = {
+          owner_name: form.owner_name,
+          email: form.email || undefined,
+          phone: form.phone || undefined,
+          address: form.address || undefined,
+          ownership_type: form.ownership_type || undefined,
+        };
+        await propertiesAPI.createOwner(form.property_id, create);
+        toast.success("Owner added");
+      }
+      onSaved();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to save owner");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
         className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-black/10">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-black/10 bg-white/80 backdrop-blur border-b border-black/10">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-black/10 bg-white/80 backdrop-blur">
           <h2 className="text-black" style={{ fontWeight: 700 }}>{owner ? "Edit Owner" : "Add New Owner"}</h2>
-          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
         </div>
         <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
-          {[
-            { label: "Full Name", field: "name" as const, placeholder: "e.g. Khalid Al Mansouri" },
-            { label: "Email Address", field: "email" as const, placeholder: "owner@email.ae" },
-            { label: "Phone Number", field: "phone" as const, placeholder: "+971 50 000 0000" },
-            { label: "Address", field: "address" as const, placeholder: "Villa, Tower, Area, Dubai, UAE" },
-          ].map(f => (
-            <div key={f.field}>
-              <label className="block text-neutral-700 text-sm mb-1.5" style={{ fontWeight: 600 }}>{f.label}</label>
-              <input value={form[f.field] as string} onChange={e => setForm(prev => ({ ...prev, [f.field]: e.target.value }))} placeholder={f.placeholder}
-                className="w-full bg-[#F8FAFC] border border-black/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all" />
-            </div>
-          ))}
           <div>
-            <label className="block text-neutral-700 text-sm mb-2" style={{ fontWeight: 600 }}>Associated Properties</label>
-            <div className="space-y-2">
-              {propertiesPool.map(p => (
-                <label key={p.id} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${form.propertyIds.includes(p.id) ? "border-[#3B82F6] bg-black/[0.04]" : "border-black/10 bg-[#F8FAFC] hover:border-black/20"}`}>
-                  <input type="checkbox" checked={form.propertyIds.includes(p.id)} onChange={() => toggleProp(p.id)} className="w-4 h-4 accent-[#3B82F6]" />
-                  <Building2 className="w-4 h-4 text-neutral-400" />
-                  <span className="text-sm text-black" style={{ fontWeight: form.propertyIds.includes(p.id) ? 600 : 400 }}>{p.name}</span>
-                </label>
-              ))}
+            <label className="block text-neutral-700 text-sm mb-1.5" style={{ fontWeight: 600 }}>Full Name *</label>
+            <input value={form.owner_name} onChange={e => setForm(f => ({ ...f, owner_name: e.target.value }))}
+              placeholder="e.g. Shradhdha Maliya"
+              className="w-full bg-[#F8FAFC] border border-black/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all" />
+          </div>
+          <div>
+            <label className="block text-neutral-700 text-sm mb-1.5" style={{ fontWeight: 600 }}>Email Address</label>
+            <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              type="email" placeholder="owner@email.com"
+              className="w-full bg-[#F8FAFC] border border-black/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all" />
+          </div>
+          <div>
+            <label className="block text-neutral-700 text-sm mb-1.5" style={{ fontWeight: 600 }}>Phone Number</label>
+            <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+              placeholder="+91 98765 43210"
+              className="w-full bg-[#F8FAFC] border border-black/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all" />
+          </div>
+          <div>
+            <label className="block text-neutral-700 text-sm mb-1.5" style={{ fontWeight: 600 }}>Address</label>
+            <input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+              placeholder="Street, City, State, Country"
+              className="w-full bg-[#F8FAFC] border border-black/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all" />
+          </div>
+          <div>
+            <label className="block text-neutral-700 text-sm mb-1.5" style={{ fontWeight: 600 }}>Ownership Type</label>
+            <div className="relative">
+              <select value={form.ownership_type} onChange={e => setForm(f => ({ ...f, ownership_type: e.target.value }))}
+                className="w-full bg-[#F8FAFC] border border-black/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black/20 appearance-none transition-all">
+                <option value="">Select type…</option>
+                {OWNERSHIP_TYPES.map(t => (
+                  <option key={t} value={t} className="capitalize">{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
             </div>
           </div>
+          {!owner && (
+            <div>
+              <label className="block text-neutral-700 text-sm mb-1.5" style={{ fontWeight: 600 }}>Property *</label>
+              <div className="relative">
+                <select value={form.property_id} onChange={e => setForm(f => ({ ...f, property_id: e.target.value }))}
+                  className="w-full bg-[#F8FAFC] border border-black/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black/20 appearance-none transition-all">
+                  {properties.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+              </div>
+            </div>
+          )}
         </div>
         <div className="px-6 py-4 border-t border-black/10 bg-white/50 flex gap-3">
           <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-black/10 text-neutral-600 text-sm hover:bg-black/[0.04] transition-colors">Cancel</button>
-          <button onClick={() => { if (form.name.trim()) onSave({ ...form, avatar: form.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() }); }}
-            disabled={!form.name.trim()}
-            className="flex-1 py-2.5 rounded-xl bg-black text-white text-sm shadow-md disabled:opacity-40 disabled:cursor-not-allowed" style={{ fontWeight: 600 }}>
+          <button
+            onClick={handleSave}
+            disabled={submitting || !form.owner_name.trim() || !form.property_id}
+            className="flex-1 py-2.5 rounded-xl bg-black text-white text-sm shadow-md disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            style={{ fontWeight: 600 }}>
+            {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
             {owner ? "Save Changes" : "Add Owner"}
           </button>
         </div>
@@ -258,27 +240,51 @@ function OwnerFormModal({ owner, onClose, onSave }: {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function OwnersPage() {
-  const [owners, setOwners] = useState(initOwners);
+  const [owners, setOwners] = useState<OwnerWithProperty[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [search, setSearch] = useState("");
-  const [profileOwner, setProfileOwner] = useState<Owner | null>(null);
-  const [formOwner, setFormOwner] = useState<Owner | null | "new">(null);
+  const [loading, setLoading] = useState(true);
+  const [profileOwner, setProfileOwner] = useState<OwnerWithProperty | null>(null);
+  const [formOwner, setFormOwner] = useState<OwnerWithProperty | null | "new">(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const propsRes = await propertiesAPI.list();
+      const propList = propsRes.data;
+      setProperties(propList);
+
+      const ownerResults = await Promise.all(
+        propList.map(p =>
+          propertiesAPI.getOwner(p.id)
+            .then(res => res.data.map(o => ({ ...o, propertyName: p.name })))
+            .catch(() => [] as OwnerWithProperty[])
+        )
+      );
+      setOwners(ownerResults.flat());
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to load owners");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const filtered = owners.filter(o =>
-    o.name.toLowerCase().includes(search.toLowerCase()) ||
-    o.email.toLowerCase().includes(search.toLowerCase())
+    o.owner_name.toLowerCase().includes(search.toLowerCase()) ||
+    (o.email ?? "").toLowerCase().includes(search.toLowerCase()) ||
+    o.propertyName.toLowerCase().includes(search.toLowerCase())
   );
-
-  const handleSave = (o: Owner) => {
-    setOwners(prev => prev.find(x => x.id === o.id) ? prev.map(x => x.id === o.id ? o : x) : [o, ...prev]);
-    setFormOwner(null);
-  };
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-black" style={{ fontSize: "1.4rem", fontWeight: 800 }}>Owner Details</h1>
-          <p className="text-neutral-500 text-sm mt-0.5">{owners.length} property owners in your portfolio</p>
+          <p className="text-neutral-500 text-sm mt-0.5">
+            {loading ? "Loading…" : `${owners.length} property owner${owners.length === 1 ? "" : "s"} in your portfolio`}
+          </p>
         </div>
         <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
           onClick={() => setFormOwner("new")}
@@ -291,8 +297,8 @@ export default function OwnersPage() {
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: "Total Owners", value: owners.length, color: "#3B82F6" },
-          { label: "Total Properties", value: owners.reduce((a, o) => a + o.propertyIds.length, 0), color: "#6366F1" },
-          { label: "Avg. Portfolio", value: `${Math.round(owners.reduce((a, o) => a + o.propertyIds.length, 0) / owners.length)} props`, color: "#10B981" },
+          { label: "Total Properties", value: properties.length, color: "#6366F1" },
+          { label: "Partnership Owners", value: owners.filter(o => o.ownership_type === "partnership").length, color: "#10B981" },
         ].map((s, i) => (
           <div key={i} className="bg-white/70 backdrop-blur rounded-xl p-5 border border-black/10 shadow-sm">
             <p className="text-neutral-500 text-xs mb-1">{s.label}</p>
@@ -304,78 +310,97 @@ export default function OwnersPage() {
       {/* Search */}
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search owners..."
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search owners…"
           className="w-full bg-white border border-black/10 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-black/20 focus:ring-2 focus:ring-[#3B82F6]/10 transition-all" />
       </div>
 
       {/* Owner Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
-        {filtered.map((o, i) => (
-          <motion.div key={o.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-            whileHover={{ y: -3 }}
-            className="bg-white/70 backdrop-blur rounded-2xl border border-black/10 shadow-sm p-6 cursor-pointer hover:shadow-md transition-all"
-          >
-            {/* Header */}
-            <div className="flex items-start gap-4 mb-5">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md"
-                style={{ background: `linear-gradient(135deg, ${o.color}, ${o.color}99)`, fontWeight: 800 }}>
-                {o.avatar}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-black text-sm truncate" style={{ fontWeight: 700 }}>{o.name}</h3>
-                  <span className="bg-black/[0.04] text-black text-xs px-2 py-0.5 rounded-full ml-2 flex-shrink-0" style={{ fontWeight: 600 }}>Active</span>
+      {loading ? (
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="w-8 h-8 animate-spin text-neutral-300" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20 text-neutral-400">
+          <p className="text-sm">{search ? "No owners match your search." : "No owners yet. Add one to get started."}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
+          {filtered.map((o, i) => {
+            const color = avatarColor(o.id);
+            const initials = getInitials(o.owner_name);
+            return (
+              <motion.div key={o.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
+                whileHover={{ y: -3 }}
+                className="bg-white/70 backdrop-blur rounded-2xl border border-black/10 shadow-sm p-6 cursor-pointer hover:shadow-md transition-all"
+              >
+                <div className="flex items-start gap-4 mb-5">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md"
+                    style={{ background: `linear-gradient(135deg, ${color}, ${color}99)`, fontWeight: 800 }}>
+                    {initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-black text-sm truncate" style={{ fontWeight: 700 }}>{o.owner_name}</h3>
+                      {o.ownership_type && (
+                        <span className="bg-black/[0.04] text-black text-xs px-2 py-0.5 rounded-full ml-2 flex-shrink-0 capitalize" style={{ fontWeight: 600 }}>
+                          {o.ownership_type}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Building2 className="w-3 h-3 text-neutral-400 flex-shrink-0" />
+                      <p className="text-neutral-400 text-xs truncate">{o.propertyName}</p>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-neutral-400 text-xs mt-0.5">Since {o.joinedDate}</p>
-              </div>
-            </div>
 
-            {/* Contact */}
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center gap-2 text-neutral-600 text-sm">
-                <Mail className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                <span className="truncate text-xs">{o.email}</span>
-              </div>
-              <div className="flex items-center gap-2 text-neutral-600 text-sm">
-                <Phone className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                <span className="text-xs">{o.phone}</span>
-              </div>
-              <div className="flex items-center gap-2 text-neutral-600 text-sm">
-                <MapPin className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                <span className="text-xs truncate">{o.address}</span>
-              </div>
-            </div>
+                <div className="space-y-2 mb-4">
+                  {o.email && (
+                    <div className="flex items-center gap-2 text-neutral-600 text-sm">
+                      <Mail className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                      <span className="truncate text-xs">{o.email}</span>
+                    </div>
+                  )}
+                  {o.phone && (
+                    <div className="flex items-center gap-2 text-neutral-600 text-sm">
+                      <Phone className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                      <span className="text-xs">{o.phone}</span>
+                    </div>
+                  )}
+                  {o.address && (
+                    <div className="flex items-center gap-2 text-neutral-600 text-sm">
+                      <MapPin className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                      <span className="text-xs truncate">{o.address}</span>
+                    </div>
+                  )}
+                </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-black/[0.04] rounded-xl p-3 text-center">
-                <p className="text-black text-base" style={{ fontWeight: 800 }}>{o.propertyIds.length}</p>
-                <p className="text-neutral-500 text-xs">Properties</p>
-              </div>
-              <div className="bg-black/[0.04] rounded-xl p-3 text-center">
-                <p className="text-black text-base" style={{ fontWeight: 800 }}>{o.revenue}</p>
-                <p className="text-neutral-500 text-xs">Monthly Rev.</p>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="pt-4 border-t border-black/10 flex items-center gap-2">
-              <button onClick={() => setProfileOwner(o)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-black/10 text-neutral-600 text-xs hover:bg-white/50 transition-colors" style={{ fontWeight: 500 }}>
-                <Eye className="w-3.5 h-3.5" /> View Profile
-              </button>
-              <button onClick={() => setFormOwner(o)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-black/[0.04] text-black text-xs hover:bg-[#DBEAFE] transition-colors" style={{ fontWeight: 500 }}>
-                <Edit2 className="w-3.5 h-3.5" /> Edit
-              </button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+                <div className="pt-4 border-t border-black/10 flex items-center gap-2">
+                  <button onClick={() => setProfileOwner(o)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-black/10 text-neutral-600 text-xs hover:bg-white/50 transition-colors" style={{ fontWeight: 500 }}>
+                    <Eye className="w-3.5 h-3.5" /> View Profile
+                  </button>
+                  <button onClick={() => setFormOwner(o)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-black/[0.04] text-black text-xs hover:bg-[#DBEAFE] transition-colors" style={{ fontWeight: 500 }}>
+                    <Edit2 className="w-3.5 h-3.5" /> Edit
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
 
       <AnimatePresence>
         {profileOwner && <OwnerProfileModal owner={profileOwner} onClose={() => setProfileOwner(null)} />}
-        {formOwner && <OwnerFormModal owner={formOwner === "new" ? null : formOwner} onClose={() => setFormOwner(null)} onSave={handleSave} />}
+        {formOwner && (
+          <OwnerFormModal
+            owner={formOwner === "new" ? null : formOwner}
+            properties={properties}
+            onClose={() => setFormOwner(null)}
+            onSaved={() => { setFormOwner(null); fetchData(); }}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
