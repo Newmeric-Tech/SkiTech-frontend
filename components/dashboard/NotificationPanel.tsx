@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, BedDouble, AlertTriangle, Clock,
@@ -77,7 +78,10 @@ export default function NotificationPanel({ open, onClose }: NotificationPanelPr
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [punchIns, setPunchIns] = useState<Alert[]>([]);
+  const [domReady, setDomReady] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setDomReady(true); }, []);
 
   const load = async () => {
     setLoading(true);
@@ -189,31 +193,29 @@ export default function NotificationPanel({ open, onClose }: NotificationPanelPr
     load();
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open, onClose]);
 
   const attendancePct =
     snapshot && snapshot.totalStaff > 0
       ? Math.round((snapshot.present / snapshot.totalStaff) * 100)
       : 0;
 
-  return (
+  if (!domReady) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
-        <motion.div
-          ref={panelRef}
-          initial={{ opacity: 0, y: -8, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -8, scale: 0.97 }}
-          transition={{ duration: 0.18, ease: "easeOut" }}
-          className="absolute right-0 top-full mt-2 w-[360px] bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-xl border border-slate-200/80 dark:border-white/8 z-50 overflow-hidden"
-        >
+        <>
+          {/* Backdrop — captures click-outside */}
+          <div className="fixed inset-0 z-[9998]" onClick={onClose} />
+
+          <motion.div
+            ref={panelRef}
+            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="fixed top-[88px] right-4 w-[360px] bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-xl border border-slate-200/80 dark:border-white/8 z-[9999] overflow-hidden"
+          >
           {/* ── Header ── */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/6">
             <div className="flex items-center gap-2.5">
@@ -457,8 +459,10 @@ export default function NotificationPanel({ open, onClose }: NotificationPanelPr
             <RefreshCw className="w-3 h-3 text-slate-300" />
             <p className="text-[10px] text-slate-400">Refreshes each time you open</p>
           </div>
-        </motion.div>
+          </motion.div>
+        </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
