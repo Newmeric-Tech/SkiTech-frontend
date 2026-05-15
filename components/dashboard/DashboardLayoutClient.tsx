@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
@@ -75,7 +75,19 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { user, features, refreshFeatures, isAuthenticated } = useAuthStore();
+  const { user, features, refreshFeatures, isAuthenticated, logout } = useAuthStore();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   // Refresh features from server on every mount so stale localStorage never persists
   useEffect(() => {
@@ -109,10 +121,9 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
     roleLabel = "Staff";
   }
 
-  // Handle logout -> navigate to home or login
   const handleLogout = () => {
-     // Clear tokens logic here
-     router.push("/auth/login");
+    setProfileOpen(false);
+    logout();
   };
 
   if (!mounted) return <div className="h-screen bg-[#f8f7f4] dark:bg-[#111111]" />;
@@ -225,20 +236,13 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
         </div>
 
         {/* Bottom Actions */}
-        <div className="p-4 border-t border-black/10 dark:border-white/10 space-y-2">
-           <button
-             onClick={() => setCollapsed(!collapsed)}
-             className="hidden md:flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-neutral-500 dark:text-[#a0a0a0] hover:bg-black/5 dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition-colors"
-           >
-             {collapsed ? <ChevronRight className="w-5 h-5 mx-auto" /> : <><ChevronLeft className="w-5 h-5" /> <span className="font-medium text-sm">Collapse Sidebar</span></>}
-           </button>
-           <button
-             onClick={handleLogout}
-             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-neutral-400 dark:text-[#707070] hover:bg-black/5 dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition-colors ${collapsed ? "justify-center" : ""}`}
-           >
-             <LogOut className="w-5 h-5" />
-             {!collapsed && <span className="font-medium text-sm">Sign Out</span>}
-           </button>
+        <div className="px-3 py-2 border-t border-black/10 dark:border-white/10">
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="hidden md:flex w-full items-center gap-3 px-3 py-2 rounded-lg text-neutral-500 dark:text-[#a0a0a0] hover:bg-black/5 dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition-colors"
+          >
+            {collapsed ? <ChevronRight className="w-5 h-5 mx-auto" /> : <><ChevronLeft className="w-4 h-4" /><span className="font-medium text-sm">Collapse Sidebar</span></>}
+          </button>
         </div>
       </motion.aside>
 
@@ -255,16 +259,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
             </h2>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="relative hidden md:block w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="w-full pl-10 pr-4 py-2 bg-white/50 dark:bg-[#252525]/50 border border-black/10 dark:border-white/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 focus:border-black/20 dark:focus:border-white/20 transition-all backdrop-blur"
-              />
-            </div>
-
+          <div className="flex items-center gap-4">
             <button
               onClick={toggleDark}
               className="flex items-center justify-center w-9 h-9 rounded-lg border border-black/10 dark:border-white/15 bg-white/60 dark:bg-white/5 text-neutral-600 dark:text-[#c0c0c0] hover:bg-black/5 dark:hover:bg-white/10 transition-all"
@@ -286,14 +281,74 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
 
             <div className="h-8 w-[1px] bg-black/10 dark:bg-white/10 hidden sm:block" />
 
-            <div className="flex items-center gap-3">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold text-black dark:text-white">{user?.first_name} {user?.last_name}</p>
-                <p className="text-xs text-neutral-500 dark:text-[#a0a0a0]">{user?.role || roleLabel}</p>
-              </div>
-              <div className="w-10 h-10 bg-white/80 dark:bg-[#2a2a2a] backdrop-blur rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-black dark:text-white font-bold shadow-sm">
-                {user?.first_name?.[0]}{user?.last_name?.[0]}
-            </div>
+            {/* Profile with dropdown */}
+            <div ref={profileRef} className="relative">
+              <button
+                onClick={() => setProfileOpen(o => !o)}
+                className="flex items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-black/5 dark:hover:bg-white/8 transition-colors"
+              >
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-semibold text-black dark:text-white leading-tight">
+                    {user?.first_name} {user?.last_name}
+                  </p>
+                  <p className="text-xs text-neutral-500 dark:text-[#a0a0a0] leading-tight">
+                    {user?.role || roleLabel}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-white/80 dark:bg-[#2a2a2a] backdrop-blur rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-black dark:text-white font-bold shadow-sm shrink-0">
+                  {user?.first_name?.[0]}{user?.last_name?.[0]}
+                </div>
+              </button>
+
+              <AnimatePresence>
+                {profileOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-[#1c1c1c] rounded-2xl shadow-xl border border-black/10 dark:border-white/10 overflow-hidden z-50"
+                  >
+                    {/* User info */}
+                    <div className="px-4 py-3.5 border-b border-black/8 dark:border-white/8 flex items-center gap-3">
+                      <div className="w-10 h-10 bg-black dark:bg-white rounded-full flex items-center justify-center text-white dark:text-black font-bold text-sm shrink-0">
+                        {user?.first_name?.[0]}{user?.last_name?.[0]}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-black dark:text-white truncate">
+                          {user?.first_name} {user?.last_name}
+                        </p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                          {user?.email || (user?.role || roleLabel)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Search */}
+                    <div className="px-4 py-3 border-b border-black/8 dark:border-white/8">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                        <input
+                          type="text"
+                          placeholder="Search..."
+                          className="w-full pl-9 pr-3 py-2 bg-black/5 dark:bg-white/8 rounded-lg text-sm text-black dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/15 transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Sign out */}
+                    <div className="p-2">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors text-sm font-medium"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>
