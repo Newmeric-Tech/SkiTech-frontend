@@ -199,7 +199,7 @@ export default function ChatWidget() {
               color: "#111111",
             }}
           >
-            {isMaximized && activeChat ? (
+            {isMaximized ? (
               <div style={{ display: "flex", width: "100%", height: "100%" }}>
                 <div style={{ width: 320, flexShrink: 0, borderRight: "1.5px solid #e5e7eb", display: "flex", flexDirection: "column" }}>
                   <ChatList
@@ -220,17 +220,41 @@ export default function ChatWidget() {
                   />
                 </div>
                 <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                  <ChatWindow
-                  chat={activeChat}
-                  onBack={() => setSelectedChat(null)}
-                  onSendMessage={handleSendMessage}
-                  onClose={() => setIsOpen(false)}
-                  onMinimize={handleMinimize}
-                  onMaximize={handleMaximize}
-                  isMinimized={isMinimized}
-                  isMaximized={isMaximized}
-                  compact={isMaximized}
-                />
+                  {activeChat ? (
+                    <ChatWindow
+                      chat={activeChat}
+                      onBack={() => setSelectedChat(null)}
+                      onSendMessage={handleSendMessage}
+                      onClose={() => setIsOpen(false)}
+                      onMinimize={handleMinimize}
+                      onMaximize={handleMaximize}
+                      isMinimized={isMinimized}
+                      isMaximized={isMaximized}
+                      compact
+                    />
+                  ) : (
+                    <div style={{
+                      flex: 1, display: "flex", flexDirection: "column",
+                      alignItems: "center", justifyContent: "center",
+                      background: "#fafafa", gap: 12,
+                    }}>
+                      <div style={{
+                        width: 64, height: 64, borderRadius: "50%",
+                        background: "#f3f4f6", display: "flex",
+                        alignItems: "center", justifyContent: "center",
+                      }}>
+                        <MessageCircle size={28} color="#9ca3af" />
+                      </div>
+                      <p style={{
+                        fontSize: 15, fontWeight: 600, color: "#6b7280",
+                        fontFamily: "'Merriweather', serif", margin: 0,
+                      }}>Select a conversation</p>
+                      <p style={{
+                        fontSize: 12, color: "#9ca3af",
+                        fontFamily: "'Merriweather', serif", margin: 0,
+                      }}>Choose a chat from the list to start messaging</p>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : activeChat ? (
