@@ -78,6 +78,13 @@ export const chatAPI = {
       { params: { tenant_id: tenantId, property_id: propertyId } }
     ),
 
+  createGroup: (tenantId: string, propertyId: string, name: string, participantIds: string[]) =>
+    api.post<ConversationDetail>(
+      "/v1/chat/conversations/group",
+      { name, participant_ids: participantIds },
+      { params: { tenant_id: tenantId, property_id: propertyId } }
+    ),
+
   getMessages: (
     conversationId: string,
     tenantId: string,

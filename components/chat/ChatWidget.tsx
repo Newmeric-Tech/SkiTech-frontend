@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageCircle, X, Minimize2, Maximize2, ChevronLeft,
   MoreVertical, Send, Mic, Image as ImageIcon,
-  Paperclip, Smile, Search, UserPlus, ArrowLeft,
+  Paperclip, Smile, Search, UserPlus, ArrowLeft, Users, Check,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { usersAPI } from "@/lib/api/users";
+import { propertiesAPI } from "@/lib/api/properties";
 import { chatAPI, ChatContact, ConversationListItem as APIConversation, MessageItem } from "@/lib/api/chat";
 
 /* ─────────── Local types ─────────── */
@@ -64,7 +65,7 @@ function fmtBytes(bytes: number): string {
 }
 
 function mapConv(conv: APIConversation, myId: string): Chat {
-  let name: string, initials: string, otherParticipantId: string | undefined;
+  let name: string, otherParticipantId: string | undefined;
   if (conv.type === "direct") {
     const other = conv.other_participants?.[0];
     if (other) {
@@ -74,11 +75,10 @@ function mapConv(conv: APIConversation, myId: string): Chat {
   } else {
     name = conv.name ?? "Group Chat";
   }
-  initials = getInitials(name);
   return {
     id: conv.id,
     name,
-    initials,
+    initials: getInitials(name),
     lastMessage: conv.last_message?.content ?? "Tap to start chatting",
     timestamp: formatTs(conv.updated_at),
     unread: conv.unread_count,
@@ -117,9 +117,11 @@ export default function ChatWidget() {
   const [isLoading, setIsLoading] = useState(false);
   const [windowHeight, setWindowHeight] = useState(800);
   const [myProfile, setMyProfile] = useState<{ id: string; property_id: string | null } | null>(null);
+  const [effectivePropertyId, setEffectivePropertyId] = useState<string | null>(null);
   const [contacts, setContacts] = useState<ChatContact[]>([]);
   const [contactsLoading, setContactsLoading] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
+  const [contactPickerMode, setContactPickerMode] = useState<"direct" | "group">("direct");
   const profileLoaded = useRef(false);
 
   useEffect(() => {
@@ -131,60 +133,74 @@ export default function ChatWidget() {
     }
   }, []);
 
-  // Load profile once on first open
+  // Load profile + resolve effective property_id on first open
   useEffect(() => {
     if (!isOpen || profileLoaded.current) return;
     profileLoaded.current = true;
     usersAPI.me()
-      .then(res => setMyProfile({ id: res.data.id, property_id: res.data.property_id ?? null }))
+      .then(async res => {
+        const profile = { id: res.data.id, property_id: res.data.property_id ?? null };
+        setMyProfile(profile);
+        if (profile.property_id) {
+          setEffectivePropertyId(profile.property_id);
+        } else {
+          // Tenant Admin with no property assigned — pick first available property
+          try {
+            const propsRes = await propertiesAPI.list();
+            if (propsRes.data.length > 0) {
+              setEffectivePropertyId(propsRes.data[0].id);
+            }
+          } catch { /* no-op */ }
+        }
+      })
       .catch(() => { profileLoaded.current = false; });
   }, [isOpen]);
 
-  // Load conversations whenever profile is ready
+  // Load conversations whenever effective property is ready
   useEffect(() => {
-    if (!myProfile || !user?.tenant_id || !myProfile.property_id) return;
+    if (!myProfile || !user?.tenant_id || !effectivePropertyId) return;
     setIsLoading(true);
-    chatAPI.listConversations(user.tenant_id, myProfile.property_id)
+    chatAPI.listConversations(user.tenant_id, effectivePropertyId)
       .then(res => setChats(res.data.items.map(c => mapConv(c, myProfile.id))))
       .catch(() => {})
       .finally(() => setIsLoading(false));
-  }, [myProfile, user?.tenant_id]);
+  }, [myProfile, user?.tenant_id, effectivePropertyId]);
 
   // Load messages when conversation changes
   useEffect(() => {
-    if (!selectedChat || !myProfile || !user?.tenant_id || !myProfile.property_id) return;
+    if (!selectedChat || !myProfile || !user?.tenant_id || !effectivePropertyId) return;
     setMessagesLoading(true);
     setMessages([]);
-    chatAPI.getMessages(selectedChat.id, user.tenant_id, myProfile.property_id)
+    chatAPI.getMessages(selectedChat.id, user.tenant_id, effectivePropertyId)
       .then(res => setMessages(res.data.items.map(m => mapMsg(m, myProfile.id))))
       .catch(() => {})
       .finally(() => setMessagesLoading(false));
   }, [selectedChat?.id]);
 
   const reloadConversations = useCallback(() => {
-    if (!myProfile || !user?.tenant_id || !myProfile.property_id) return;
-    chatAPI.listConversations(user.tenant_id, myProfile.property_id)
+    if (!myProfile || !user?.tenant_id || !effectivePropertyId) return;
+    chatAPI.listConversations(user.tenant_id, effectivePropertyId)
       .then(res => setChats(res.data.items.map(c => mapConv(c, myProfile.id))))
       .catch(() => {});
-  }, [myProfile, user?.tenant_id]);
+  }, [myProfile, user?.tenant_id, effectivePropertyId]);
 
-  const handleOpenNewChat = useCallback(() => {
+  const handleOpenNewChat = useCallback((mode: "direct" | "group" = "direct") => {
+    setContactPickerMode(mode);
     setShowNewChat(true);
-    if (!myProfile?.property_id || !user?.tenant_id || contacts.length > 0) return;
+    if (!effectivePropertyId || !user?.tenant_id || contacts.length > 0) return;
     setContactsLoading(true);
-    chatAPI.contacts(user.tenant_id, myProfile.property_id)
+    chatAPI.contacts(user.tenant_id, effectivePropertyId)
       .then(res => setContacts(res.data))
       .catch(() => {})
       .finally(() => setContactsLoading(false));
-  }, [myProfile, user?.tenant_id, contacts.length]);
+  }, [effectivePropertyId, user?.tenant_id, contacts.length]);
 
-  const handleStartChat = useCallback(async (contact: ChatContact) => {
-    if (!myProfile?.property_id || !user?.tenant_id) return;
+  const handleStartDirect = useCallback(async (contact: ChatContact) => {
+    if (!effectivePropertyId || !user?.tenant_id) return;
     setShowNewChat(false);
     try {
-      const res = await chatAPI.createDirect(user.tenant_id, myProfile.property_id, contact.id);
+      const res = await chatAPI.createDirect(user.tenant_id, effectivePropertyId, contact.id);
       reloadConversations();
-      // Build a temporary chat object to select immediately
       const name = `${contact.first_name} ${contact.last_name}`.trim() || contact.email;
       const newChat: Chat = {
         id: res.data.id,
@@ -201,10 +217,36 @@ export default function ChatWidget() {
       setChats(prev => prev.some(c => c.id === newChat.id) ? prev : [newChat, ...prev]);
       setSelectedChat(newChat);
     } catch { /* silently ignore */ }
-  }, [myProfile, user?.tenant_id, reloadConversations]);
+  }, [effectivePropertyId, user?.tenant_id, reloadConversations]);
+
+  const handleCreateGroup = useCallback(async (name: string, participants: ChatContact[]) => {
+    if (!effectivePropertyId || !user?.tenant_id || !myProfile) return;
+    setShowNewChat(false);
+    try {
+      const res = await chatAPI.createGroup(
+        user.tenant_id,
+        effectivePropertyId,
+        name,
+        participants.map(p => p.id)
+      );
+      reloadConversations();
+      const newChat: Chat = {
+        id: res.data.id,
+        name: res.data.name ?? name,
+        initials: getInitials(name),
+        lastMessage: "Group created",
+        timestamp: formatTs(res.data.updated_at),
+        unread: 0,
+        isOnline: false,
+        type: "group",
+        messages: [],
+      };
+      setChats(prev => prev.some(c => c.id === newChat.id) ? prev : [newChat, ...prev]);
+      setSelectedChat(newChat);
+    } catch { /* silently ignore */ }
+  }, [effectivePropertyId, user?.tenant_id, myProfile, reloadConversations]);
 
   const handleSendMessage = useCallback(async (chatId: string, message: Message) => {
-    // Optimistic add
     setMessages(prev => [...prev, message]);
     setChats(prev => prev.map(c =>
       c.id === chatId
@@ -212,23 +254,22 @@ export default function ChatWidget() {
         : c
     ));
 
-    if (message.type === "text" && message.text && myProfile?.property_id && user?.tenant_id) {
-      chatAPI.sendMessage(chatId, user.tenant_id, myProfile.property_id, message.text)
+    if (message.type === "text" && message.text && effectivePropertyId && user?.tenant_id && myProfile) {
+      chatAPI.sendMessage(chatId, user.tenant_id, effectivePropertyId, message.text)
         .then(res => {
           const real = mapMsg(res.data, myProfile.id);
           setMessages(prev => prev.map(m => m.id === message.id ? real : m));
         })
         .catch(() => { /* keep optimistic */ });
     }
-  }, [myProfile, user?.tenant_id]);
+  }, [effectivePropertyId, user?.tenant_id, myProfile]);
 
   const handleSendFile = useCallback(async (chatId: string, file: File, type: "image" | "file", localUrl: string) => {
-    if (!myProfile?.property_id || !user?.tenant_id) return;
+    if (!effectivePropertyId || !user?.tenant_id || !myProfile) return;
     const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const tempId = `temp-${Date.now()}`;
     const localMsg: Message = {
-      id: tempId,
-      type,
+      id: tempId, type,
       text: file.name,
       imageUrl: type === "image" ? localUrl : undefined,
       fileName: file.name,
@@ -240,15 +281,14 @@ export default function ChatWidget() {
     setMessages(prev => [...prev, localMsg]);
     setChats(prev => prev.map(c => c.id === chatId ? { ...c, lastMessage: `[${type}]`, timestamp: ts } : c));
 
-    // Upload: send message then attach file
-    chatAPI.sendMessage(chatId, user.tenant_id, myProfile.property_id, file.name)
+    chatAPI.sendMessage(chatId, user.tenant_id, effectivePropertyId, file.name)
       .then(msgRes => {
         const msgId = msgRes.data.id;
         setMessages(prev => prev.map(m => m.id === tempId ? { ...localMsg, id: msgId } : m));
-        return chatAPI.uploadMedia(chatId, user.tenant_id!, myProfile.property_id!, msgId, file);
+        return chatAPI.uploadMedia(chatId, user.tenant_id!, effectivePropertyId!, msgId, file);
       })
       .catch(() => { /* keep local display */ });
-  }, [myProfile, user?.tenant_id]);
+  }, [effectivePropertyId, user?.tenant_id, myProfile]);
 
   const panelWidth = isMaximized ? (typeof window !== "undefined" ? window.innerWidth : 1200) : 360;
   const panelHeight = isMinimized ? 66 : isMaximized ? windowHeight : 600;
@@ -294,12 +334,15 @@ export default function ChatWidget() {
           >
             {isMaximized ? (
               <div style={{ display: "flex", width: "100%", height: "100%" }}>
+                {/* Left sidebar — list or contact picker */}
                 <div style={{ width: 320, flexShrink: 0, borderRight: "1.5px solid #e5e7eb", display: "flex", flexDirection: "column" }}>
                   {showNewChat ? (
                     <ContactPicker
                       contacts={contacts}
                       loading={contactsLoading}
-                      onSelect={handleStartChat}
+                      mode={contactPickerMode}
+                      onSelectDirect={handleStartDirect}
+                      onCreateGroup={handleCreateGroup}
                       onClose={() => setShowNewChat(false)}
                     />
                   ) : (
@@ -322,6 +365,7 @@ export default function ChatWidget() {
                     />
                   )}
                 </div>
+                {/* Right — active conversation */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                   {activeChat ? (
                     <ChatWindow
@@ -339,21 +383,17 @@ export default function ChatWidget() {
                       compact
                     />
                   ) : (
-                    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#fafafa", gap: 12 }}>
-                      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <MessageCircle size={28} color="#9ca3af" />
-                      </div>
-                      <p style={{ fontSize: 15, fontWeight: 600, color: "#6b7280", fontFamily: "'Merriweather', serif", margin: 0 }}>Select a conversation</p>
-                      <p style={{ fontSize: 12, color: "#9ca3af", fontFamily: "'Merriweather', serif", margin: 0 }}>Choose a chat from the list to start messaging</p>
-                    </div>
+                    <EmptyConversation />
                   )}
                 </div>
               </div>
-            ) : showNewChat && !isMaximized ? (
+            ) : showNewChat ? (
               <ContactPicker
                 contacts={contacts}
                 loading={contactsLoading}
-                onSelect={handleStartChat}
+                mode={contactPickerMode}
+                onSelectDirect={handleStartDirect}
+                onCreateGroup={handleCreateGroup}
                 onClose={() => setShowNewChat(false)}
               />
             ) : activeChat ? (
@@ -415,32 +455,108 @@ export default function ChatWidget() {
   );
 }
 
-/* ─────────── Contact Picker ─────────── */
+/* ─────────── Empty conversation placeholder ─────────── */
+function EmptyConversation() {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#fafafa", gap: 12 }}>
+      <div style={{ width: 72, height: 72, borderRadius: "50%", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <MessageCircle size={32} color="#9ca3af" />
+      </div>
+      <p style={{ fontSize: 16, fontWeight: 700, color: "#374151", fontFamily: "'Merriweather', serif", margin: 0 }}>Select a conversation</p>
+      <p style={{ fontSize: 13, color: "#9ca3af", fontFamily: "'Merriweather', serif", margin: 0 }}>Choose a chat from the list to start messaging</p>
+    </div>
+  );
+}
+
+/* ─────────── Contact Picker (Direct + Group) ─────────── */
 interface ContactPickerProps {
   contacts: ChatContact[];
   loading: boolean;
-  onSelect: (c: ChatContact) => void;
+  mode: "direct" | "group";
+  onSelectDirect: (c: ChatContact) => void;
+  onCreateGroup: (name: string, participants: ChatContact[]) => void;
   onClose: () => void;
 }
 
-function ContactPicker({ contacts, loading, onSelect, onClose }: ContactPickerProps) {
+function ContactPicker({ contacts, loading, mode: initialMode, onSelectDirect, onCreateGroup, onClose }: ContactPickerProps) {
   const [q, setQ] = useState("");
+  const [activeMode, setActiveMode] = useState<"direct" | "group">(initialMode);
+  const [selectedContacts, setSelectedContacts] = useState<ChatContact[]>([]);
+  const [groupName, setGroupName] = useState("");
+  const [creating, setCreating] = useState(false);
+
   const filtered = contacts.filter(c => {
     const name = `${c.first_name} ${c.last_name}`.toLowerCase();
     return name.includes(q.toLowerCase()) || c.email.toLowerCase().includes(q.toLowerCase());
   });
 
+  const toggleContact = (c: ChatContact) => {
+    setSelectedContacts(prev =>
+      prev.some(p => p.id === c.id) ? prev.filter(p => p.id !== c.id) : [...prev, c]
+    );
+  };
+
+  const handleCreateGroup = async () => {
+    if (!groupName.trim() || selectedContacts.length < 1) return;
+    setCreating(true);
+    try {
+      await onCreateGroup(groupName.trim(), selectedContacts);
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Header */}
       <div style={{ padding: "14px 14px 0", borderBottom: "1.5px solid #f0f0f0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
           <IconBtn onClick={onClose}><ArrowLeft size={15} /></IconBtn>
-          <span style={{ fontWeight: 700, fontSize: 15, fontFamily: "'Merriweather', serif" }}>New Chat</span>
+          <span style={{ fontWeight: 700, fontSize: 15, fontFamily: "'Merriweather', serif", flex: 1 }}>New Chat</span>
         </div>
+
+        {/* Mode tabs: Direct | Group */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
+          {(["direct", "group"] as const).map(m => (
+            <button
+              key={m}
+              onClick={() => { setActiveMode(m); setSelectedContacts([]); setQ(""); }}
+              style={{
+                flex: 1, padding: "7px 0", borderRadius: 10, border: "none", cursor: "pointer",
+                fontFamily: "'Merriweather', serif", fontSize: 12, fontWeight: 700,
+                background: activeMode === m ? "#111111" : "#f3f4f6",
+                color: activeMode === m ? "#fff" : "#555",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                transition: "all 0.15s",
+              }}
+            >
+              {m === "direct" ? <UserPlus size={13} /> : <Users size={13} />}
+              {m === "direct" ? "Direct" : "Group"}
+            </button>
+          ))}
+        </div>
+
+        {/* Group name input */}
+        {activeMode === "group" && (
+          <input
+            placeholder="Group name…"
+            value={groupName}
+            onChange={e => setGroupName(e.target.value)}
+            style={{
+              width: "100%", boxSizing: "border-box",
+              padding: "8px 12px", borderRadius: 10,
+              border: "1.5px solid #e5e7eb", background: "#f9fafb",
+              fontSize: 13, color: "#111", fontFamily: "'Merriweather', serif", outline: "none",
+              marginBottom: 10,
+            }}
+          />
+        )}
+
+        {/* Search */}
         <div style={{ position: "relative", marginBottom: 12 }}>
           <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} />
           <input
-            placeholder="Search contacts…"
+            placeholder={activeMode === "group" ? "Add people…" : "Search contacts…"}
             value={q}
             onChange={e => setQ(e.target.value)}
             autoFocus
@@ -452,7 +568,31 @@ function ContactPicker({ contacts, loading, onSelect, onClose }: ContactPickerPr
             }}
           />
         </div>
+
+        {/* Selected chips for group mode */}
+        {activeMode === "group" && selectedContacts.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+            {selectedContacts.map(c => {
+              const name = `${c.first_name} ${c.last_name}`.trim() || c.email;
+              return (
+                <span
+                  key={c.id}
+                  onClick={() => toggleContact(c)}
+                  style={{
+                    padding: "3px 10px", borderRadius: 99, background: "#111",
+                    color: "#fff", fontSize: 11, fontFamily: "'Merriweather', serif",
+                    cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+                  }}
+                >
+                  {name} <X size={10} />
+                </span>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {/* Contact list */}
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px" }}>
         {loading ? (
           <div style={{ padding: "20px 14px", textAlign: "center", color: "#9ca3af", fontSize: 13, fontFamily: "'Merriweather', serif" }}>
@@ -465,18 +605,21 @@ function ContactPicker({ contacts, loading, onSelect, onClose }: ContactPickerPr
         ) : (
           filtered.map(c => {
             const name = `${c.first_name} ${c.last_name}`.trim() || c.email;
+            const isChecked = selectedContacts.some(p => p.id === c.id);
             return (
               <button
                 key={c.id}
-                onClick={() => onSelect(c)}
+                onClick={() => activeMode === "group" ? toggleContact(c) : onSelectDirect(c)}
                 style={{
                   width: "100%", padding: "10px 14px", borderRadius: 14,
                   display: "flex", alignItems: "center", gap: 12,
-                  border: "none", cursor: "pointer", background: "transparent",
+                  border: "none", cursor: "pointer",
+                  background: isChecked ? "#f0fdf4" : "transparent",
                   textAlign: "left", fontFamily: "'Merriweather', serif",
+                  transition: "background 0.12s",
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = "#f5f5f7")}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                onMouseEnter={e => { if (!isChecked) e.currentTarget.style.background = "#f5f5f7"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = isChecked ? "#f0fdf4" : "transparent"; }}
               >
                 <div style={{
                   width: 40, height: 40, borderRadius: "50%",
@@ -488,11 +631,43 @@ function ContactPicker({ contacts, loading, onSelect, onClose }: ContactPickerPr
                   <div style={{ fontSize: 13, fontWeight: 600, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
                   <div style={{ fontSize: 11, color: "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.email}</div>
                 </div>
+                {activeMode === "group" && (
+                  <div style={{
+                    width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                    border: isChecked ? "none" : "2px solid #d1d5db",
+                    background: isChecked ? "#22c55e" : "transparent",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {isChecked && <Check size={13} color="#fff" strokeWidth={3} />}
+                  </div>
+                )}
               </button>
             );
           })
         )}
       </div>
+
+      {/* Create Group button */}
+      {activeMode === "group" && (
+        <div style={{ padding: "12px 14px", borderTop: "1.5px solid #f0f0f0" }}>
+          <button
+            onClick={handleCreateGroup}
+            disabled={!groupName.trim() || selectedContacts.length < 1 || creating}
+            style={{
+              width: "100%", padding: "11px 0", borderRadius: 12, border: "none",
+              background: groupName.trim() && selectedContacts.length > 0 ? "#111111" : "#e5e7eb",
+              color: groupName.trim() && selectedContacts.length > 0 ? "#fff" : "#9ca3af",
+              fontSize: 13, fontWeight: 700, fontFamily: "'Merriweather', serif",
+              cursor: groupName.trim() && selectedContacts.length > 0 ? "pointer" : "not-allowed",
+              transition: "all 0.15s",
+            }}
+          >
+            {creating ? "Creating…" : selectedContacts.length > 0
+              ? `Create Group (${selectedContacts.length} member${selectedContacts.length > 1 ? "s" : ""})`
+              : "Select at least 1 person"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -513,7 +688,7 @@ interface ChatListProps {
   isLoading: boolean;
   compact?: boolean;
   selectedChatId?: string;
-  onNewChat: () => void;
+  onNewChat: (mode?: "direct" | "group") => void;
 }
 
 function SkeletonChatItem() {
@@ -550,7 +725,8 @@ function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMini
               <span style={{ fontWeight: 700, fontSize: 15, color: "#111", fontFamily: "'Merriweather', serif", letterSpacing: "-0.3px" }}>SkiTech</span>
             </div>
             <div style={{ display: "flex", gap: 4 }}>
-              <IconBtn onClick={onNewChat} title="New chat"><UserPlus size={15} /></IconBtn>
+              <IconBtn onClick={() => onNewChat("group")} title="New group"><Users size={14} /></IconBtn>
+              <IconBtn onClick={() => onNewChat("direct")} title="New chat"><UserPlus size={15} /></IconBtn>
               <IconBtn onClick={onMaximize} title={isMaximized ? "Restore" : "Expand"}>
                 {isMaximized ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
               </IconBtn>
@@ -562,7 +738,10 @@ function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMini
         {compact && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <span style={{ fontWeight: 700, fontSize: 14, color: "#111", fontFamily: "'Merriweather', serif" }}>Chats</span>
-            <IconBtn onClick={onNewChat} title="New chat"><UserPlus size={14} /></IconBtn>
+            <div style={{ display: "flex", gap: 2 }}>
+              <IconBtn onClick={() => onNewChat("group")} title="New group"><Users size={13} /></IconBtn>
+              <IconBtn onClick={() => onNewChat("direct")} title="New chat"><UserPlus size={14} /></IconBtn>
+            </div>
           </div>
         )}
 
@@ -615,9 +794,23 @@ function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMini
           </>
         ) : chats.length === 0 ? (
           <div style={{ padding: "40px 14px", textAlign: "center" }}>
-            <MessageCircle size={32} color="#d1d5db" style={{ marginBottom: 12 }} />
-            <p style={{ fontSize: 13, color: "#9ca3af", fontFamily: "'Merriweather', serif", margin: "0 0 6px" }}>No conversations yet</p>
-            <p style={{ fontSize: 11, color: "#c4c4c4", fontFamily: "'Merriweather', serif", margin: 0 }}>Tap the + icon to start a new chat</p>
+            <MessageCircle size={36} color="#d1d5db" style={{ marginBottom: 12 }} />
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", fontFamily: "'Merriweather', serif", margin: "0 0 6px" }}>No conversations yet</p>
+            <p style={{ fontSize: 11, color: "#c4c4c4", fontFamily: "'Merriweather', serif", margin: "0 0 16px" }}>Start by messaging a colleague or creating a group</p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+              <button
+                onClick={() => onNewChat("direct")}
+                style={{ padding: "8px 16px", borderRadius: 10, border: "1.5px solid #e5e7eb", background: "#fff", cursor: "pointer", fontSize: 12, fontFamily: "'Merriweather', serif", fontWeight: 600, color: "#374151", display: "flex", alignItems: "center", gap: 6 }}
+              >
+                <UserPlus size={13} /> Direct
+              </button>
+              <button
+                onClick={() => onNewChat("group")}
+                style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "#111", cursor: "pointer", fontSize: 12, fontFamily: "'Merriweather', serif", fontWeight: 600, color: "#fff", display: "flex", alignItems: "center", gap: 6 }}
+              >
+                <Users size={13} /> Group
+              </button>
+            </div>
           </div>
         ) : (
           chats.map(chat => <ChatItem key={chat.id} chat={chat} onClick={() => onSelectChat(chat)} isSelected={chat.id === selectedChatId} />)
@@ -644,17 +837,18 @@ function ChatItem({ chat, onClick, isSelected }: { chat: Chat; onClick: () => vo
     >
       <div style={{ position: "relative", flexShrink: 0 }}>
         <div style={{ width: 46, height: 46, borderRadius: "50%", background: gradient, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "'Merriweather', serif", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
-          {chat.initials}
+          {chat.type === "group" ? <Users size={18} color="#fff" /> : chat.initials}
         </div>
-        <span style={{ position: "absolute", bottom: 2, right: 2, width: 12, height: 12, borderRadius: "50%", background: chat.isOnline ? "#22c55e" : "#9ca3af", border: "2.5px solid #fff" }} />
+        {chat.type === "direct" && (
+          <span style={{ position: "absolute", bottom: 2, right: 2, width: 12, height: 12, borderRadius: "50%", background: chat.isOnline ? "#22c55e" : "#9ca3af", border: "2.5px solid #fff" }} />
+        )}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3, gap: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: chat.unread > 0 ? 700 : 500, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{chat.name}</span>
+          <span style={{ fontSize: 13, fontWeight: chat.unread > 0 ? 700 : 600, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{chat.name}</span>
           <span style={{ fontSize: 10, color: "#9ca3af", flexShrink: 0, whiteSpace: "nowrap" }}>{chat.timestamp}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {chat.unread === 0 && <span style={{ fontSize: 11, color: "#9ca3af", flexShrink: 0 }}>✓✓</span>}
           <p style={{ fontSize: 12, color: chat.unread > 0 ? "#111" : "#6b7280", fontWeight: chat.unread > 0 ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, flex: 1 }}>
             {chat.lastMessage}
           </p>
@@ -758,56 +952,82 @@ function ChatWindow({ chat, messages, messagesLoading, onBack, onSendMessage, on
 
   const fmtRec = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
+  const gradient = chat.type === "group"
+    ? "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)"
+    : "linear-gradient(135deg, #10b981 0%, #34d399 100%)";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#fff", position: "relative" }}>
       <input ref={imageRef} type="file" accept="image/*" style={{ display: "none" }} onChange={onImageChange} />
       <input ref={fileRef} type="file" style={{ display: "none" }} onChange={onFileChange} />
 
-      {/* Header */}
-      <div style={{ padding: "16px 16px 12px", borderBottom: "1.5px solid #f0f0f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <IconBtn onClick={onBack}><ChevronLeft size={16} /></IconBtn>
-          <div style={{ width: 34, height: 34, borderRadius: 10, background: "#111111", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: "'Merriweather', serif" }}>S</span>
+      {/* Header — shows contact/group name, back button, and controls */}
+      <div style={{ padding: "12px 14px", borderBottom: "1.5px solid #f0f0f0", display: "flex", alignItems: "center", gap: 10, background: "#fff" }}>
+        {/* Back button — always visible for clear navigation */}
+        <button
+          onClick={onBack}
+          title="Back to conversations"
+          style={{
+            width: 34, height: 34, borderRadius: 10, border: "none", cursor: "pointer",
+            background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#374151", flexShrink: 0, transition: "background 0.15s",
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = "#e5e7eb")}
+          onMouseLeave={e => (e.currentTarget.style.background = "#f3f4f6")}
+        >
+          <ChevronLeft size={18} />
+        </button>
+
+        {/* Avatar */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <div style={{ width: 38, height: 38, borderRadius: "50%", background: gradient, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>
+            {chat.type === "group" ? <Users size={16} color="#fff" /> : chat.initials}
           </div>
-          <span style={{ fontWeight: 700, fontSize: 15, color: "#111", fontFamily: "'Merriweather', serif", letterSpacing: "-0.3px" }}>SkiTech</span>
+          {chat.type === "direct" && (
+            <span style={{ position: "absolute", bottom: 1, right: 1, width: 10, height: 10, borderRadius: "50%", background: chat.isOnline ? "#22c55e" : "#9ca3af", border: "2px solid #fff" }} />
+          )}
         </div>
+
+        {/* Name + status */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "#111", fontFamily: "'Merriweather', serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{chat.name}</div>
+          <div style={{ fontSize: 11, color: chat.type === "group" ? "#6b7280" : chat.isOnline ? "#22c55e" : "#9ca3af", fontFamily: "'Merriweather', serif" }}>
+            {chat.type === "group" ? "Group chat" : chat.isOnline ? "Online" : "Offline"}
+          </div>
+        </div>
+
+        {/* Controls */}
         <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
-          <IconBtn onClick={onMaximize} title={isMaximized ? "Restore" : "Expand"}>
-            {isMaximized ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-          </IconBtn>
+          {!compact && (
+            <IconBtn onClick={onMaximize} title={isMaximized ? "Restore" : "Expand"}>
+              {isMaximized ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+            </IconBtn>
+          )}
           <IconBtn onClick={onClose} title="Close"><X size={15} /></IconBtn>
         </div>
       </div>
 
-      {/* Chat info bar */}
-      <div style={{ padding: "10px 16px", borderBottom: "1.5px solid #f0f0f0", display: "flex", alignItems: "center", gap: 10, background: "#fff" }}>
-        <div style={{ position: "relative" }}>
-          <div style={{ width: 38, height: 38, borderRadius: "50%", background: chat.type === "group" ? "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)" : "linear-gradient(135deg, #10b981 0%, #34d399 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff", fontFamily: "'Merriweather', serif" }}>
-            {chat.initials}
-          </div>
-          <span style={{ position: "absolute", bottom: 1, right: 1, width: 10, height: 10, borderRadius: "50%", background: chat.isOnline ? "#22c55e" : "#9ca3af", border: "2px solid #fff" }} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: 14, color: "#111", fontFamily: "'Merriweather', serif" }}>{chat.name}</div>
-          <div style={{ fontSize: 11, color: chat.isOnline ? "#22c55e" : "#9ca3af", fontFamily: "'Merriweather', serif" }}>
-            {chat.isOnline ? "Online" : "Offline"}
-          </div>
-        </div>
-        <IconBtn onClick={() => {}}><MoreVertical size={15} /></IconBtn>
-      </div>
-
-      <div style={{ background: "#f9fafb", padding: "6px 0", textAlign: "center", fontSize: 11, color: "#9ca3af", fontFamily: "'Merriweather', serif", borderBottom: "1px solid #f0f0f0" }}>Today</div>
+      {/* Date divider */}
+      <div style={{ background: "#f9fafb", padding: "5px 0", textAlign: "center", fontSize: 11, color: "#9ca3af", fontFamily: "'Merriweather', serif", borderBottom: "1px solid #f0f0f0" }}>Today</div>
 
       {/* Messages */}
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
         {messagesLoading ? (
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2 }} style={{ width: 8, height: 8, borderRadius: "50%", background: "#d1d5db" }} />
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            {[0, 1, 2].map(i => (
+              <motion.div key={i} animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.2 }}
+                style={{ width: 8, height: 8, borderRadius: "50%", background: "#d1d5db" }} />
+            ))}
           </div>
         ) : messages.length === 0 ? (
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <p style={{ fontSize: 12, color: "#9ca3af", fontFamily: "'Merriweather', serif" }}>No messages yet. Say hello!</p>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: gradient, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {chat.type === "group" ? <Users size={22} color="#fff" /> : <span style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{chat.initials}</span>}
+            </div>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#374151", fontFamily: "'Merriweather', serif", margin: 0 }}>{chat.name}</p>
+            <p style={{ fontSize: 12, color: "#9ca3af", fontFamily: "'Merriweather', serif", margin: 0 }}>
+              {chat.type === "group" ? "Group conversation started. Say hello!" : "No messages yet. Start the conversation!"}
+            </p>
           </div>
         ) : (
           messages.map(msg => <MessageBubble key={msg.id} message={msg} />)
@@ -848,7 +1068,7 @@ function ChatWindow({ chat, messages, messagesLoading, onBack, onSendMessage, on
         />
         <button
           onClick={input.trim() ? sendText : isRecording ? stopRec : startRec}
-          style={{ width: 36, height: 36, borderRadius: "50%", background: isRecording ? "#ef4444" : "#111111", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.2s" }}
+          style={{ width: 36, height: 36, borderRadius: "50%", background: isRecording ? "#ef4444" : input.trim() ? "#111111" : "#374151", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.2s" }}
         >
           {input.trim() ? <Send size={15} color="#fff" /> : <Mic size={15} color="#fff" />}
         </button>
