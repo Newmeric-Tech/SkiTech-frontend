@@ -5,6 +5,7 @@ export interface ChatContact {
   first_name: string;
   last_name: string;
   email: string;
+  property_id?: string | null;
 }
 
 export interface LastMessage {
@@ -60,9 +61,12 @@ export interface MessageItem {
 }
 
 export const chatAPI = {
-  contacts: (tenantId: string, propertyId: string) =>
+  contacts: (tenantId: string, propertyId?: string | null) =>
     api.get<ChatContact[]>("/v1/chat/contacts", {
-      params: { tenant_id: tenantId, property_id: propertyId },
+      params: {
+        tenant_id: tenantId,
+        ...(propertyId ? { property_id: propertyId } : {}),
+      },
     }),
 
   listConversations: (tenantId: string, propertyId: string, skip = 0, limit = 50) =>

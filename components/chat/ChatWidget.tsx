@@ -9,7 +9,6 @@ import {
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { usersAPI } from "@/lib/api/users";
-import { propertiesAPI } from "@/lib/api/properties";
 import { chatAPI, ChatContact, ConversationListItem as APIConversation, MessageItem } from "@/lib/api/chat";
 
 /* ─────────── Local types ─────────── */
@@ -144,13 +143,13 @@ export default function ChatWidget() {
         if (profile.property_id) {
           setEffectivePropertyId(profile.property_id);
         } else {
-          // Tenant Admin with no property assigned — pick first available property
+          // Tenant Admin with no assigned property — find any user in the tenant with a property_id.
+          // usersAPI.list() uses role-based auth (always works for Tenant Admin).
           try {
-            const propsRes = await propertiesAPI.list();
-            if (propsRes.data.length > 0) {
-              setEffectivePropertyId(propsRes.data[0].id);
-            }
-          } catch { /* no-op */ }
+            const usersRes = await usersAPI.list();
+            const found = usersRes.data.find(u => u.property_id && u.id !== profile.id);
+            if (found?.property_id) setEffectivePropertyId(found.property_id);
+          } catch { /* no-op — effectivePropertyId stays null; contacts will still load */ }
         }
       })
       .catch(() => { profileLoaded.current = false; });
@@ -184,16 +183,23 @@ export default function ChatWidget() {
       .catch(() => {});
   }, [myProfile, user?.tenant_id, effectivePropertyId]);
 
-  // Load contacts reactively — fires whenever showNewChat opens AND effectivePropertyId is ready,
-  // regardless of which one arrived first.
+  // Load contacts whenever the picker opens. property_id is optional on the backend —
+  // Tenant Admins with null property_id will see contacts across all properties.
   useEffect(() => {
-    if (!showNewChat || !effectivePropertyId || !user?.tenant_id || contacts.length > 0) return;
+    if (!showNewChat || !myProfile || !user?.tenant_id || contacts.length > 0) return;
     setContactsLoading(true);
     chatAPI.contacts(user.tenant_id, effectivePropertyId)
-      .then(res => setContacts(res.data))
+      .then(res => {
+        setContacts(res.data);
+        // Auto-discover property from contacts if still unknown
+        if (!effectivePropertyId) {
+          const propId = res.data.find(c => c.property_id)?.property_id;
+          if (propId) setEffectivePropertyId(propId);
+        }
+      })
       .catch(() => {})
       .finally(() => setContactsLoading(false));
-  }, [showNewChat, effectivePropertyId, user?.tenant_id]);
+  }, [showNewChat, myProfile, user?.tenant_id]);
 
   const handleOpenNewChat = useCallback((mode: "direct" | "group" = "direct") => {
     setContactPickerMode(mode);
@@ -201,10 +207,13 @@ export default function ChatWidget() {
   }, []);
 
   const handleStartDirect = useCallback(async (contact: ChatContact) => {
-    if (!effectivePropertyId || !user?.tenant_id) return;
+    // Use our property, or fall back to the contact's property (for Tenant Admin with null property)
+    const propId = effectivePropertyId || contact.property_id || null;
+    if (!propId || !user?.tenant_id) return;
+    if (!effectivePropertyId && propId) setEffectivePropertyId(propId);
     setShowNewChat(false);
     try {
-      const res = await chatAPI.createDirect(user.tenant_id, effectivePropertyId, contact.id);
+      const res = await chatAPI.createDirect(user.tenant_id, propId, contact.id);
       reloadConversations();
       const name = `${contact.first_name} ${contact.last_name}`.trim() || contact.email;
       const newChat: Chat = {
@@ -225,12 +234,14 @@ export default function ChatWidget() {
   }, [effectivePropertyId, user?.tenant_id, reloadConversations]);
 
   const handleCreateGroup = useCallback(async (name: string, participants: ChatContact[]) => {
-    if (!effectivePropertyId || !user?.tenant_id || !myProfile) return;
+    const propId = effectivePropertyId || participants.find(p => p.property_id)?.property_id || null;
+    if (!propId || !user?.tenant_id || !myProfile) return;
+    if (!effectivePropertyId && propId) setEffectivePropertyId(propId);
     setShowNewChat(false);
     try {
       const res = await chatAPI.createGroup(
         user.tenant_id,
-        effectivePropertyId,
+        propId,
         name,
         participants.map(p => p.id)
       );
