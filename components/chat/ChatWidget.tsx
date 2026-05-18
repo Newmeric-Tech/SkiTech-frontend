@@ -34,6 +34,7 @@ interface Chat {
   unread: number;
   isOnline: boolean;
   type: "direct" | "group";
+  property_id: string | null;
   otherParticipantId?: string;
   messages: Message[];
 }
@@ -79,7 +80,8 @@ function mapConv(conv: APIConversation, myId: string): Chat {
     lastMessage: conv.last_message?.content ?? "Tap to start chatting",
     timestamp: formatTs(conv.updated_at),
     unread: conv.unread_count, isOnline: false,
-    type: conv.type, otherParticipantId, messages: [],
+    type: conv.type, property_id: conv.property_id ?? null,
+    otherParticipantId, messages: [],
   };
 }
 
@@ -177,33 +179,38 @@ export default function ChatWidget() {
     fetchContacts(user.tenant_id, effectivePropertyId);
   }, [myProfile, user?.tenant_id]);
 
-  // ── Step 3: Load conversations once property is known ──
+  // ── Step 3: Load conversations once profile is known ──
+  // Tenant Admin (null property_id): backend returns all tenant conversations.
+  // Manager/Staff: backend filters to their property.
   useEffect(() => {
-    if (!myProfile || !user?.tenant_id || !effectivePropertyId) return;
+    if (!myProfile || !user?.tenant_id) return;
     setIsLoading(true);
-    chatAPI.listConversations(user.tenant_id, effectivePropertyId)
+    chatAPI.listConversations(user.tenant_id, myProfile.property_id)
       .then(res => setChats(res.data.items.map(c => mapConv(c, myProfile.id))))
       .catch(() => {})
       .finally(() => setIsLoading(false));
-  }, [myProfile, user?.tenant_id, effectivePropertyId]);
+  }, [myProfile, user?.tenant_id]);
 
   // ── Load messages when conversation changes ──
+  // Use the conversation's own property_id so cross-property DMs work for Tenant Admin.
   useEffect(() => {
-    if (!selectedChat || !myProfile || !user?.tenant_id || !effectivePropertyId) return;
+    if (!selectedChat || !myProfile || !user?.tenant_id) return;
+    const propId = selectedChat.property_id || effectivePropertyId;
+    if (!propId) return;
     setMessagesLoading(true);
     setMessages([]);
-    chatAPI.getMessages(selectedChat.id, user.tenant_id, effectivePropertyId)
+    chatAPI.getMessages(selectedChat.id, user.tenant_id, propId)
       .then(res => setMessages(res.data.items.map(m => mapMsg(m, myProfile.id))))
       .catch(() => {})
       .finally(() => setMessagesLoading(false));
   }, [selectedChat?.id]);
 
   const reloadConversations = useCallback(() => {
-    if (!myProfile || !user?.tenant_id || !effectivePropertyId) return;
-    chatAPI.listConversations(user.tenant_id, effectivePropertyId)
+    if (!myProfile || !user?.tenant_id) return;
+    chatAPI.listConversations(user.tenant_id, myProfile.property_id)
       .then(res => setChats(res.data.items.map(c => mapConv(c, myProfile.id))))
       .catch(() => {});
-  }, [myProfile, user?.tenant_id, effectivePropertyId]);
+  }, [myProfile, user?.tenant_id]);
 
   const handleOpenNewChat = useCallback((mode: "direct" | "group" = "direct") => {
     setContactPickerMode(mode);
@@ -227,6 +234,7 @@ export default function ChatWidget() {
         lastMessage: "Tap to start chatting",
         timestamp: formatTs(res.data.updated_at),
         unread: 0, isOnline: false, type: "direct",
+        property_id: propId,
         otherParticipantId: contact.id, messages: [],
       };
       setChats(prev => prev.some(c => c.id === newChat.id) ? prev : [newChat, ...prev]);
@@ -249,7 +257,7 @@ export default function ChatWidget() {
       const newChat: Chat = {
         id: res.data.id, name: res.data.name ?? name, initials: getInitials(name),
         lastMessage: "Group created", timestamp: formatTs(res.data.updated_at),
-        unread: 0, isOnline: false, type: "group", messages: [],
+        unread: 0, isOnline: false, type: "group", property_id: propId, messages: [],
       };
       setChats(prev => prev.some(c => c.id === newChat.id) ? prev : [newChat, ...prev]);
       setShowNewChat(false);
@@ -267,18 +275,29 @@ export default function ChatWidget() {
         ? { ...c, lastMessage: message.type === "text" ? (message.text ?? "") : `[${message.type}]`, timestamp: message.timestamp }
         : c
     ));
-    if (message.type === "text" && message.text && effectivePropertyId && user?.tenant_id && myProfile) {
-      chatAPI.sendMessage(chatId, user.tenant_id, effectivePropertyId, message.text)
-        .then(res => {
-          const real = mapMsg(res.data, myProfile.id);
-          setMessages(prev => prev.map(m => m.id === message.id ? real : m));
-        })
-        .catch(() => {});
+    if (message.type === "text" && message.text && user?.tenant_id && myProfile) {
+      // Use conversation's own property_id (critical for Tenant Admin cross-property DMs)
+      setChats(currentChats => {
+        const chat = currentChats.find(c => c.id === chatId);
+        const propId = chat?.property_id || effectivePropertyId;
+        if (propId) {
+          chatAPI.sendMessage(chatId, user.tenant_id!, propId, message.text!)
+            .then(res => {
+              const real = mapMsg(res.data, myProfile.id);
+              setMessages(prev => prev.map(m => m.id === message.id ? real : m));
+            })
+            .catch(() => {});
+        }
+        return currentChats;
+      });
     }
   }, [effectivePropertyId, user?.tenant_id, myProfile]);
 
   const handleSendFile = useCallback(async (chatId: string, file: File, type: "image" | "file", localUrl: string) => {
-    if (!effectivePropertyId || !user?.tenant_id || !myProfile) return;
+    if (!user?.tenant_id || !myProfile) return;
+    const chat = chats.find(c => c.id === chatId);
+    const propId = chat?.property_id || effectivePropertyId;
+    if (!propId) return;
     const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const tempId = `temp-${Date.now()}`;
     const localMsg: Message = {
@@ -290,14 +309,14 @@ export default function ChatWidget() {
     };
     setMessages(prev => [...prev, localMsg]);
     setChats(prev => prev.map(c => c.id === chatId ? { ...c, lastMessage: `[${type}]`, timestamp: ts } : c));
-    chatAPI.sendMessage(chatId, user.tenant_id, effectivePropertyId, file.name)
+    chatAPI.sendMessage(chatId, user.tenant_id, propId, file.name)
       .then(msgRes => {
         const msgId = msgRes.data.id;
         setMessages(prev => prev.map(m => m.id === tempId ? { ...localMsg, id: msgId } : m));
-        return chatAPI.uploadMedia(chatId, user.tenant_id!, effectivePropertyId!, msgId, file);
+        return chatAPI.uploadMedia(chatId, user.tenant_id!, propId, msgId, file);
       })
       .catch(() => {});
-  }, [effectivePropertyId, user?.tenant_id, myProfile]);
+  }, [chats, effectivePropertyId, user?.tenant_id, myProfile]);
 
   const panelWidth = isMaximized ? (typeof window !== "undefined" ? window.innerWidth : 1200) : 360;
   const panelHeight = isMinimized ? 66 : isMaximized ? windowHeight : 600;

@@ -27,6 +27,7 @@ export interface ConversationListItem {
   is_archived: boolean;
   is_muted: boolean;
   updated_at: string;
+  property_id: string | null;
 }
 
 export interface ConversationDetail {
@@ -69,10 +70,10 @@ export const chatAPI = {
       },
     }),
 
-  listConversations: (tenantId: string, propertyId: string, skip = 0, limit = 50) =>
+  listConversations: (tenantId: string, propertyId: string | null | undefined, skip = 0, limit = 50) =>
     api.get<{ total: number; skip: number; limit: number; items: ConversationListItem[] }>(
       "/v1/chat/conversations",
-      { params: { tenant_id: tenantId, property_id: propertyId, skip, limit } }
+      { params: { tenant_id: tenantId, ...(propertyId ? { property_id: propertyId } : {}), skip, limit } }
     ),
 
   createDirect: (tenantId: string, propertyId: string, otherUserId: string) =>
