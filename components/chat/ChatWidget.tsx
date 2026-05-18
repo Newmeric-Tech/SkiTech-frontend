@@ -115,6 +115,7 @@ export default function ChatWidget() {
   const [contacts, setContacts] = useState<ChatContact[]>([]);
   const [contactsLoading, setContactsLoading] = useState(false);
   const [contactsError, setContactsError] = useState(false);
+  const [creatingFor, setCreatingFor] = useState<string | null>(null); // contact id being created
   const [showNewChat, setShowNewChat] = useState(false);
   const [contactPickerMode, setContactPickerMode] = useState<"direct" | "group">("direct");
   const profileLoaded = useRef(false);
@@ -215,12 +216,11 @@ export default function ChatWidget() {
 
   const handleStartDirect = useCallback(async (contact: ChatContact) => {
     const propId = effectivePropertyId || contact.property_id || null;
-    if (!propId || !user?.tenant_id) return;
+    if (!propId || !user?.tenant_id || creatingFor) return;
     if (!effectivePropertyId && propId) setEffectivePropertyId(propId);
-    setShowNewChat(false);
+    setCreatingFor(contact.id);
     try {
       const res = await chatAPI.createDirect(user.tenant_id, propId, contact.id);
-      reloadConversations();
       const name = `${contact.first_name} ${contact.last_name}`.trim() || contact.email;
       const newChat: Chat = {
         id: res.data.id, name, initials: getInitials(name),
@@ -230,26 +230,34 @@ export default function ChatWidget() {
         otherParticipantId: contact.id, messages: [],
       };
       setChats(prev => prev.some(c => c.id === newChat.id) ? prev : [newChat, ...prev]);
+      setShowNewChat(false);
       setSelectedChat(newChat);
-    } catch { /* silently ignore */ }
-  }, [effectivePropertyId, user?.tenant_id, reloadConversations]);
+      reloadConversations();
+    } catch {
+      alert("Could not start conversation. Please try again.");
+    } finally {
+      setCreatingFor(null);
+    }
+  }, [effectivePropertyId, user?.tenant_id, reloadConversations, creatingFor]);
 
   const handleCreateGroup = useCallback(async (name: string, participants: ChatContact[]) => {
     const propId = effectivePropertyId || participants.find(p => p.property_id)?.property_id || null;
     if (!propId || !user?.tenant_id || !myProfile) return;
     if (!effectivePropertyId && propId) setEffectivePropertyId(propId);
-    setShowNewChat(false);
     try {
       const res = await chatAPI.createGroup(user.tenant_id, propId, name, participants.map(p => p.id));
-      reloadConversations();
       const newChat: Chat = {
         id: res.data.id, name: res.data.name ?? name, initials: getInitials(name),
         lastMessage: "Group created", timestamp: formatTs(res.data.updated_at),
         unread: 0, isOnline: false, type: "group", messages: [],
       };
       setChats(prev => prev.some(c => c.id === newChat.id) ? prev : [newChat, ...prev]);
+      setShowNewChat(false);
       setSelectedChat(newChat);
-    } catch { /* silently ignore */ }
+      reloadConversations();
+    } catch {
+      alert("Could not create group. Please try again.");
+    }
   }, [effectivePropertyId, user?.tenant_id, myProfile, reloadConversations]);
 
   const handleSendMessage = useCallback(async (chatId: string, message: Message) => {
@@ -322,6 +330,16 @@ export default function ChatWidget() {
     onNewChat: handleOpenNewChat,
   };
 
+  const contactPickerProps = {
+    contacts, loading: contactsLoading, error: contactsError,
+    mode: contactPickerMode,
+    creatingFor,
+    onSelectDirect: handleStartDirect,
+    onCreateGroup: handleCreateGroup,
+    onClose: () => setShowNewChat(false),
+    onRetry: () => user?.tenant_id && fetchContacts(user.tenant_id, effectivePropertyId),
+  };
+
   return (
     <div style={{
       position: "fixed", zIndex: 50,
@@ -351,16 +369,7 @@ export default function ChatWidget() {
                 {/* Left sidebar */}
                 <div style={{ width: 320, flexShrink: 0, borderRight: "1.5px solid #e5e7eb", display: "flex", flexDirection: "column" }}>
                   {showNewChat ? (
-                    <ContactPicker
-                      contacts={contacts}
-                      loading={contactsLoading}
-                      error={contactsError}
-                      mode={contactPickerMode}
-                      onSelectDirect={handleStartDirect}
-                      onCreateGroup={handleCreateGroup}
-                      onClose={() => setShowNewChat(false)}
-                      onRetry={() => user?.tenant_id && fetchContacts(user.tenant_id, effectivePropertyId)}
-                    />
+                    <ContactPicker {...contactPickerProps} />
                   ) : (
                     <ChatList {...sharedListProps} compact selectedChatId={selectedChat?.id} />
                   )}
@@ -383,13 +392,7 @@ export default function ChatWidget() {
               </div>
             ) : showNewChat ? (
               /* ── Small widget: contact picker ── */
-              <ContactPicker
-                contacts={contacts} loading={contactsLoading} error={contactsError}
-                mode={contactPickerMode}
-                onSelectDirect={handleStartDirect} onCreateGroup={handleCreateGroup}
-                onClose={() => setShowNewChat(false)}
-                onRetry={() => user?.tenant_id && fetchContacts(user.tenant_id, effectivePropertyId)}
-              />
+              <ContactPicker {...contactPickerProps} />
             ) : activeChat ? (
               /* ── Small widget: active chat ── */
               <ChatWindow
@@ -451,13 +454,14 @@ interface ContactPickerProps {
   loading: boolean;
   error: boolean;
   mode: "direct" | "group";
+  creatingFor: string | null;
   onSelectDirect: (c: ChatContact) => void;
   onCreateGroup: (name: string, participants: ChatContact[]) => void;
   onClose: () => void;
   onRetry: () => void;
 }
 
-function ContactPicker({ contacts, loading, error, mode: initialMode, onSelectDirect, onCreateGroup, onClose, onRetry }: ContactPickerProps) {
+function ContactPicker({ contacts, loading, error, mode: initialMode, creatingFor, onSelectDirect, onCreateGroup, onClose, onRetry }: ContactPickerProps) {
   const [q, setQ] = useState("");
   const [activeMode, setActiveMode] = useState<"direct" | "group">(initialMode);
   const [selectedContacts, setSelectedContacts] = useState<ChatContact[]>([]);
@@ -589,31 +593,52 @@ function ContactPicker({ contacts, loading, error, mode: initialMode, onSelectDi
           filtered.map(c => {
             const name = `${c.first_name} ${c.last_name}`.trim() || c.email;
             const isChecked = selectedContacts.some(p => p.id === c.id);
+            const isCreating = creatingFor === c.id;
+            const avatarColors = [
+              "linear-gradient(135deg,#6366f1 0%,#818cf8 100%)",
+              "linear-gradient(135deg,#10b981 0%,#34d399 100%)",
+              "linear-gradient(135deg,#f59e0b 0%,#fbbf24 100%)",
+              "linear-gradient(135deg,#ef4444 0%,#f87171 100%)",
+              "linear-gradient(135deg,#3b82f6 0%,#60a5fa 100%)",
+              "linear-gradient(135deg,#8b5cf6 0%,#a78bfa 100%)",
+            ];
+            const avatarGrad = avatarColors[(name.charCodeAt(0) || 0) % avatarColors.length];
             return (
               <button
                 key={c.id}
-                onClick={() => activeMode === "group" ? toggleContact(c) : onSelectDirect(c)}
+                onClick={() => !creatingFor && (activeMode === "group" ? toggleContact(c) : onSelectDirect(c))}
+                disabled={!!creatingFor}
                 style={{
                   width: "100%", padding: "10px 14px", borderRadius: 14,
                   display: "flex", alignItems: "center", gap: 12,
-                  border: "none", cursor: "pointer",
-                  background: isChecked ? "#f0fdf4" : "transparent",
+                  border: "none", cursor: creatingFor ? "wait" : "pointer",
+                  background: isCreating ? "#f0f4ff" : isChecked ? "#f0fdf4" : "transparent",
                   textAlign: "left", fontFamily: "'Merriweather', serif", transition: "background 0.12s",
+                  opacity: creatingFor && !isCreating ? 0.5 : 1,
                 }}
-                onMouseEnter={e => { if (!isChecked) e.currentTarget.style.background = "#f5f5f7"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = isChecked ? "#f0fdf4" : "transparent"; }}
+                onMouseEnter={e => { if (!isChecked && !creatingFor) e.currentTarget.style.background = "#f5f5f7"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = isCreating ? "#f0f4ff" : isChecked ? "#f0fdf4" : "transparent"; }}
               >
                 <div style={{
                   width: 42, height: 42, borderRadius: "50%",
-                  background: "linear-gradient(135deg, #6366f1 0%, #818cf8 100%)",
+                  background: avatarGrad,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0,
-                }}>{getInitials(name)}</div>
+                }}>
+                  {isCreating ? (
+                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}>
+                      <RefreshCw size={16} color="#fff" />
+                    </motion.div>
+                  ) : getInitials(name)}
+                </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {name}
+                    {isCreating && <span style={{ fontSize: 11, color: "#6366f1", marginLeft: 8, fontWeight: 400 }}>Opening…</span>}
+                  </div>
                   <div style={{ fontSize: 11, color: "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.email}</div>
                 </div>
-                {activeMode === "group" && (
+                {activeMode === "group" && !isCreating && (
                   <div style={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0, border: isChecked ? "none" : "2px solid #d1d5db", background: isChecked ? "#22c55e" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {isChecked && <Check size={13} color="#fff" strokeWidth={3} />}
                   </div>
