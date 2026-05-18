@@ -184,16 +184,21 @@ export default function ChatWidget() {
       .catch(() => {});
   }, [myProfile, user?.tenant_id, effectivePropertyId]);
 
-  const handleOpenNewChat = useCallback((mode: "direct" | "group" = "direct") => {
-    setContactPickerMode(mode);
-    setShowNewChat(true);
-    if (!effectivePropertyId || !user?.tenant_id || contacts.length > 0) return;
+  // Load contacts reactively — fires whenever showNewChat opens AND effectivePropertyId is ready,
+  // regardless of which one arrived first.
+  useEffect(() => {
+    if (!showNewChat || !effectivePropertyId || !user?.tenant_id || contacts.length > 0) return;
     setContactsLoading(true);
     chatAPI.contacts(user.tenant_id, effectivePropertyId)
       .then(res => setContacts(res.data))
       .catch(() => {})
       .finally(() => setContactsLoading(false));
-  }, [effectivePropertyId, user?.tenant_id, contacts.length]);
+  }, [showNewChat, effectivePropertyId, user?.tenant_id]);
+
+  const handleOpenNewChat = useCallback((mode: "direct" | "group" = "direct") => {
+    setContactPickerMode(mode);
+    setShowNewChat(true);
+  }, []);
 
   const handleStartDirect = useCallback(async (contact: ChatContact) => {
     if (!effectivePropertyId || !user?.tenant_id) return;
