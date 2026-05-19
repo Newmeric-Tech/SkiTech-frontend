@@ -604,9 +604,22 @@ function ContactPicker({ contacts, loading, error, mode: initialMode, creatingFo
         ) : filtered.length === 0 ? (
           <div style={{ padding: "30px 14px", textAlign: "center" }}>
             <Users size={28} color="#d1d5db" style={{ marginBottom: 10 }} />
-            <p style={{ fontSize: 13, color: "#9ca3af", fontFamily: "'Merriweather', serif", margin: 0 }}>
-              {q ? `No results for "${q}"` : "No contacts available"}
+            <p style={{ fontSize: 13, color: "#9ca3af", fontFamily: "'Merriweather', serif", margin: "0 0 12px" }}>
+              {q ? `No results for "${q}"` : "No contacts found"}
             </p>
+            {!q && (
+              <button
+                onClick={onRetry}
+                style={{
+                  padding: "7px 18px", borderRadius: 10, border: "1.5px solid #e5e7eb",
+                  background: "#fff", cursor: "pointer",
+                  fontSize: 12, fontFamily: "'Merriweather', serif", fontWeight: 600,
+                  color: "#374151", display: "inline-flex", alignItems: "center", gap: 6,
+                }}
+              >
+                <RefreshCw size={12} /> Refresh
+              </button>
+            )}
           </div>
         ) : (
           filtered.map(c => {
