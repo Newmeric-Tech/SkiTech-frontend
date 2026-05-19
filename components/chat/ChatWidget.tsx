@@ -241,7 +241,9 @@ export default function ChatWidget() {
       setShowNewChat(false);
       setSelectedChat(newChat);
       reloadConversations();
-    } catch {
+    } catch (err: unknown) {
+      const detail = (err as any)?.response?.data?.detail ?? String(err);
+      console.error("[Chat] createDirect failed:", detail);
       alert("Could not start conversation. Please try again.");
     } finally {
       setCreatingFor(null);
@@ -263,7 +265,9 @@ export default function ChatWidget() {
       setShowNewChat(false);
       setSelectedChat(newChat);
       reloadConversations();
-    } catch {
+    } catch (err: unknown) {
+      const detail = (err as any)?.response?.data?.detail ?? String(err);
+      console.error("[Chat] createGroup failed:", detail);
       alert("Could not create group. Please try again.");
     }
   }, [effectivePropertyId, user?.tenant_id, myProfile, reloadConversations]);
