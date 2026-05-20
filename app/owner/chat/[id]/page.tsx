@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { chatAPI, MessageItem } from "@/lib/api/chat";
 import { useAuthStore } from "@/store/authStore";
-import { usersAPI } from "@/lib/api/users";
 import type { Chat } from "@/components/chat/ChatSidebar";
 
 function getInitials(name: string): string {
@@ -54,35 +53,34 @@ function mapMsg(msg: MessageItem, myId: string) {
 export default function ChatIdPage() {
   const { id } = useParams() as { id: string };
   const { user } = useAuthStore();
+
   const [chat, setChat] = useState<Chat | null>(null);
   const [convPropertyId, setConvPropertyId] = useState<string | null>(null);
-  const [myId, setMyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const tenantId = user?.tenant_id ?? null;
+  // Tenant Admins have no property_id — pass null and let backend scope to all tenant properties
+  const userPropertyId = user?.property_id ?? null;
+  const myId = user?.user_id ?? null;
+
   useEffect(() => {
-    if (!user?.tenant_id || !id) return;
+    if (!tenantId || !myId || !id) return;
     setLoading(true);
     setError(null);
 
-    usersAPI.me()
-      .then(async (meRes) => {
-        const me = meRes.data;
-        setMyId(me.id);
-        const userPropId: string | null = me.property_id ?? null;
-
-        const [convRes, msgsRes] = await Promise.all([
-          chatAPI.getConversation(user.tenant_id!, id, userPropId),
-          chatAPI.getMessages(id, user.tenant_id!, userPropId),
-        ]);
-
+    Promise.all([
+      chatAPI.getConversation(tenantId, id, userPropertyId),
+      chatAPI.getMessages(id, tenantId, userPropertyId),
+    ])
+      .then(([convRes, msgsRes]) => {
         const conv = convRes.data;
-        const propId = conv.property_id ?? userPropId;
+        const propId = conv.property_id ?? userPropertyId;
         setConvPropertyId(propId);
 
         let name: string;
         if (conv.type === "direct") {
-          const other = conv.participants?.find(p => p.user.id !== me.id);
+          const other = conv.participants?.find(p => p.user.id !== myId);
           name = other
             ? `${other.user.first_name ?? ""} ${other.user.last_name ?? ""}`.trim() || "Direct Chat"
             : "Direct Chat";
@@ -90,7 +88,7 @@ export default function ChatIdPage() {
           name = conv.name ?? "Group Chat";
         }
 
-        const messages = msgsRes.data.items.map(m => mapMsg(m, me.id));
+        const messages = msgsRes.data.items.map(m => mapMsg(m, myId));
 
         setChat({
           id: conv.id,
@@ -106,22 +104,29 @@ export default function ChatIdPage() {
       })
       .catch((err) => {
         const detail = (err as any)?.response?.data?.detail ?? "Failed to load conversation";
-        setError(detail);
+        setError(typeof detail === "string" ? detail : JSON.stringify(detail));
       })
       .finally(() => setLoading(false));
-  }, [id, user?.tenant_id]);
+  }, [id, tenantId, myId]);
 
   const handleSendMessage = (_chatId: string, message: { text?: string }) => {
-    if (!user?.tenant_id || !myId || !message.text || !convPropertyId) return;
-    chatAPI.sendMessage(id, user.tenant_id, convPropertyId, message.text).catch(() => {});
+    if (!tenantId || !myId || !message.text || !convPropertyId) return;
+    chatAPI.sendMessage(id, tenantId, convPropertyId, message.text).catch(() => {});
   };
+
+  if (!tenantId || !myId) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: "#f9fafb" }}>
+        <p style={{ fontFamily: "'Merriweather', serif", fontSize: 14, color: "#6b7280" }}>
+          Not authenticated
+        </p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "center",
-        height: "100%", background: "#f9fafb",
-      }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: "#f9fafb" }}>
         <p style={{ fontFamily: "'Merriweather', serif", fontSize: 14, color: "#6b7280" }}>
           Loading conversation…
         </p>
@@ -131,10 +136,7 @@ export default function ChatIdPage() {
 
   if (error || !chat) {
     return (
-      <div style={{
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        height: "100%", background: "#f9fafb", padding: 40, textAlign: "center",
-      }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", background: "#f9fafb", padding: 40, textAlign: "center" }}>
         <h2 style={{ fontFamily: "'Merriweather', serif", fontWeight: 700, fontSize: 20, color: "#111", marginBottom: 8 }}>
           {error ? "Failed to load conversation" : "Conversation not found"}
         </h2>

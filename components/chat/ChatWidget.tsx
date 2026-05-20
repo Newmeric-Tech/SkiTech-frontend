@@ -222,19 +222,23 @@ export default function ChatWidget() {
   }, [contactsError, user?.tenant_id, effectivePropertyId, fetchContacts]);
 
   const handleStartDirect = useCallback(async (contact: ChatContact) => {
+    // propId may be null for Tenant Admin — backend derives it from the other user's property
     const propId = effectivePropertyId || contact.property_id || null;
-    if (!propId || !user?.tenant_id || creatingFor) return;
+    if (!user?.tenant_id || creatingFor) return;
     if (!effectivePropertyId && propId) setEffectivePropertyId(propId);
     setCreatingFor(contact.id);
     try {
       const res = await chatAPI.createDirect(user.tenant_id, propId, contact.id);
       const name = `${contact.first_name} ${contact.last_name}`.trim() || contact.email;
+      // Always use the API-returned property_id — backend resolves it even for Tenant Admin
+      const convPropId = res.data.property_id ?? propId;
+      if (!effectivePropertyId && convPropId) setEffectivePropertyId(convPropId);
       const newChat: Chat = {
         id: res.data.id, name, initials: getInitials(name),
         lastMessage: "Tap to start chatting",
         timestamp: formatTs(res.data.updated_at),
         unread: 0, isOnline: false, type: "direct",
-        property_id: propId,
+        property_id: convPropId,
         otherParticipantId: contact.id, messages: [],
       };
       setChats(prev => prev.some(c => c.id === newChat.id) ? prev : [newChat, ...prev]);
@@ -252,14 +256,16 @@ export default function ChatWidget() {
 
   const handleCreateGroup = useCallback(async (name: string, participants: ChatContact[]) => {
     const propId = effectivePropertyId || participants.find(p => p.property_id)?.property_id || null;
-    if (!propId || !user?.tenant_id || !myProfile) return;
+    if (!user?.tenant_id || !myProfile) return;
     if (!effectivePropertyId && propId) setEffectivePropertyId(propId);
     try {
       const res = await chatAPI.createGroup(user.tenant_id, propId, name, participants.map(p => p.id));
+      const convPropId = res.data.property_id ?? propId;
+      if (!effectivePropertyId && convPropId) setEffectivePropertyId(convPropId);
       const newChat: Chat = {
         id: res.data.id, name: res.data.name ?? name, initials: getInitials(name),
         lastMessage: "Group created", timestamp: formatTs(res.data.updated_at),
-        unread: 0, isOnline: false, type: "group", property_id: propId, messages: [],
+        unread: 0, isOnline: false, type: "group", property_id: convPropId, messages: [],
       };
       setChats(prev => prev.some(c => c.id === newChat.id) ? prev : [newChat, ...prev]);
       setShowNewChat(false);

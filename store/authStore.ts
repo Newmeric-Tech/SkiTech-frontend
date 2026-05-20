@@ -8,6 +8,7 @@ import api from "@/lib/config/app";
 interface User {
   user_id: string;
   tenant_id: string;
+  property_id: string | null;
   email: string;
   role: string;
   first_name?: string;
@@ -74,9 +75,10 @@ function decodeJWT(token: string): User | null {
     return {
       user_id: decoded.user_id,
       tenant_id: decoded.tenant_id,
+      property_id: decoded.property_id ?? null,
       email: decoded.email,
       role: decoded.role,
-      first_name: decoded.first_name, 
+      first_name: decoded.first_name,
       last_name: decoded.last_name,
     };
   } catch (err) {
