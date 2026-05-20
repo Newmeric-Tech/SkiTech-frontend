@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Merriweather, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { SharedStoreProvider } from "../store/SharedStore";
+import { SchedulingProvider } from "../store/SchedulingStore";
 import { ThemeProvider } from "next-themes";
 import ChatWidgetGate from "@/components/chat/ChatWidgetGate";
 
@@ -38,8 +39,10 @@ export default function RootLayout({
       <body className={`${inter.variable} ${merriweather.variable} ${dmSans.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">
           <SharedStoreProvider>
-            {children}
-            <ChatWidgetGate />
+            <SchedulingProvider>
+              {children}
+              <ChatWidgetGate />
+            </SchedulingProvider>
           </SharedStoreProvider>
         </ThemeProvider>
       </body>

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText, AlertTriangle, Bell, Calendar, Activity, Users, Settings,
   Plus, X, MessageSquare, Building, Wrench, PartyPopper, ShieldAlert,
-  ChevronRight, Clock, Home, BarChart3
+  ChevronRight, Clock, Home, BarChart3, AlertCircle
 } from "lucide-react";
 import { HandoverLog, dummyHandoverLogs, dummyComplaints } from "@/lib/operational";
 
@@ -22,10 +22,7 @@ export default function OperationalLayout({
   const [sidebarLinks, setSidebarLinks] = useState<{href: string; label: string; icon: any}[]>([]);
 
   useEffect(() => {
-    const role = localStorage.getItem("skitech_role");
-    const isManager = role === "Manager";
     setSidebarLinks([
-      ...(isManager ? [{ href: "/operational/manager", label: "Manager Dashboard", icon: BarChart3 }] : []),
       { href: "/operational", label: "Error & Complaint Log", icon: AlertTriangle },
     ]);
   }, []);
@@ -275,7 +272,6 @@ function MobileNav() {
     const role = localStorage.getItem("skitech_role");
     const isManager = role === "Manager";
     setLinks([
-      ...(isManager ? [{ href: "/operational/manager", label: "Manager Dashboard", icon: BarChart3 }] : []),
       { href: "/operational", label: "Error & Complaint Log", icon: AlertTriangle },
     ]);
   }, []);

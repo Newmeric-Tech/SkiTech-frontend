@@ -458,7 +458,17 @@ function SidebarMenu({ className, ...props }: React.ComponentProps<"ul">) {
       data-sidebar="menu"
       className={cn("flex w-full min-w-0 flex-col gap-1", className)}
       {...props}
-    />
+    >
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          asChild
+          tooltip="Activity Log"
+          isActive={false} // Set to true if this is the active page
+        >
+          <a href="/activity-log">Activity Log</a>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </ul>
   );
 }
 
@@ -695,6 +705,29 @@ function SidebarMenuSubButton({
       )}
       {...props}
     />
+  );
+}
+
+function SidebarActivityLogItem() {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        asChild
+        tooltip="Activity Log"
+        isActive={false} // Set to true if this is the active page
+      >
+        <a href="/activity-log">Activity Log</a>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
+function SidebarMenuWithActivityLog({ className, ...props }: React.ComponentProps<"ul">) {
+  return (
+    <SidebarMenu className={className} {...props}>
+      {/* ...existing menu items... */}
+      <SidebarActivityLogItem />
+    </SidebarMenu>
   );
 }
 

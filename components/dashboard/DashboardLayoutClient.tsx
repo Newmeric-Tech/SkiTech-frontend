@@ -8,11 +8,13 @@ import {
   Zap, LayoutDashboard, Building2, Users, UserCheck, BarChart3,
   Shield, Truck, FileText, Settings, LogOut, ChevronLeft, ChevronRight,
   Bell, Search, Briefcase, Menu, ClipboardList, Clock, Package,
-  ShieldCheck, Layers, Lock, X, BarChart2, CalendarDays, MessageCircle
+  ShieldCheck, Layers, Lock, X, BarChart2, CalendarDays, MessageCircle,
+  CalendarClock, AlertCircle, AlertTriangle, Folder, Activity
 } from "lucide-react";
 
 const ownerNav = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/owner" },
+  { icon: Folder, label: "Document Management", href: "/owner/document-management" },
   { icon: Building2, label: "Properties", href: "/owner/properties" },
   { icon: Briefcase, label: "Managers", href: "/owner/managers" },
   { icon: Users, label: "Staff", href: "/owner/staff" },
@@ -21,7 +23,8 @@ const ownerNav = [
   { icon: BarChart2, label: "Analytics", href: "/owner/analytics" },
   { icon: Truck, label: "Inventory", href: "/owner/inventory" },
   { icon: FileText, label: "SOP Management", href: "/owner/sop" },
-  { icon: Zap, label: "Error and Complaint Log", href: "/operational" },
+  { icon: AlertCircle, label: "Error & Complaint Log", href: "/operational" },
+  { icon: Activity, label: "Activity Log", href: "/owner/master-activity-log" },
 ];
 
 const ownerConfigNav = [
@@ -34,6 +37,7 @@ const ownerConfigNav = [
 
 const managerNav = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/manager" },
+  { icon: Folder, label: "Document Management", href: "/manager/document-management" },
   { icon: Clock, label: "Punch In/Out", href: "/manager/punch" },
   { icon: ClipboardList, label: "Tasks", href: "/manager/tasks" },
   { icon: UserCheck, label: "Attendance", href: "/manager/attendance" },
@@ -41,15 +45,19 @@ const managerNav = [
   { icon: BarChart3, label: "Reports", href: "/manager/reports" },
   { icon: FileText, label: "SOP Management", href: "/manager/sop" },
   { icon: CalendarDays, label: "KRA Center", href: "/manager/kra" },
-  { icon: Zap, label: "Error and Complaint Log", href: "/operational/manager" },
+  { icon: CalendarClock, label: "Employee Scheduling", href: "/manager/scheduling" },
+  { icon: AlertCircle, label: "Error & Complaint Log", href: "/operational" },
 ];
 
 const staffNav = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/staff" },
+  { icon: Folder, label: "Document Management", href: "/staff/document-management" },
   { icon: Clock, label: "Punch In/Out", href: "/staff/punch" },
   { icon: ClipboardList, label: "My Tasks", href: "/staff/tasks" },
   { icon: FileText, label: "SOPs", href: "/staff/sop" },
+  { icon: AlertCircle, label: "My Complaints", href: "/staff/complaints" },
   { icon: CalendarDays, label: "KRA Center", href: "/staff/kra" },
+  { icon: CalendarClock, label: "Employee Scheduling", href: "/staff/scheduling" },
 ];
 
 export function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
