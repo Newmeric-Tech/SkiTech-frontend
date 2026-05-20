@@ -34,6 +34,7 @@ export interface ConversationDetail {
   id: string;
   type: "direct" | "group";
   name: string | null;
+  property_id: string | null;
   participants: Array<{ user: ChatContact; role: string; joined_at: string }>;
   is_archived: boolean;
   participant_count: number;
@@ -113,6 +114,11 @@ export const chatAPI = {
       { conversation_id: conversationId, content },
       { params: { tenant_id: tenantId, ...(propertyId ? { property_id: propertyId } : {}) } }
     ),
+
+  getConversation: (tenantId: string, conversationId: string, propertyId?: string | null) =>
+    api.get<ConversationDetail>(`/v1/chat/conversations/${conversationId}`, {
+      params: { tenant_id: tenantId, ...(propertyId ? { property_id: propertyId } : {}) },
+    }),
 
   uploadMedia: (
     conversationId: string,
