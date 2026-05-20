@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Search, Plus, Users, UserCheck, UserX, Shield, Edit, Trash2, X, Crown, Briefcase, User, Ban, Loader2 } from "lucide-react";
+import { Search, Plus, Users, UserCheck, UserX, Shield, Edit, Trash2, X, Crown, Briefcase, User, Ban, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { superadminAPI, SuperadminUser, InviteUserPayload } from "@/lib/api/superadmin";
 
@@ -203,9 +203,15 @@ export default function AllUsers() {
                         <button onClick={() => { setEditingUser(user); setEditRole(user.role); }} className="p-2 hover:bg-black/5 rounded-lg transition-colors">
                           <Edit className="w-4 h-4 text-neutral-600" />
                         </button>
-                        <button onClick={() => handleSuspend(user)} className="p-2 hover:bg-amber-50 rounded-lg transition-colors">
-                          <Ban className="w-4 h-4 text-amber-500" />
-                        </button>
+                        {user.status === "suspended" ? (
+                          <button onClick={() => handleSuspend(user)} title="Remove suspension" className="p-2 hover:bg-emerald-50 rounded-lg transition-colors">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          </button>
+                        ) : (
+                          <button onClick={() => handleSuspend(user)} title="Suspend user" className="p-2 hover:bg-amber-50 rounded-lg transition-colors">
+                            <Ban className="w-4 h-4 text-amber-500" />
+                          </button>
+                        )}
                         <button onClick={() => handleDelete(user.id)} className="p-2 hover:bg-red-50 rounded-lg transition-colors">
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </button>

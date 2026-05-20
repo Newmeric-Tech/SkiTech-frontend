@@ -222,7 +222,7 @@ export const superadminAPI = {
     api.put<PlatformSettings>("/v1/superadmin/settings", data),
 
   // Users
-  listUsers: (params?: { search?: string; role?: string }) =>
+  listUsers: (params?: { search?: string; role?: string; status?: string }) =>
     api.get<SuperadminUser[]>("/v1/superadmin/users", { params }),
   inviteUser: (data: InviteUserPayload) =>
     api.post<SuperadminUser>("/v1/superadmin/users/invite", data),
