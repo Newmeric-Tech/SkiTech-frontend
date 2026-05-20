@@ -76,48 +76,48 @@ export const chatAPI = {
       { params: { tenant_id: tenantId, ...(propertyId ? { property_id: propertyId } : {}), skip, limit } }
     ),
 
-  createDirect: (tenantId: string, propertyId: string, otherUserId: string) =>
+  createDirect: (tenantId: string, propertyId: string | null | undefined, otherUserId: string) =>
     api.post<ConversationDetail>(
       "/v1/chat/conversations/direct",
       { other_user_id: otherUserId },
-      { params: { tenant_id: tenantId, property_id: propertyId } }
+      { params: { tenant_id: tenantId, ...(propertyId ? { property_id: propertyId } : {}) } }
     ),
 
-  createGroup: (tenantId: string, propertyId: string, name: string, participantIds: string[]) =>
+  createGroup: (tenantId: string, propertyId: string | null | undefined, name: string, participantIds: string[]) =>
     api.post<ConversationDetail>(
       "/v1/chat/conversations/group",
       { name, participant_ids: participantIds },
-      { params: { tenant_id: tenantId, property_id: propertyId } }
+      { params: { tenant_id: tenantId, ...(propertyId ? { property_id: propertyId } : {}) } }
     ),
 
   getMessages: (
     conversationId: string,
     tenantId: string,
-    propertyId: string,
+    propertyId: string | null | undefined,
     skip = 0,
     limit = 50
   ) =>
     api.get<{ total: number; items: MessageItem[] }>(
       `/v1/chat/conversations/${conversationId}/messages`,
-      { params: { tenant_id: tenantId, property_id: propertyId, skip, limit } }
+      { params: { tenant_id: tenantId, ...(propertyId ? { property_id: propertyId } : {}), skip, limit } }
     ),
 
   sendMessage: (
     conversationId: string,
     tenantId: string,
-    propertyId: string,
+    propertyId: string | null | undefined,
     content: string
   ) =>
     api.post<MessageItem>(
       `/v1/chat/conversations/${conversationId}/messages`,
       { conversation_id: conversationId, content },
-      { params: { tenant_id: tenantId, property_id: propertyId } }
+      { params: { tenant_id: tenantId, ...(propertyId ? { property_id: propertyId } : {}) } }
     ),
 
   uploadMedia: (
     conversationId: string,
     tenantId: string,
-    propertyId: string,
+    propertyId: string | null | undefined,
     messageId: string,
     file: File
   ) => {
@@ -127,7 +127,7 @@ export const chatAPI = {
       `/v1/chat/conversations/${conversationId}/media/upload`,
       formData,
       {
-        params: { tenant_id: tenantId, property_id: propertyId, message_id: messageId },
+        params: { tenant_id: tenantId, ...(propertyId ? { property_id: propertyId } : {}), message_id: messageId },
         headers: { "Content-Type": "multipart/form-data" },
       }
     );
