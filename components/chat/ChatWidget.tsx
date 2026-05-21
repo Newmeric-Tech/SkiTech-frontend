@@ -122,6 +122,10 @@ export default function ChatWidget() {
   const [contactPickerMode, setContactPickerMode] = useState<"direct" | "group">("direct");
   const profileLoaded = useRef(false);
   const contactsLoaded = useRef(false);
+  const wsRef = useRef<WebSocket | null>(null);
+  const wsReconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const myProfileRef = useRef<{ id: string; property_id: string | null } | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -130,6 +134,18 @@ export default function ChatWidget() {
       window.addEventListener("resize", h);
       return () => window.removeEventListener("resize", h);
     }
+  }, []);
+
+  // Keep myProfileRef in sync so WS/polling closures always see the latest value
+  useEffect(() => { myProfileRef.current = myProfile; }, [myProfile]);
+
+  // Cleanup WS + polling on unmount
+  useEffect(() => {
+    return () => {
+      if (wsRef.current) { wsRef.current.onclose = null; wsRef.current.close(); }
+      if (wsReconnectRef.current) clearTimeout(wsReconnectRef.current);
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
   }, []);
 
   // ── Step 1: Load profile on first open ──
@@ -191,18 +207,88 @@ export default function ChatWidget() {
       .finally(() => setIsLoading(false));
   }, [myProfile, user?.tenant_id]);
 
-  // ── Load messages when conversation changes ──
+  // ── Load messages + real-time delivery when conversation changes ──
   // Use the conversation's own property_id so cross-property DMs work for Tenant Admin.
   useEffect(() => {
     if (!selectedChat || !myProfile || !user?.tenant_id) return;
     const propId = selectedChat.property_id || effectivePropertyId;
     if (!propId) return;
+    const convId = selectedChat.id;
+    const tenantId = user.tenant_id;
+
+    // Load initial messages
     setMessagesLoading(true);
     setMessages([]);
-    chatAPI.getMessages(selectedChat.id, user.tenant_id, propId)
+    chatAPI.getMessages(convId, tenantId, propId)
       .then(res => setMessages(res.data.items.map(m => mapMsg(m, myProfile.id))))
       .catch(() => {})
       .finally(() => setMessagesLoading(false));
+
+    // ── Polling fallback — runs when WS is not connected ──
+    function startPolling() {
+      if (pollingRef.current) return;
+      pollingRef.current = setInterval(async () => {
+        const profile = myProfileRef.current;
+        if (!profile) return;
+        try {
+          const res = await chatAPI.getMessages(convId, tenantId, propId);
+          setMessages(prev => {
+            const ids = new Set(prev.map(m => m.id));
+            const fresh = res.data.items
+              .map(m => mapMsg(m, profile.id))
+              .filter(m => !ids.has(m.id) && !m.isSent); // skip own msgs already added optimistically
+            return fresh.length ? [...prev, ...fresh] : prev;
+          });
+        } catch {}
+      }, 3000);
+    }
+
+    // ── WebSocket connection ──
+    function connectWS() {
+      if (wsRef.current) { wsRef.current.onclose = null; wsRef.current.close(); wsRef.current = null; }
+      if (wsReconnectRef.current) { clearTimeout(wsReconnectRef.current); wsReconnectRef.current = null; }
+
+      const token = localStorage.getItem("skitech_access_token");
+      if (!token) { startPolling(); return; }
+
+      const wsBase = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api")
+        .replace(/^https/, "wss")
+        .replace(/^http/, "ws");
+      const ws = new WebSocket(`${wsBase}/v1/chat/conversations/${convId}/ws?token=${token}`);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+      };
+
+      ws.onmessage = (e: MessageEvent) => {
+        try {
+          const data = JSON.parse(e.data as string);
+          if (data.type === "message.sent") {
+            const msg = data.data as MessageItem;
+            const profile = myProfileRef.current;
+            if (!profile) return;
+            const mapped = mapMsg(msg, profile.id);
+            if (mapped.isSent) return; // sender already sees it via optimistic update
+            setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, mapped]);
+          }
+        } catch {}
+      };
+
+      ws.onclose = () => {
+        wsRef.current = null;
+        startPolling(); // fall back to polling until WS reconnects
+        wsReconnectRef.current = setTimeout(connectWS, 3000);
+      };
+    }
+
+    connectWS();
+
+    return () => {
+      if (wsRef.current) { wsRef.current.onclose = null; wsRef.current.close(); wsRef.current = null; }
+      if (wsReconnectRef.current) { clearTimeout(wsReconnectRef.current); wsReconnectRef.current = null; }
+      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+    };
   }, [selectedChat?.id]);
 
   const reloadConversations = useCallback(() => {
@@ -296,7 +382,13 @@ export default function ChatWidget() {
               const real = mapMsg(res.data, myProfile.id);
               setMessages(prev => prev.map(m => m.id === message.id ? real : m));
             })
-            .catch(() => {});
+            .catch((err) => {
+              console.error("[Chat] sendMessage failed:", (err as any)?.response?.data?.detail ?? String(err));
+              // Mark the optimistic message as failed so user knows to retry
+              setMessages(prev => prev.map(m =>
+                m.id === message.id ? { ...m, text: `${m.text} (failed to send)` } : m
+              ));
+            });
         }
         return currentChats;
       });
