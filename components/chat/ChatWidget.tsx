@@ -506,13 +506,13 @@ export default function ChatWidget() {
               background: "#ffffff", boxShadow: panelShadow,
               border: "none",
               borderLeft: "1.5px solid #e5e7eb",
-              overflow: "hidden", display: "flex",
+              overflow: "hidden", display: "flex", flexDirection: "column",
               fontFamily: "'Merriweather', Georgia, serif", color: "#111111",
             }}
           >
             {showSplitView ? (
               /* ── Wide panel: full-width list OR left sidebar + right chat ── */
-              <div style={{ display: "flex", width: "100%", height: "100%" }}>
+              <div style={{ display: "flex", flex: 1, width: "100%", minHeight: 0 }}>
                 {/* Left: full-width when no chat selected, 300px sidebar when chat is open */}
                 <div style={{
                   width: activeChat ? 300 : "100%",
@@ -950,7 +950,7 @@ function ChatItem({ chat, onClick, isSelected }: { chat: Chat; onClick: () => vo
       onHoverStart={() => setHovered(true)} onHoverEnd={() => setHovered(false)}
       animate={{ background: isSelected ? "#e8e8e8" : hovered ? "#f5f5f7" : "#ffffff" }}
       onClick={onClick}
-      style={{ width: "100%", padding: "11px 14px", borderRadius: 14, display: "flex", alignItems: "center", gap: 13, border: "none", cursor: "pointer", textAlign: "left", fontFamily: "'Merriweather', serif" }}
+      style={{ width: "100%", padding: "11px 16px", borderRadius: 0, display: "flex", alignItems: "center", gap: 13, border: "none", cursor: "pointer", textAlign: "left", fontFamily: "'Merriweather', serif" }}
     >
       <div style={{ position: "relative", flexShrink: 0 }}>
         <div style={{ width: 46, height: 46, borderRadius: "50%", background: gradient, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
