@@ -126,6 +126,7 @@ export default function ChatWidget() {
   const wsReconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const myProfileRef = useRef<{ id: string; property_id: string | null } | null>(null);
+  const chatsRef = useRef<Chat[]>([]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -136,8 +137,9 @@ export default function ChatWidget() {
     }
   }, []);
 
-  // Keep myProfileRef in sync so WS/polling closures always see the latest value
+  // Keep refs in sync so closures always see the latest values
   useEffect(() => { myProfileRef.current = myProfile; }, [myProfile]);
+  useEffect(() => { chatsRef.current = chats; }, [chats]);
 
   // Cleanup WS + polling on unmount
   useEffect(() => {
@@ -372,26 +374,22 @@ export default function ChatWidget() {
         : c
     ));
     if (message.type === "text" && message.text && user?.tenant_id && myProfile) {
-      // Use conversation's own property_id (critical for Tenant Admin cross-property DMs)
-      setChats(currentChats => {
-        const chat = currentChats.find(c => c.id === chatId);
-        const propId = chat?.property_id || effectivePropertyId;
-        if (propId) {
-          chatAPI.sendMessage(chatId, user.tenant_id!, propId, message.text!)
-            .then(res => {
-              const real = mapMsg(res.data, myProfile.id);
-              setMessages(prev => prev.map(m => m.id === message.id ? real : m));
-            })
-            .catch((err) => {
-              console.error("[Chat] sendMessage failed:", (err as any)?.response?.data?.detail ?? String(err));
-              // Mark the optimistic message as failed so user knows to retry
-              setMessages(prev => prev.map(m =>
-                m.id === message.id ? { ...m, text: `${m.text} (failed to send)` } : m
-              ));
-            });
-        }
-        return currentChats;
-      });
+      // Read current chat from ref — avoids side effects inside a setState updater
+      const chat = chatsRef.current.find(c => c.id === chatId);
+      const propId = chat?.property_id || effectivePropertyId;
+      if (propId) {
+        chatAPI.sendMessage(chatId, user.tenant_id, propId, message.text)
+          .then(res => {
+            const real = mapMsg(res.data, myProfile.id);
+            setMessages(prev => prev.map(m => m.id === message.id ? real : m));
+          })
+          .catch((err) => {
+            console.error("[Chat] sendMessage failed:", (err as any)?.response?.data?.detail ?? String(err));
+            setMessages(prev => prev.map(m =>
+              m.id === message.id ? { ...m, text: `${m.text} (failed to send)` } : m
+            ));
+          });
+      }
     }
   }, [effectivePropertyId, user?.tenant_id, myProfile]);
 
