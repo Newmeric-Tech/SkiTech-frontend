@@ -423,12 +423,14 @@ export default function ChatWidget() {
       .catch(() => {});
   }, [chats, effectivePropertyId, user?.tenant_id, myProfile]);
 
-  // Full-width on phones/tablets/small laptops; 440px side panel only on large desktops
+  // Full-width on phones/tablets/small laptops; side panel only on large desktops
   const isMobile = windowWidth < 1024;
   // Side-panel: open, non-maximized, non-minimized, large desktop only
   const isSidePanel = isOpen && !isMinimized && !isMaximized && !isMobile;
 
-  const panelWidth = isMaximized ? windowWidth : isMobile ? windowWidth : Math.min(440, windowWidth);
+  const panelWidth = isMaximized ? windowWidth : isMobile ? windowWidth : Math.min(600, windowWidth);
+  // Split view (list sidebar + chat window) whenever the panel is wide enough
+  const showSplitView = panelWidth >= 580;
   const panelHeight = isMinimized ? 56 : windowHeight;
   const panelRadius = isMaximized || (isMobile && !isMinimized) ? 0 : isSidePanel ? "16px 0 0 16px" : 14;
   const panelShadow = isMaximized || (isMobile && !isMinimized)
@@ -501,38 +503,41 @@ export default function ChatWidget() {
               fontFamily: "'Merriweather', Georgia, serif", color: "#111111",
             }}
           >
-            {isMaximized ? (
-              /* ── Maximized two-panel layout ── */
+            {showSplitView ? (
+              /* ── Wide panel: full-width list OR left sidebar + right chat ── */
               <div style={{ display: "flex", width: "100%", height: "100%" }}>
-                {/* Left sidebar */}
-                <div style={{ width: 320, flexShrink: 0, borderRight: "1.5px solid #e5e7eb", display: "flex", flexDirection: "column" }}>
+                {/* Left: full-width when no chat selected, 300px sidebar when chat is open */}
+                <div style={{
+                  width: activeChat ? 300 : "100%",
+                  flexShrink: 0,
+                  borderRight: activeChat ? "1.5px solid #e5e7eb" : "none",
+                  display: "flex", flexDirection: "column",
+                }}>
                   {showNewChat ? (
                     <ContactPicker {...contactPickerProps} />
                   ) : (
-                    <ChatList {...sharedListProps} compact selectedChatId={selectedChat?.id} />
+                    <ChatList {...sharedListProps} compact={!!activeChat} selectedChatId={selectedChat?.id} />
                   )}
                 </div>
-                {/* Right panel */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                  {activeChat ? (
+                {/* Right: chat window — only rendered when a conversation is selected */}
+                {activeChat && (
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                     <ChatWindow
                       chat={activeChat} messages={messages} messagesLoading={messagesLoading}
                       onBack={() => setSelectedChat(null)}
                       onSendMessage={(msg) => handleSendMessage(activeChat.id, msg)}
                       onSendFile={(file, type, url) => handleSendFile(activeChat.id, file, type, url)}
                       onClose={handleClose} onMinimize={handleMinimize} onMaximize={handleMaximize}
-                      isMinimized={isMinimized} isMaximized={isMaximized} compact
+                      isMinimized={isMinimized} isMaximized={isMaximized} compact={isMaximized}
                     />
-                  ) : (
-                    <EmptyConversation />
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             ) : showNewChat ? (
-              /* ── Small widget: contact picker ── */
+              /* ── Narrow panel: contact picker ── */
               <ContactPicker {...contactPickerProps} />
             ) : activeChat ? (
-              /* ── Small widget: active chat ── */
+              /* ── Narrow panel: active chat ── */
               <ChatWindow
                 chat={activeChat} messages={messages} messagesLoading={messagesLoading}
                 onBack={() => setSelectedChat(null)}
@@ -542,7 +547,7 @@ export default function ChatWidget() {
                 isMinimized={isMinimized} isMaximized={isMaximized} isMobile={isMobile}
               />
             ) : (
-              /* ── Small widget: conversation list ── */
+              /* ── Narrow panel: conversation list ── */
               <ChatList {...sharedListProps} />
             )}
           </motion.div>
@@ -567,19 +572,6 @@ export default function ChatWidget() {
           </motion.button>
         )}
       </AnimatePresence>
-    </div>
-  );
-}
-
-/* ─────────── Empty right panel ─────────── */
-function EmptyConversation() {
-  return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#fafafa", gap: 12 }}>
-      <div style={{ width: 72, height: 72, borderRadius: "50%", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <MessageCircle size={32} color="#9ca3af" />
-      </div>
-      <p style={{ fontSize: 16, fontWeight: 700, color: "#374151", fontFamily: "'Merriweather', serif", margin: 0 }}>Select a conversation</p>
-      <p style={{ fontSize: 13, color: "#9ca3af", fontFamily: "'Merriweather', serif", margin: 0 }}>Choose a chat from the list to start messaging</p>
     </div>
   );
 }
