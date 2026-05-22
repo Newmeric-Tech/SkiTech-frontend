@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageCircle, X, Minimize2, Maximize2, ChevronLeft,
   MoreVertical, Send, Mic, Image as ImageIcon,
-  Paperclip, Smile, Search, UserPlus, ArrowLeft, Users, Check, RefreshCw,
+  Paperclip, Smile, Search, UserPlus, ArrowLeft, Users, Check, RefreshCw, Settings,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuthStore } from "@/store/authStore";
@@ -114,8 +114,8 @@ export default function ChatWidget() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [windowHeight, setWindowHeight] = useState(800);
-  const [windowWidth, setWindowWidth] = useState(1200);
+  const [windowHeight, setWindowHeight] = useState(() => typeof window !== "undefined" ? window.innerHeight : 800);
+  const [windowWidth, setWindowWidth] = useState(() => typeof window !== "undefined" ? window.innerWidth : 1200);
   const [myProfile, setMyProfile] = useState<{ id: string; property_id: string | null } | null>(null);
   const [effectivePropertyId, setEffectivePropertyId] = useState<string | null>(null);
   const [contacts, setContacts] = useState<ChatContact[]>([]);
@@ -423,21 +423,14 @@ export default function ChatWidget() {
       .catch(() => {});
   }, [chats, effectivePropertyId, user?.tenant_id, myProfile]);
 
-  const isMobile = windowWidth < 520;
-  // Side-panel open state: open, not maximized, not minimized, not mobile
+  // Full-width on phones/tablets/small laptops; 440px side panel only on large desktops
+  const isMobile = windowWidth < 1024;
+  // Side-panel: open, non-maximized, non-minimized, large desktop only
   const isSidePanel = isOpen && !isMinimized && !isMaximized && !isMobile;
 
-  const panelWidth = isMaximized
-    ? windowWidth
-    : isMobile
-      ? windowWidth
-      : Math.min(400, windowWidth);
+  const panelWidth = isMaximized ? windowWidth : isMobile ? windowWidth : Math.min(440, windowWidth);
   const panelHeight = isMinimized ? 56 : windowHeight;
-  const panelRadius = isMaximized || (isMobile && !isMinimized)
-    ? 0
-    : isSidePanel
-      ? "16px 0 0 16px"
-      : 14;
+  const panelRadius = isMaximized || (isMobile && !isMinimized) ? 0 : isSidePanel ? "16px 0 0 16px" : 14;
   const panelShadow = isMaximized || (isMobile && !isMinimized)
     ? "none"
     : isSidePanel
@@ -467,6 +460,7 @@ export default function ChatWidget() {
     isLoading,
     isMobile,
     onNewChat: handleOpenNewChat,
+    onSettings: () => {},
   };
 
   const contactPickerProps = {
@@ -846,6 +840,7 @@ interface ChatListProps {
   isMobile?: boolean;
   selectedChatId?: string;
   onNewChat: (mode?: "direct" | "group") => void;
+  onSettings?: () => void;
 }
 
 function SkeletonItem() {
@@ -862,7 +857,7 @@ function SkeletonItem() {
 
 const filters = [{ id: "all", label: "All" }, { id: "direct", label: "Direct" }, { id: "group", label: "Group" }];
 
-function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMinimized, isMaximized, activeFilter, setActiveFilter, searchQuery, setSearchQuery, isLoading, compact, isMobile, selectedChatId, onNewChat }: ChatListProps) {
+function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMinimized, isMaximized, activeFilter, setActiveFilter, searchQuery, setSearchQuery, isLoading, compact, isMobile, selectedChatId, onNewChat, onSettings }: ChatListProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* ── Header ── */}
@@ -881,6 +876,7 @@ function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMini
               <IconBtn onClick={() => onNewChat("group")} title="New group"><Users size={14} /></IconBtn>
               <IconBtn onClick={() => onNewChat("direct")} title="New direct chat"><UserPlus size={14} /></IconBtn>
               {!isMobile && <IconBtn onClick={onMaximize} title="Expand">{isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</IconBtn>}
+              {onSettings && <IconBtn onClick={onSettings} title="Settings"><Settings size={14} /></IconBtn>}
               <IconBtn onClick={onClose} title="Close"><X size={14} /></IconBtn>
             </div>
           </div>
@@ -893,6 +889,7 @@ function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMini
             <div style={{ display: "flex", gap: 2 }}>
               <IconBtn onClick={() => onNewChat("group")} title="New group"><Users size={13} /></IconBtn>
               <IconBtn onClick={() => onNewChat("direct")} title="New chat"><UserPlus size={14} /></IconBtn>
+              {onSettings && <IconBtn onClick={onSettings} title="Settings"><Settings size={13} /></IconBtn>}
               <IconBtn onClick={onMaximize} title="Restore to widget"><Minimize2 size={14} /></IconBtn>
               <IconBtn onClick={onClose} title="Close chat"><X size={14} /></IconBtn>
             </div>
