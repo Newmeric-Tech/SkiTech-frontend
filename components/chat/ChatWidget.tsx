@@ -115,6 +115,7 @@ export default function ChatWidget() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [windowHeight, setWindowHeight] = useState(800);
+  const [windowWidth, setWindowWidth] = useState(1200);
   const [myProfile, setMyProfile] = useState<{ id: string; property_id: string | null } | null>(null);
   const [effectivePropertyId, setEffectivePropertyId] = useState<string | null>(null);
   const [contacts, setContacts] = useState<ChatContact[]>([]);
@@ -134,7 +135,8 @@ export default function ChatWidget() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       setWindowHeight(window.innerHeight);
-      const h = () => setWindowHeight(window.innerHeight);
+      setWindowWidth(window.innerWidth);
+      const h = () => { setWindowHeight(window.innerHeight); setWindowWidth(window.innerWidth); };
       window.addEventListener("resize", h);
       return () => window.removeEventListener("resize", h);
     }
@@ -421,11 +423,12 @@ export default function ChatWidget() {
       .catch(() => {});
   }, [chats, effectivePropertyId, user?.tenant_id, myProfile]);
 
-  const panelWidth = isMaximized ? (typeof window !== "undefined" ? window.innerWidth : 1200) : 360;
-  const panelHeight = isMinimized ? 66 : isMaximized ? windowHeight : 600;
-  const panelRadius = isMaximized ? 0 : 20;
-  const panelShadow = isMaximized
-    ? "-8px 0 40px rgba(0,0,0,0.14)"
+  const isMobile = windowWidth < 520;
+  const panelWidth = isMaximized ? windowWidth : isMobile ? windowWidth : 380;
+  const panelHeight = isMinimized ? 56 : (isMaximized || (isMobile && !isMinimized)) ? windowHeight : Math.min(620, windowHeight - 90);
+  const panelRadius = isMaximized || isMobile ? 0 : 20;
+  const panelShadow = isMaximized || isMobile
+    ? "none"
     : "0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.10)";
 
   const handleMinimize = () => { setIsMinimized(p => { if (!p) setIsMaximized(false); return !p; }); };
@@ -449,6 +452,7 @@ export default function ChatWidget() {
     activeFilter, setActiveFilter,
     searchQuery, setSearchQuery,
     isLoading,
+    isMobile,
     onNewChat: handleOpenNewChat,
   };
 
@@ -467,15 +471,18 @@ export default function ChatWidget() {
       position: "fixed", zIndex: 50,
       display: "flex", flexDirection: "column",
       alignItems: "flex-end", justifyContent: "flex-end",
-      gap: isMaximized ? 0 : 16,
-      ...(isMaximized ? { top: 0, right: 0, bottom: 0 } : { bottom: 24, right: 24 }),
+      gap: isMaximized || isMobile ? 0 : 16,
+      ...((isMaximized || (isMobile && isOpen && !isMinimized))
+        ? { top: 0, left: 0, right: 0, bottom: 0 }
+        : { bottom: 24, right: 24 }
+      ),
     }}>
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, x: 40, scale: 0.97, width: panelWidth, height: panelHeight, borderRadius: panelRadius }}
-            animate={{ opacity: 1, x: 0, scale: 1, width: panelWidth, height: panelHeight, borderRadius: panelRadius }}
-            exit={{ opacity: 0, x: 40, scale: 0.97 }}
+            initial={{ opacity: 0, ...(isMobile ? { y: 40 } : { x: 40, scale: 0.97 }), width: panelWidth, height: panelHeight, borderRadius: panelRadius }}
+            animate={{ opacity: 1, y: 0, x: 0, scale: 1, width: panelWidth, height: panelHeight, borderRadius: panelRadius }}
+            exit={{ opacity: 0, ...(isMobile ? { y: 40 } : { x: 40, scale: 0.97 }) }}
             transition={{ type: "spring", damping: 28, stiffness: 320 }}
             style={{
               background: "#ffffff", boxShadow: panelShadow,
@@ -523,7 +530,7 @@ export default function ChatWidget() {
                 onSendMessage={(msg) => handleSendMessage(activeChat.id, msg)}
                 onSendFile={(file, type, url) => handleSendFile(activeChat.id, file, type, url)}
                 onClose={handleClose} onMinimize={handleMinimize} onMaximize={handleMaximize}
-                isMinimized={isMinimized} isMaximized={isMaximized}
+                isMinimized={isMinimized} isMaximized={isMaximized} isMobile={isMobile}
               />
             ) : (
               /* ── Small widget: conversation list ── */
@@ -534,7 +541,7 @@ export default function ChatWidget() {
       </AnimatePresence>
 
       <AnimatePresence mode="wait">
-        {!isMaximized && (
+        {!isMaximized && !(isMobile && isOpen) && (
           <motion.button
             key="chat-fab"
             initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
@@ -823,6 +830,7 @@ interface ChatListProps {
   setSearchQuery: (q: string) => void;
   isLoading: boolean;
   compact?: boolean;
+  isMobile?: boolean;
   selectedChatId?: string;
   onNewChat: (mode?: "direct" | "group") => void;
 }
@@ -841,7 +849,7 @@ function SkeletonItem() {
 
 const filters = [{ id: "all", label: "All" }, { id: "direct", label: "Direct" }, { id: "group", label: "Group" }];
 
-function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMinimized, isMaximized, activeFilter, setActiveFilter, searchQuery, setSearchQuery, isLoading, compact, selectedChatId, onNewChat }: ChatListProps) {
+function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMinimized, isMaximized, activeFilter, setActiveFilter, searchQuery, setSearchQuery, isLoading, compact, isMobile, selectedChatId, onNewChat }: ChatListProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* ── Header ── */}
@@ -859,7 +867,7 @@ function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMini
             <div style={{ display: "flex", gap: 2 }}>
               <IconBtn onClick={() => onNewChat("group")} title="New group"><Users size={14} /></IconBtn>
               <IconBtn onClick={() => onNewChat("direct")} title="New direct chat"><UserPlus size={14} /></IconBtn>
-              <IconBtn onClick={onMaximize} title="Expand">{isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</IconBtn>
+              {!isMobile && <IconBtn onClick={onMaximize} title="Expand">{isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</IconBtn>}
               <IconBtn onClick={onClose} title="Close"><X size={14} /></IconBtn>
             </div>
           </div>
@@ -963,7 +971,7 @@ interface ChatWindowProps {
   onBack: () => void; onSendMessage: (message: Message) => void;
   onSendFile: (file: File, type: "image" | "file", localUrl: string) => void;
   onClose: () => void; onMinimize: () => void; onMaximize: () => void;
-  isMinimized: boolean; isMaximized: boolean; compact?: boolean;
+  isMinimized: boolean; isMaximized: boolean; compact?: boolean; isMobile?: boolean;
 }
 
 const EMOJIS = [
@@ -974,7 +982,7 @@ const EMOJIS = [
   "👋","🙏","👏","🤝","💪","✌️","🤞","🤙","👌","🫶","🌟","🥳","👀","💬","📎","📷","🎤",
 ];
 
-function ChatWindow({ chat, messages, messagesLoading, onBack, onSendMessage, onSendFile, onClose, onMinimize, onMaximize, isMinimized, isMaximized, compact }: ChatWindowProps) {
+function ChatWindow({ chat, messages, messagesLoading, onBack, onSendMessage, onSendFile, onClose, onMinimize, onMaximize, isMinimized, isMaximized, compact, isMobile }: ChatWindowProps) {
   const [input, setInput] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -1038,7 +1046,7 @@ function ChatWindow({ chat, messages, messagesLoading, onBack, onSendMessage, on
           <div style={{ fontSize: 11, color: "#9ca3af", fontFamily: "'Merriweather', serif" }}>{chat.type === "group" ? "Group chat" : "Offline"}</div>
         </div>
         <div style={{ display: "flex", gap: 2 }}>
-          {!compact && <IconBtn onClick={onMaximize} title={isMaximized ? "Restore" : "Expand"}>{isMaximized ? <Minimize2 size={15} /> : <Maximize2 size={15} />}</IconBtn>}
+          {!compact && !isMobile && <IconBtn onClick={onMaximize} title={isMaximized ? "Restore" : "Expand"}>{isMaximized ? <Minimize2 size={15} /> : <Maximize2 size={15} />}</IconBtn>}
           <IconBtn onClick={onClose} title="Close"><X size={15} /></IconBtn>
         </div>
       </div>
