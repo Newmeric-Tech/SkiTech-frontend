@@ -78,8 +78,8 @@ function mapConv(conv: APIConversation, myId: string): Chat {
   }
   return {
     id: conv.id, name, initials: getInitials(name),
-    lastMessage: conv.last_message?.content ?? "Tap to start chatting",
-    timestamp: formatTs(conv.updated_at),
+    lastMessage: conv.last_message?.content ?? "",
+    timestamp: conv.last_message ? formatTs(conv.last_message.created_at) : formatTs(conv.updated_at),
     unread: conv.unread_count, isOnline: false,
     type: conv.type, property_id: conv.property_id ?? null,
     otherParticipantId, messages: [],
@@ -849,18 +849,18 @@ function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMini
 
         {/* Non-compact (small widget) header — full controls */}
         {!compact && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: "#111111", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: "'Merriweather', serif" }}>S</span>
+              <div style={{ width: 32, height: 32, borderRadius: 9, background: "#111111", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: "'Merriweather', serif" }}>S</span>
               </div>
-              <span style={{ fontWeight: 700, fontSize: 15, color: "#111", fontFamily: "'Merriweather', serif" }}>SkiTech</span>
+              <span style={{ fontWeight: 700, fontSize: 15, color: "#111", fontFamily: "'Merriweather', serif" }}>Chats</span>
             </div>
-            <div style={{ display: "flex", gap: 4 }}>
+            <div style={{ display: "flex", gap: 2 }}>
               <IconBtn onClick={() => onNewChat("group")} title="New group"><Users size={14} /></IconBtn>
-              <IconBtn onClick={() => onNewChat("direct")} title="New direct chat"><UserPlus size={15} /></IconBtn>
-              <IconBtn onClick={onMaximize} title="Expand">{isMaximized ? <Minimize2 size={15} /> : <Maximize2 size={15} />}</IconBtn>
-              <IconBtn onClick={onClose} title="Close"><X size={15} /></IconBtn>
+              <IconBtn onClick={() => onNewChat("direct")} title="New direct chat"><UserPlus size={14} /></IconBtn>
+              <IconBtn onClick={onMaximize} title="Expand">{isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</IconBtn>
+              <IconBtn onClick={onClose} title="Close"><X size={14} /></IconBtn>
             </div>
           </div>
         )}
@@ -876,10 +876,6 @@ function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMini
               <IconBtn onClick={onClose} title="Close chat"><X size={14} /></IconBtn>
             </div>
           </div>
-        )}
-
-        {!compact && (
-          <h2 style={{ fontFamily: "'Merriweather', serif", fontWeight: 700, fontSize: 17, color: "#111", margin: "0 0 12px" }}>Chats</h2>
         )}
 
         <div style={{ position: "relative", marginBottom: 12 }}>
@@ -948,11 +944,13 @@ function ChatItem({ chat, onClick, isSelected }: { chat: Chat; onClick: () => vo
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3, gap: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{chat.name}</span>
-          <span style={{ fontSize: 10, color: "#9ca3af", flexShrink: 0 }}>{chat.timestamp}</span>
+          {chat.timestamp && <span style={{ fontSize: 10, color: "#9ca3af", flexShrink: 0 }}>{chat.timestamp}</span>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <p style={{ fontSize: 12, color: chat.unread > 0 ? "#111" : "#6b7280", fontWeight: chat.unread > 0 ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, flex: 1 }}>{chat.lastMessage}</p>
-          {chat.unread > 0 && <span style={{ minWidth: 20, height: 20, borderRadius: 99, background: "#ef4444", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 6px", flexShrink: 0 }}>{chat.unread}</span>}
+          <p style={{ fontSize: 12, color: chat.unread > 0 ? "#374151" : "#9ca3af", fontWeight: chat.unread > 0 ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, flex: 1, fontStyle: chat.lastMessage ? "normal" : "italic" }}>
+            {chat.lastMessage || "No messages yet"}
+          </p>
+          {chat.unread > 0 && <span style={{ minWidth: 20, height: 20, borderRadius: 99, background: "#111", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 6px", flexShrink: 0 }}>{chat.unread}</span>}
         </div>
       </div>
     </motion.button>
