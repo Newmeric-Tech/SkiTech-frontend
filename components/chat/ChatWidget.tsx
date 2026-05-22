@@ -424,12 +424,25 @@ export default function ChatWidget() {
   }, [chats, effectivePropertyId, user?.tenant_id, myProfile]);
 
   const isMobile = windowWidth < 520;
-  const panelWidth = isMaximized ? windowWidth : isMobile ? windowWidth : 380;
-  const panelHeight = isMinimized ? 56 : (isMaximized || (isMobile && !isMinimized)) ? windowHeight : Math.min(620, windowHeight - 90);
-  const panelRadius = isMaximized || isMobile ? 0 : 20;
-  const panelShadow = isMaximized || isMobile
+  // Side-panel open state: open, not maximized, not minimized, not mobile
+  const isSidePanel = isOpen && !isMinimized && !isMaximized && !isMobile;
+
+  const panelWidth = isMaximized
+    ? windowWidth
+    : isMobile
+      ? windowWidth
+      : Math.min(400, windowWidth);
+  const panelHeight = isMinimized ? 56 : windowHeight;
+  const panelRadius = isMaximized || (isMobile && !isMinimized)
+    ? 0
+    : isSidePanel
+      ? "16px 0 0 16px"
+      : 14;
+  const panelShadow = isMaximized || (isMobile && !isMinimized)
     ? "none"
-    : "0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.10)";
+    : isSidePanel
+      ? "-6px 0 32px rgba(0,0,0,0.14)"
+      : "0 8px 32px rgba(0,0,0,0.14)";
 
   const handleMinimize = () => { setIsMinimized(p => { if (!p) setIsMaximized(false); return !p; }); };
   const handleMaximize = () => { setIsMaximized(p => { if (!p) setIsMinimized(false); return !p; }); };
@@ -471,23 +484,25 @@ export default function ChatWidget() {
       position: "fixed", zIndex: 50,
       display: "flex", flexDirection: "column",
       alignItems: "flex-end", justifyContent: "flex-end",
-      gap: isMaximized || isMobile ? 0 : 16,
+      gap: 0,
       ...((isMaximized || (isMobile && isOpen && !isMinimized))
         ? { top: 0, left: 0, right: 0, bottom: 0 }
-        : { bottom: 24, right: 24 }
+        : isSidePanel
+          ? { top: 0, right: 0, bottom: 0 }  // full-height right-edge attachment
+          : { bottom: 24, right: 24 }
       ),
     }}>
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, ...(isMobile ? { y: 40 } : { x: 40, scale: 0.97 }), width: panelWidth, height: panelHeight, borderRadius: panelRadius }}
-            animate={{ opacity: 1, y: 0, x: 0, scale: 1, width: panelWidth, height: panelHeight, borderRadius: panelRadius }}
-            exit={{ opacity: 0, ...(isMobile ? { y: 40 } : { x: 40, scale: 0.97 }) }}
-            transition={{ type: "spring", damping: 28, stiffness: 320 }}
+            initial={{ opacity: 0, x: isMobile ? 0 : panelWidth, y: isMobile ? 40 : 0, width: panelWidth, height: panelHeight, borderRadius: panelRadius }}
+            animate={{ opacity: 1, x: 0, y: 0, width: panelWidth, height: panelHeight, borderRadius: panelRadius }}
+            exit={{ opacity: 0, x: isMobile ? 0 : panelWidth, y: isMobile ? 40 : 0 }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
             style={{
               background: "#ffffff", boxShadow: panelShadow,
-              border: isMaximized ? "none" : "1.5px solid #e5e7eb",
-              borderLeft: isMaximized ? "1.5px solid #e5e7eb" : undefined,
+              border: "none",
+              borderLeft: "1.5px solid #e5e7eb",
               overflow: "hidden", display: "flex",
               fontFamily: "'Merriweather', Georgia, serif", color: "#111111",
             }}
@@ -541,7 +556,7 @@ export default function ChatWidget() {
       </AnimatePresence>
 
       <AnimatePresence mode="wait">
-        {!isMaximized && !(isMobile && isOpen) && (
+        {!isMaximized && !isSidePanel && !(isMobile && isOpen) && (
           <motion.button
             key="chat-fab"
             initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
@@ -554,9 +569,7 @@ export default function ChatWidget() {
               boxShadow: "0 8px 24px rgba(0,0,0,0.22)", flexShrink: 0,
             }}
           >
-            <motion.div animate={{ rotate: isOpen ? 90 : 0 }} transition={{ duration: 0.2 }}>
-              {isOpen ? <X size={22} color="#ffffff" /> : <MessageCircle size={22} color="#ffffff" />}
-            </motion.div>
+            <MessageCircle size={22} color="#ffffff" />
           </motion.button>
         )}
       </AnimatePresence>
