@@ -23,6 +23,7 @@ interface Message {
   audioUrl?: string;
   timestamp: string;
   isSent: boolean;
+  senderName?: string;
 }
 
 interface Chat {
@@ -87,6 +88,7 @@ function mapConv(conv: APIConversation, myId: string): Chat {
 
 function mapMsg(msg: MessageItem, myId: string): Message {
   const m = msg.media?.[0];
+  const fullName = `${msg.sender.first_name ?? ""} ${msg.sender.last_name ?? ""}`.trim() || msg.sender.email;
   return {
     id: msg.id,
     type: m?.media_type === "image" ? "image" : m?.media_type === "audio" ? "audio" : m ? "file" : "text",
@@ -95,6 +97,7 @@ function mapMsg(msg: MessageItem, myId: string): Message {
     fileSize: m ? fmtBytes(m.file_size_bytes) : undefined,
     timestamp: formatTs(msg.created_at),
     isSent: msg.sender.id === myId,
+    senderName: fullName,
   };
 }
 
@@ -1059,7 +1062,7 @@ function ChatWindow({ chat, messages, messagesLoading, onBack, onSendMessage, on
             <p style={{ fontSize: 12, color: "#9ca3af", fontFamily: "'Merriweather', serif", margin: 0 }}>Say hello to start the conversation!</p>
           </div>
         ) : (
-          messages.map(msg => <MessageBubble key={msg.id} message={msg} />)
+          messages.map(msg => <MessageBubble key={msg.id} message={msg} isGroup={chat.type === "group"} />)
         )}
         <div ref={messagesEndRef} />
       </div>
@@ -1099,27 +1102,39 @@ function ChatWindow({ chat, messages, messagesLoading, onBack, onSendMessage, on
 }
 
 /* ─────────── Message bubble ─────────── */
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message, isGroup }: { message: Message; isGroup?: boolean }) {
   const sent = message.isSent;
+  const showSender = isGroup && !sent && message.senderName;
   return (
     <div style={{ display: "flex", justifyContent: sent ? "flex-end" : "flex-start" }}>
-      <div style={{ maxWidth: "78%", padding: "10px 14px", borderRadius: 18, background: sent ? "#111111" : "#f3f4f6", color: sent ? "#ffffff" : "#111111", borderBottomRightRadius: sent ? 4 : 18, borderBottomLeftRadius: sent ? 18 : 4, overflow: "hidden" }}>
-        {message.type === "text" && <p style={{ margin: 0, fontSize: 13, fontFamily: "'Merriweather', serif", lineHeight: 1.5 }}>{message.text}</p>}
-        {message.type === "image" && message.imageUrl && <img src={message.imageUrl} alt={message.fileName ?? "image"} style={{ maxWidth: "100%", borderRadius: 10, display: "block" }} />}
-        {message.type === "image" && !message.imageUrl && <p style={{ margin: 0, fontSize: 13, fontFamily: "'Merriweather', serif" }}>📷 {message.fileName ?? "Image"}</p>}
-        {message.type === "file" && (
-          <a href={message.fileUrl ?? "#"} download={message.fileName} style={{ color: "inherit", textDecoration: "none" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
-              <div style={{ width: 36, height: 36, borderRadius: 8, background: sent ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Paperclip size={16} /></div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, fontFamily: "'Merriweather', serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}>{message.fileName}</div>
-                <div style={{ fontSize: 10, opacity: 0.6, fontFamily: "'Merriweather', serif" }}>{message.fileSize} · Tap to download</div>
-              </div>
-            </div>
-          </a>
+      <div style={{ maxWidth: "78%", display: "flex", flexDirection: "column", alignItems: sent ? "flex-end" : "flex-start" }}>
+        {showSender && (
+          <span style={{
+            fontSize: 11, fontWeight: 700, color: "#6366f1",
+            fontFamily: "'Merriweather', serif",
+            marginBottom: 3, paddingLeft: 4,
+          }}>
+            {message.senderName}
+          </span>
         )}
-        {message.type === "audio" && <audio src={message.audioUrl} controls style={{ width: "100%", minWidth: 180, height: 36, borderRadius: 8 }} />}
-        <span style={{ fontSize: 10, opacity: 0.6, fontFamily: "'Merriweather', serif", display: "block", marginTop: 4, textAlign: sent ? "right" : "left" }}>{message.timestamp}</span>
+        <div style={{ padding: "10px 14px", borderRadius: 18, background: sent ? "#111111" : "#f3f4f6", color: sent ? "#ffffff" : "#111111", borderBottomRightRadius: sent ? 4 : 18, borderBottomLeftRadius: sent ? 18 : 4, overflow: "hidden" }}>
+          {message.type === "text" && <p style={{ margin: 0, fontSize: 13, fontFamily: "'Merriweather', serif", lineHeight: 1.5 }}>{message.text}</p>}
+          {message.type === "image" && message.imageUrl && <img src={message.imageUrl} alt={message.fileName ?? "image"} style={{ maxWidth: "100%", borderRadius: 10, display: "block" }} />}
+          {message.type === "image" && !message.imageUrl && <p style={{ margin: 0, fontSize: 13, fontFamily: "'Merriweather', serif" }}>📷 {message.fileName ?? "Image"}</p>}
+          {message.type === "file" && (
+            <a href={message.fileUrl ?? "#"} download={message.fileName} style={{ color: "inherit", textDecoration: "none" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: sent ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Paperclip size={16} /></div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, fontFamily: "'Merriweather', serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}>{message.fileName}</div>
+                  <div style={{ fontSize: 10, opacity: 0.6, fontFamily: "'Merriweather', serif" }}>{message.fileSize} · Tap to download</div>
+                </div>
+              </div>
+            </a>
+          )}
+          {message.type === "audio" && <audio src={message.audioUrl} controls style={{ width: "100%", minWidth: 180, height: 36, borderRadius: 8 }} />}
+          <span style={{ fontSize: 10, opacity: 0.6, fontFamily: "'Merriweather', serif", display: "block", marginTop: 4, textAlign: sent ? "right" : "left" }}>{message.timestamp}</span>
+        </div>
       </div>
     </div>
   );
