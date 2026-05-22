@@ -689,7 +689,7 @@ function ContactPicker({ contacts, loading, error, mode: initialMode, creatingFo
       </div>
 
       {/* Contact list */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
         {loading ? (
           <div style={{ padding: "30px 14px", textAlign: "center" }}>
             <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 10 }}>
@@ -914,7 +914,7 @@ function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMini
       </div>
 
       {/* ── List body ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
         {isLoading ? (
           [0, 1, 2, 3].map(i => <SkeletonItem key={i} />)
         ) : chats.length === 0 ? (
