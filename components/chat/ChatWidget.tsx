@@ -428,7 +428,14 @@ export default function ChatWidget() {
   // Side-panel: open, non-maximized, non-minimized, not a small phone
   const isSidePanel = isOpen && !isMinimized && !isMaximized && !isMobile;
 
-  const panelWidth = isMaximized ? windowWidth : isMobile ? windowWidth : Math.min(380, windowWidth);
+  // Expand from 380px (list only) to 640px (list + chat) when a conversation is open
+  const panelWidth = isMaximized
+    ? windowWidth
+    : isMobile
+      ? windowWidth
+      : selectedChat
+        ? Math.min(640, windowWidth)
+        : Math.min(380, windowWidth);
   // Split view (list sidebar + chat window) whenever the panel is wide enough
   const showSplitView = panelWidth >= 580;
   const panelHeight = isMinimized ? 56 : windowHeight;
