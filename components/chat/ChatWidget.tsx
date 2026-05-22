@@ -423,12 +423,12 @@ export default function ChatWidget() {
       .catch(() => {});
   }, [chats, effectivePropertyId, user?.tenant_id, myProfile]);
 
-  // Full-width on phones/tablets/small laptops; side panel only on large desktops
-  const isMobile = windowWidth < 1024;
-  // Side-panel: open, non-maximized, non-minimized, large desktop only
+  // Full-screen only on small phones; side panel on everything wider
+  const isMobile = windowWidth < 640;
+  // Side-panel: open, non-maximized, non-minimized, not a small phone
   const isSidePanel = isOpen && !isMinimized && !isMaximized && !isMobile;
 
-  const panelWidth = isMaximized ? windowWidth : isMobile ? windowWidth : Math.min(600, windowWidth);
+  const panelWidth = isMaximized ? windowWidth : isMobile ? windowWidth : Math.min(440, windowWidth);
   // Split view (list sidebar + chat window) whenever the panel is wide enough
   const showSplitView = panelWidth >= 580;
   const panelHeight = isMinimized ? 56 : windowHeight;
