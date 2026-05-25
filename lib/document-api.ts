@@ -17,7 +17,7 @@ export const documentApi = {
    */
   getDocuments: async (role: string): Promise<DocumentWithExtra[]> => {
     try {
-      const { data } = await api.get<BackendDocumentMeta[]>("/documents", {
+      const { data } = await api.get<BackendDocumentMeta[]>("/v1/documents", {
         headers: { "X-User-Role": role },
       });
       return data.map(mapToDocumentWithExtra);
@@ -80,7 +80,7 @@ export const documentApi = {
         backendForm.append("file", fileObj, fileObj.name);
       }
 
-      const { data } = await api.post<BackendDocumentMeta>("/documents/upload", backendForm, {
+      const { data } = await api.post<BackendDocumentMeta>("/v1/documents/upload", backendForm, {
         headers: { "Content-Type": "multipart/form-data", "X-User-Role": role },
         onUploadProgress,
       });
@@ -143,7 +143,7 @@ export const documentApi = {
     }
 
     try {
-      const { data } = await api.post<DocumentWithExtra>("/documents/create", docData, {
+      const { data } = await api.post<DocumentWithExtra>("/v1/documents/create", docData, {
         headers: { "X-User-Role": role }
       });
       return data;

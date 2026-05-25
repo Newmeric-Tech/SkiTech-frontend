@@ -157,31 +157,31 @@ export const complaintsAPI = {
 
   /** List complaints (manager sees property-wide, owner sees all) */
   list: async (params: ListComplaintsParams = {}): Promise<[ComplaintListItem[], number]> => {
-    const { data } = await api.get<[ComplaintListItem[], number]>("/complaints/", { params });
+    const { data } = await api.get<[ComplaintListItem[], number]>("/v1/complaints/", { params });
     return data;
   },
 
   /** Get complaint detail with comments & attachments */
   getDetail: async (id: string): Promise<ComplaintDetail> => {
-    const { data } = await api.get<ComplaintDetail>(`/complaints/${id}`);
+    const { data } = await api.get<ComplaintDetail>(`/v1/complaints/${id}`);
     return data;
   },
 
   /** Create a new complaint (staff / any role) */
   create: async (payload: CreateComplaintPayload): Promise<ComplaintDetail> => {
-    const { data } = await api.post<ComplaintDetail>("/complaints/", payload);
+    const { data } = await api.post<ComplaintDetail>("/v1/complaints/", payload);
     return data;
   },
 
   /** Resolve or close a complaint (manager / owner) */
   resolve: async (id: string, payload: ResolveComplaintPayload): Promise<ComplaintDetail> => {
-    const { data } = await api.post<ComplaintDetail>(`/complaints/${id}/resolve`, payload);
+    const { data } = await api.post<ComplaintDetail>(`/v1/complaints/${id}/resolve`, payload);
     return data;
   },
 
   /** Escalate a complaint */
   escalate: async (id: string, reason: string): Promise<ComplaintDetail> => {
-    const { data } = await api.post<ComplaintDetail>(`/complaints/${id}/escalate`, null, {
+    const { data } = await api.post<ComplaintDetail>(`/v1/complaints/${id}/escalate`, null, {
       params: { reason },
     });
     return data;
@@ -189,13 +189,13 @@ export const complaintsAPI = {
 
   /** Assign complaint to a staff member (manager / owner) */
   assign: async (id: string, payload: AssignComplaintPayload): Promise<ComplaintDetail> => {
-    const { data } = await api.post<ComplaintDetail>(`/complaints/${id}/assign`, payload);
+    const { data } = await api.post<ComplaintDetail>(`/v1/complaints/${id}/assign`, payload);
     return data;
   },
 
   /** Get complaints created by the current staff user */
   myComplaints: async (skip = 0, limit = 50): Promise<[ComplaintListItem[], number]> => {
-    const { data } = await api.get<[ComplaintListItem[], number]>("/complaints/me/my-complaints", {
+    const { data } = await api.get<[ComplaintListItem[], number]>("/v1/complaints/me/my-complaints", {
       params: { skip, limit },
     });
     return data;
@@ -203,30 +203,30 @@ export const complaintsAPI = {
 
   /** Add a comment to a complaint */
   addComment: async (id: string, payload: AddCommentPayload): Promise<ComplaintComment> => {
-    const { data } = await api.post<ComplaintComment>(`/complaints/${id}/comments`, payload);
+    const { data } = await api.post<ComplaintComment>(`/v1/complaints/${id}/comments`, payload);
     return data;
   },
 
   /** Get all comments for a complaint */
   getComments: async (id: string): Promise<ComplaintComment[]> => {
-    const { data } = await api.get<ComplaintComment[]>(`/complaints/${id}/comments`);
+    const { data } = await api.get<ComplaintComment[]>(`/v1/complaints/${id}/comments`);
     return data;
   },
 
   // ── Dashboards ──────────────────────────────────────────
 
   managerDashboard: async (): Promise<ManagerDashboard> => {
-    const { data } = await api.get<ManagerDashboard>("/complaints/dashboard/manager");
+    const { data } = await api.get<ManagerDashboard>("/v1/complaints/dashboard/manager");
     return data;
   },
 
   ownerDashboard: async (): Promise<OwnerDashboard> => {
-    const { data } = await api.get<OwnerDashboard>("/complaints/dashboard/owner");
+    const { data } = await api.get<OwnerDashboard>("/v1/complaints/dashboard/owner");
     return data;
   },
 
   staffDashboard: async (): Promise<StaffDashboard> => {
-    const { data } = await api.get<StaffDashboard>("/complaints/dashboard/staff");
+    const { data } = await api.get<StaffDashboard>("/v1/complaints/dashboard/staff");
     return data;
   },
 };

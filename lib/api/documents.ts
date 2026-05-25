@@ -111,7 +111,7 @@ export const documentsAPI = {
 
   /** List documents — returns mapped DocumentWithExtra[] */
   list: async (skip = 0, limit = 50): Promise<DocumentWithExtra[]> => {
-    const { data } = await api.get<BackendDocumentMeta[]>("/documents", {
+    const { data } = await api.get<BackendDocumentMeta[]>("/v1/documents", {
       params: { skip, limit },
     });
     return data.map(mapToDocumentWithExtra);
@@ -150,7 +150,7 @@ export const documentsAPI = {
     fd.append("access_scope", meta.access_scope ?? "organization_wide");
     fd.append("is_confidential", String(meta.is_confidential ?? false));
 
-    const { data } = await api.post<BackendDocumentMeta>("/documents/upload", fd, {
+    const { data } = await api.post<BackendDocumentMeta>("/v1/documents/upload", fd, {
       headers: { "Content-Type": "multipart/form-data" },
       onUploadProgress: onProgress
         ? (e) => { if (e.total) onProgress(Math.round((e.loaded / e.total) * 100)); }

@@ -88,33 +88,33 @@ export const schedulingAPI = {
 
   /** Current user's staff dashboard (schedule + replacement requests) */
   myDashboard: async (): Promise<BackendStaffDashboard> => {
-    const { data } = await api.get<BackendStaffDashboard>("/scheduling/me");
+    const { data } = await api.get<BackendStaffDashboard>("/v1/scheduling/me");
     return data;
   },
 
   /** Manager dashboard — defaults to current week on backend */
   managerDashboard: async (): Promise<BackendManagerDashboard> => {
-    const { data } = await api.get<BackendManagerDashboard>("/scheduling/dashboard/manager");
+    const { data } = await api.get<BackendManagerDashboard>("/v1/scheduling/dashboard/manager");
     return data;
   },
 
   /** Accept a replacement request (as a staff member) */
   acceptReplacement: async (requestId: string, employeeId: string): Promise<void> => {
-    await api.post(`/scheduling/replacement-requests/${requestId}/accept`, null, {
+    await api.post(`/v1/scheduling/replacement-requests/${requestId}/accept`, null, {
       params: { employee_id: employeeId },
     });
   },
 
   /** Reject a replacement request (as a staff member) */
   rejectReplacement: async (requestId: string, employeeId: string, reason?: string): Promise<void> => {
-    await api.post(`/scheduling/replacement-requests/${requestId}/reject`, null, {
+    await api.post(`/v1/scheduling/replacement-requests/${requestId}/reject`, null, {
       params: { employee_id: employeeId, reason },
     });
   },
 
   /** Direct-assign a replacement (manager) */
   assignReplacement: async (requestId: string, replacementEmployeeId: string): Promise<void> => {
-    await api.post(`/scheduling/replacement-requests/${requestId}/assign`, null, {
+    await api.post(`/v1/scheduling/replacement-requests/${requestId}/assign`, null, {
       params: { replacement_employee_id: replacementEmployeeId },
     });
   },

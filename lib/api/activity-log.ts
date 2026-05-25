@@ -51,7 +51,7 @@ export const activityLogAPI = {
 
   /** Summary stats for the stats cards */
   summary: async (days = 7): Promise<ActivitySummary> => {
-    const { data } = await api.get<ActivitySummary>("/activity-log/summary", {
+    const { data } = await api.get<ActivitySummary>("/v1/activity-log/summary", {
       params: { days },
     });
     return data;
@@ -61,7 +61,7 @@ export const activityLogAPI = {
   list: async (
     params: ListActivityParams = {}
   ): Promise<[ActivityLogItem[], number]> => {
-    const { data } = await api.get<[ActivityLogItem[], number]>("/activity-log/", {
+    const { data } = await api.get<[ActivityLogItem[], number]>("/v1/activity-log/", {
       params,
     });
     return data;
@@ -69,7 +69,7 @@ export const activityLogAPI = {
 
   /** Recent critical events */
   critical: async (limit = 10): Promise<ActivityLogItem[]> => {
-    const { data } = await api.get<ActivityLogItem[]>("/activity-log/critical", {
+    const { data } = await api.get<ActivityLogItem[]>("/v1/activity-log/critical", {
       params: { limit },
     });
     return data;
