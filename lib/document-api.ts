@@ -1,4 +1,4 @@
-import { api } from "./api";
+import api from "@/lib/config/app";
 import { DocumentWithExtra, ReviewHistoryEntry } from "./useDocumentStore";
 
 /**
