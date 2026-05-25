@@ -1,6 +1,6 @@
 "use client";
 
-import { useScheduling } from "@/store/SchedulingStore";
+import { useScheduling, SchedulingProvider } from "@/store/SchedulingStore";
 import { CheckCircle2, XCircle, Info, Building2, Clock, User, Zap, DollarSign, Calendar, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
@@ -310,8 +310,10 @@ function StaffSchedulingContent() {
 
 export default function StaffSchedulingPage() {
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 lg:p-8">
-      <StaffSchedulingContent />
-    </div>
+    <SchedulingProvider>
+      <div className="min-h-screen bg-[#F8FAFC] p-4 lg:p-8">
+        <StaffSchedulingContent />
+      </div>
+    </SchedulingProvider>
   );
 }

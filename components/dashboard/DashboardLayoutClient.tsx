@@ -33,7 +33,7 @@ const ownerNav: NavItem[] = [
   { icon: Shield,          label: "KRA Monitoring",     href: "/owner/kra" },
   { icon: Truck,           label: "Inventory",          href: "/owner/inventory", feature: "inventory" },
   { icon: FileText,        label: "SOP Management",     href: "/owner/sop" },
-  { icon: CalendarClock,   label: "Employee Scheduling",href: "/owner/master-activity-log" },
+  { icon: CalendarClock,   label: "Employee Scheduling",href: "/owner/scheduling" },
   { icon: AlertCircle,     label: "Error & Complaints", href: "/owner/complaints" },
   { icon: Folder,          label: "Documents",          href: "/owner/document-management" },
   { icon: Activity,        label: "Activity Log",       href: "/owner/master-activity-log" },

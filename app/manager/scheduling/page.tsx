@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useScheduling, EmergencyAlert, Employee } from "@/store/SchedulingStore";
+import { useScheduling, EmergencyAlert, Employee, SchedulingProvider } from "@/store/SchedulingStore";
 import { EmergencyAlertBanner } from "@/components/scheduling/EmergencyAlertBanner";
 import { StaffingAnalytics } from "@/components/scheduling/StaffingAnalytics";
 import { ScheduleTable } from "@/components/scheduling/ScheduleTable";
@@ -286,5 +286,9 @@ function ManagerSchedulingContent() {
 }
 
 export default function ManagerSchedulingPage() {
-  return <ManagerSchedulingContent />;
+  return (
+    <SchedulingProvider>
+      <ManagerSchedulingContent />
+    </SchedulingProvider>
+  );
 }

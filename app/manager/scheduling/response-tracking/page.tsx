@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { useScheduling } from "@/store/SchedulingStore";
+import { useScheduling, SchedulingProvider } from "@/store/SchedulingStore";
 import {
   ArrowLeft, CheckCircle2, XCircle, Clock, Sparkles, Send,
   Users, AlertTriangle, ChevronRight, Plus, Bell, Activity,
@@ -228,7 +228,7 @@ function TimelineItem({ item }: { item: typeof TIMELINE[0] }) {
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
-export default function ResponseTrackingPage() {
+function ResponseTrackingPageInner() {
   const { replacementRequests, getPendingRequests, getAcceptedRequests, getRejectedRequests, employees, shifts, assignShift, sendReplacementRequest, addEmergencyAlert } = useScheduling();
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "accepted" | "rejected">("all");
   const [showNewAlertForm, setShowNewAlertForm] = useState(false);
@@ -513,5 +513,13 @@ const pending = getPendingRequests().length;
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ResponseTrackingPage() {
+  return (
+    <SchedulingProvider>
+      <ResponseTrackingPageInner />
+    </SchedulingProvider>
   );
 }
