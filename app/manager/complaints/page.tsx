@@ -1,436 +1,326 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Plus, Search, Filter, AlertCircle, CheckCircle2, Clock, X, UserPlus, Eye } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Search, Filter, AlertCircle, CheckCircle2, Clock, Eye, X,
+  UserPlus, ShieldAlert, Loader2, RefreshCw, ChevronDown,
+} from "lucide-react";
 import { toast } from "sonner";
-
-interface TeamComplaint {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  severity: string;
-  status: "open" | "in_progress" | "resolved" | "escalated";
-  createdAt: string;
-  roomNumber?: string;
-  department: string;
-  reportedBy: string;
-  assignedTo?: string;
-}
-
-const categories = ["Housekeeping", "Maintenance", "F&B", "Front Desk", "Security", "WiFi", "HVAC", "Other"];
-const severities = ["Low", "Medium", "High", "Critical"];
-const teamMembers = ["Fatima Al-Hassan", "Ahmed Khalid", "Raj Patel", "Sarah Mitchell", "James Lee", "Maria Santos"];
+import {
+  complaintsAPI, ComplaintListItem, ComplaintDetail,
+  ManagerDashboard, ComplaintCategory, ComplaintStatus,
+  ComplaintPriority, fmtDate, priorityStyles, statusStyles,
+} from "@/lib/api/complaints";
 
 export default function ManagerComplaintsPage() {
-  const [showForm, setShowForm] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [filterDept, setFilterDept] = useState<string>("all");
-  const [selectedComplaint, setSelectedComplaint] = useState<TeamComplaint | null>(null);
+  const [dashboard, setDashboard]       = useState<ManagerDashboard | null>(null);
+  const [complaints, setComplaints]     = useState<ComplaintListItem[]>([]);
+  const [total, setTotal]               = useState(0);
+  const [loading, setLoading]           = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const [complaints, setComplaints] = useState<TeamComplaint[]>([
-    {
-      id: "#CMP-10492",
-      title: "Room 402 - Water Leakage",
-      description: "Guest reported water dripping from the ceiling in the bathroom. Possible pipe burst on the floor above.",
-      category: "Maintenance",
-      severity: "High",
-      status: "open",
-      createdAt: "Today, 08:45 AM",
-      roomNumber: "402",
-      department: "Maintenance",
-      reportedBy: "Sarah Mitchell",
-    },
-    {
-      id: "#CMP-10495",
-      title: "Suite 22 - Smart Lock Failure",
-      description: "RFID reader is not responding to keycards. Guest is currently waiting in the lobby.",
-      category: "Maintenance",
-      severity: "Critical",
-      status: "in_progress",
-      createdAt: "Today, 09:12 AM",
-      roomNumber: "22",
-      department: "Maintenance",
-      reportedBy: "James Lee",
-      assignedTo: "Raj Patel",
-    },
-    {
-      id: "#CMP-10501",
-      title: "Room 1105 - Incomplete Turnout",
-      description: "Guest checked in and found minibar not restocked and towels missing. VIP Platinum member.",
-      category: "Housekeeping",
-      severity: "High",
-      status: "open",
-      createdAt: "Today, 10:30 AM",
-      roomNumber: "1105",
-      department: "Housekeeping",
-      reportedBy: "Fatima Al-Hassan",
-    },
-    {
-      id: "#CMP-10480",
-      title: "Room 305 - AC Not Cooling",
-      description: "Guest reported AC is not working properly.",
-      category: "Maintenance",
-      severity: "High",
-      status: "resolved",
-      createdAt: "Yesterday, 08:30 AM",
-      roomNumber: "305",
-      department: "Maintenance",
-      reportedBy: "Raj Patel",
-    },
-  ]);
+  // filters
+  const [search, setSearch]             = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterPriority, setFilterPriority] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
 
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    category: "",
-    severity: "Medium",
-    roomNumber: "",
-    assignedTo: "",
-  });
+  // detail panel
+  const [detail, setDetail]             = useState<ComplaintDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
-  const filtered = complaints.filter((c) => {
-    const matchesSearch =
-      c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.reportedBy.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === "all" || c.status === filterStatus;
-    const matchesDept = filterDept === "all" || c.department === filterDept;
-    return matchesSearch && matchesStatus && matchesDept;
-  });
+  // resolve modal
+  const [resolveId, setResolveId]       = useState<string | null>(null);
+  const [resolveNotes, setResolveNotes] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.title || !formData.description || !formData.category) {
-      toast.error("Please fill in all required fields");
-      return;
+  // assign modal
+  const [assignId, setAssignId]         = useState<string | null>(null);
+  const [assignUserId, setAssignUserId] = useState("");
+
+  const loadDashboard = useCallback(async () => {
+    try {
+      const dash = await complaintsAPI.managerDashboard();
+      setDashboard(dash);
+    } catch { /* silent */ }
+  }, []);
+
+  const loadList = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [items, count] = await complaintsAPI.list({
+        skip: 0, limit: 100,
+        status:   filterStatus   ? filterStatus   as ComplaintStatus   : undefined,
+        priority: filterPriority ? filterPriority as ComplaintPriority : undefined,
+        category: filterCategory ? filterCategory as ComplaintCategory : undefined,
+        search:   search || undefined,
+      });
+      setComplaints(items);
+      setTotal(count);
+    } catch { toast.error("Failed to load complaints"); }
+    finally { setLoading(false); }
+  }, [search, filterStatus, filterPriority, filterCategory]);
+
+  useEffect(() => { loadDashboard(); }, [loadDashboard]);
+  useEffect(() => { loadList(); }, [loadList]);
+
+  const openDetail = async (id: string) => {
+    try {
+      setDetailLoading(true);
+      const d = await complaintsAPI.getDetail(id);
+      setDetail(d);
+    } catch { toast.error("Failed to load complaint details"); }
+    finally { setDetailLoading(false); }
+  };
+
+  const handleResolve = async () => {
+    if (!resolveId || resolveNotes.trim().length < 10) {
+      toast.error("Resolution notes must be at least 10 characters"); return;
     }
-    const newComplaint: TeamComplaint = {
-      id: `#CMP-${10500 + complaints.length + 1}`,
-      title: formData.title,
-      description: formData.description,
-      category: formData.category,
-      severity: formData.severity,
-      status: "open",
-      createdAt: new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }),
-      roomNumber: formData.roomNumber || undefined,
-      department: formData.category,
-      reportedBy: "You",
-      assignedTo: formData.assignedTo || undefined,
-    };
-    setComplaints([newComplaint, ...complaints]);
-    setFormData({ title: "", description: "", category: "", severity: "Medium", roomNumber: "", assignedTo: "" });
-    setShowForm(false);
-    toast.success("Complaint created successfully");
+    try {
+      setActionLoading(resolveId);
+      await complaintsAPI.resolve(resolveId, { status: "resolved", resolution_notes: resolveNotes });
+      toast.success("Complaint resolved");
+      setResolveId(null); setResolveNotes("");
+      loadList(); loadDashboard(); setDetail(null);
+    } catch (err: any) { toast.error(err?.response?.data?.detail || "Failed to resolve"); }
+    finally { setActionLoading(null); }
   };
 
-  const handleStatusChange = (id: string, newStatus: TeamComplaint["status"]) => {
-    setComplaints(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
-    toast.success(`Status updated to ${newStatus.replace("_", " ")}`);
+  const handleEscalate = async (id: string) => {
+    try {
+      setActionLoading(id);
+      await complaintsAPI.escalate(id, "Escalated by manager for urgent attention");
+      toast.success("Complaint escalated");
+      loadList(); loadDashboard(); setDetail(null);
+    } catch (err: any) { toast.error(err?.response?.data?.detail || "Failed to escalate"); }
+    finally { setActionLoading(null); }
   };
 
-  const handleAssign = (id: string, assignee: string) => {
-    setComplaints(prev => prev.map(c => c.id === id ? { ...c, assignedTo: assignee } : c));
-    toast.success(`Assigned to ${assignee}`);
-  };
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case "Critical": return "bg-red-100 text-red-700 border-red-200";
-      case "High": return "bg-orange-100 text-orange-700 border-orange-200";
-      case "Medium": return "bg-blue-100 text-blue-700 border-blue-200";
-      case "Low": return "bg-emerald-100 text-emerald-700 border-emerald-200";
-      default: return "bg-slate-100 text-slate-700 border-slate-200";
-    }
-  };
-
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case "resolved": return "bg-emerald-100 text-emerald-700";
-      case "in_progress": return "bg-amber-100 text-amber-700";
-      case "escalated": return "bg-red-100 text-red-700";
-      case "open": return "bg-blue-100 text-blue-700";
-      default: return "bg-slate-100 text-slate-700";
-    }
-  };
-
-  const stats = {
-    total: complaints.length,
-    open: complaints.filter(c => c.status === "open").length,
-    inProgress: complaints.filter(c => c.status === "in_progress").length,
-    resolved: complaints.filter(c => c.status === "resolved").length,
+  const handleAssign = async () => {
+    if (!assignId || !assignUserId.trim()) { toast.error("Enter the user ID to assign"); return; }
+    try {
+      setActionLoading(assignId);
+      await complaintsAPI.assign(assignId, { assigned_to: assignUserId });
+      toast.success("Complaint assigned");
+      setAssignId(null); setAssignUserId("");
+      loadList(); loadDashboard();
+    } catch (err: any) { toast.error(err?.response?.data?.detail || "Failed to assign"); }
+    finally { setActionLoading(null); }
   };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Team Complaints</h2>
-          <p className="text-sm text-slate-500 mt-1">Manage and track all complaints in your team.</p>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Error &amp; Complaint Log</h2>
+          <p className="text-sm text-slate-500 mt-1">Manage, assign, and resolve complaints for your property. ({total} total)</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-900 rounded-lg text-sm font-medium text-white hover:bg-slate-800"
-        >
-          <Plus className="w-4 h-4" /> New Complaint
+        <button onClick={() => { loadList(); loadDashboard(); }}
+          className="flex items-center gap-2 px-3 py-2 border border-slate-200 dark:border-white/10 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5">
+          <RefreshCw className="w-4 h-4" /> Refresh
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Total", value: stats.total, color: "#3B82F6" },
-          { label: "Open", value: stats.open, color: "#3B82F6" },
-          { label: "In Progress", value: stats.inProgress, color: "#F59E0B" },
-          { label: "Resolved", value: stats.resolved, color: "#10B981" },
-        ].map((s) => (
-          <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <p className="text-xs text-slate-500 font-medium">{s.label}</p>
-            <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
-          </div>
-        ))}
-      </div>
+      {/* Dashboard Stats */}
+      {dashboard && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {[
+            { label: "Total",      value: dashboard.total_complaints,  color: "#3B82F6" },
+            { label: "Open",       value: dashboard.open_complaints,   color: "#3B82F6" },
+            { label: "In Progress",value: dashboard.in_progress_count, color: "#F59E0B" },
+            { label: "Escalated",  value: dashboard.escalated_count,   color: "#EF4444" },
+            { label: "Resolved Today", value: dashboard.resolved_today, color: "#10B981" },
+          ].map((s) => (
+            <div key={s.label} className="bg-white dark:bg-[#1c1c1c] rounded-xl border border-slate-200 dark:border-white/10 p-4 shadow-sm">
+              <p className="text-xs text-slate-500 font-medium">{s.label}</p>
+              <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
+      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by title, ID or reporter..."
-            className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-300"
-          />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search title or description…"
+            className="w-full pl-9 pr-4 py-2 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-white/10 rounded-lg text-sm focus:outline-none" />
         </div>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-300"
-        >
-          <option value="all">All Status</option>
-          <option value="open">Open</option>
-          <option value="in_progress">In Progress</option>
-          <option value="escalated">Escalated</option>
-          <option value="resolved">Resolved</option>
-        </select>
-        <select
-          value={filterDept}
-          onChange={(e) => setFilterDept(e.target.value)}
-          className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-300"
-        >
-          <option value="all">All Departments</option>
-          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+        {[
+          { val: filterStatus,   setter: setFilterStatus,   opts: ["open","in_progress","resolved","escalated","closed"], label: "Status" },
+          { val: filterPriority, setter: setFilterPriority, opts: ["low","medium","high","critical"],                     label: "Priority" },
+          { val: filterCategory, setter: setFilterCategory, opts: ["maintenance","housekeeping","technical","operational","security","safety","other"], label: "Category" },
+        ].map(({ val, setter, opts, label }) => (
+          <select key={label} value={val} onChange={(e) => setter(e.target.value)}
+            className="px-3 py-2 bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-white/10 rounded-lg text-sm focus:outline-none capitalize">
+            <option value="">All {label}</option>
+            {opts.map((o) => <option key={o} value={o} className="capitalize">{o.replace("_", " ")}</option>)}
+          </select>
+        ))}
       </div>
 
-      <div className="space-y-3">
-        {filtered.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-xl border border-slate-200">
-            <AlertCircle className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500 font-medium">No complaints found</p>
-          </div>
-        ) : (
-          filtered.map((complaint) => (
-            <motion.div
-              key={complaint.id}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`bg-white rounded-xl border p-5 shadow-sm ${
-                complaint.status === "resolved" ? "border-emerald-200" : "border-slate-200"
-              }`}
-            >
+      {/* List */}
+      {loading ? (
+        <div className="flex items-center justify-center h-48"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>
+      ) : complaints.length === 0 ? (
+        <div className="text-center py-12 bg-white dark:bg-[#1c1c1c] rounded-xl border border-slate-200 dark:border-white/10">
+          <AlertCircle className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-500 font-medium">No complaints found</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {complaints.map((c) => (
+            <motion.div key={c.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+              className={`bg-white dark:bg-[#1c1c1c] rounded-xl border p-5 shadow-sm ${
+                c.status === "resolved" ? "border-emerald-200" : c.status === "escalated" ? "border-red-200" : "border-slate-200 dark:border-white/10"}`}>
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">
-                    {complaint.category}
-                  </span>
-                  <span className="text-xs text-slate-400">{complaint.id}</span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border ${getSeverityColor(complaint.severity)}`}>
-                    {complaint.severity}
-                  </span>
+                  <span className="text-xs font-bold capitalize px-2 py-0.5 rounded bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300">{c.complaint_type}</span>
+                  <span className="text-xs text-slate-400 font-mono">{c.id.slice(0, 8)}…</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase border ${priorityStyles[c.priority]}`}>{c.priority}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-slate-50 dark:bg-white/5 text-slate-500 capitalize">{c.category}</span>
                 </div>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full capitalize ${getStatusStyle(complaint.status)}`}>
-                  {complaint.status.replace("_", " ")}
-                </span>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full capitalize ${statusStyles[c.status]}`}>{c.status.replace("_", " ")}</span>
               </div>
-
               <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h3 className="font-bold text-slate-900 mb-1">{complaint.title}</h3>
-                  <p className="text-sm text-slate-500 leading-relaxed mb-3">{complaint.description}</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-slate-900 dark:text-white mb-1">{c.title}</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed line-clamp-2 mb-2">{c.description}</p>
                   <div className="flex items-center gap-4 text-xs text-slate-400 flex-wrap">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {complaint.createdAt}
-                    </span>
-                    <span>By: <span className="text-slate-600">{complaint.reportedBy}</span></span>
-                    {complaint.roomNumber && <span>Room {complaint.roomNumber}</span>}
-                    {complaint.assignedTo && (
-                      <span>Assigned: <span className="text-slate-600">{complaint.assignedTo}</span></span>
-                    )}
+                    <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{fmtDate(c.created_at)}</span>
+                    {c.room_number && <span>Room {c.room_number}</span>}
+                    {c.assigned_to && <span className="text-blue-600">Assigned</span>}
+                    {c.comment_count > 0 && <span>{c.comment_count} comment{c.comment_count !== 1 ? "s" : ""}</span>}
                   </div>
                 </div>
+                <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                  <button onClick={() => openDetail(c.id)}
+                    className="p-2 border border-slate-200 dark:border-white/10 rounded-lg text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5" title="View detail">
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  {c.status !== "resolved" && c.status !== "closed" && (
+                    <>
+                      <button onClick={() => setAssignId(c.id)}
+                        className="p-2 border border-blue-200 rounded-lg text-blue-500 hover:bg-blue-50" title="Assign">
+                        <UserPlus className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => setResolveId(c.id)}
+                        className="p-2 border border-emerald-200 rounded-lg text-emerald-500 hover:bg-emerald-50" title="Resolve">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </button>
+                      {c.status !== "escalated" && (
+                        <button onClick={() => handleEscalate(c.id)} disabled={actionLoading === c.id}
+                          className="p-2 border border-red-200 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-50" title="Escalate">
+                          {actionLoading === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldAlert className="w-4 h-4" />}
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
-                {complaint.status !== "resolved" && (
-                  <div className="flex items-center gap-2 ml-4">
-                    <button
-                      onClick={() => setSelectedComplaint(complaint)}
-                      className="p-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50"
-                      title="Manage"
-                    >
-                      <Eye className="w-4 h-4" />
+      {/* Detail Side Panel */}
+      <AnimatePresence>
+        {(detail || detailLoading) && (
+          <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
+            className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-[#1c1c1c] shadow-2xl border-l border-slate-200 dark:border-white/10 z-50 overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-[#1c1c1c] border-b border-slate-200 dark:border-white/10 px-6 py-4 flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 dark:text-white">Complaint Detail</h3>
+              <button onClick={() => setDetail(null)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+            </div>
+            {detailLoading ? (
+              <div className="flex items-center justify-center h-48"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>
+            ) : detail && (
+              <div className="p-6 space-y-5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase border ${priorityStyles[detail.priority]}`}>{detail.priority}</span>
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full capitalize ${statusStyles[detail.status]}`}>{detail.status.replace("_", " ")}</span>
+                  <span className="text-xs capitalize px-2 py-0.5 rounded bg-slate-100 dark:bg-white/10 text-slate-500">{detail.category}</span>
+                </div>
+                <h4 className="font-bold text-lg text-slate-900 dark:text-white">{detail.title}</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{detail.description}</p>
+                <div className="text-xs text-slate-400 space-y-1">
+                  <p>Created: {fmtDate(detail.created_at)}</p>
+                  {detail.room_number && <p>Location: Room {detail.room_number}</p>}
+                  {detail.resolved_at && <p>Resolved: {fmtDate(detail.resolved_at)}</p>}
+                  {detail.resolution_notes && <p className="text-emerald-600">Resolution: {detail.resolution_notes}</p>}
+                </div>
+                {detail.comments.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Comments ({detail.comments.length})</p>
+                    <div className="space-y-2">
+                      {detail.comments.map((cm) => (
+                        <div key={cm.id} className="bg-slate-50 dark:bg-white/5 rounded-lg p-3">
+                          <p className="text-sm text-slate-700 dark:text-slate-200">{cm.comment}</p>
+                          <p className="text-xs text-slate-400 mt-1">{fmtDate(cm.created_at)} {cm.is_internal && "· Internal"}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {detail.status !== "resolved" && detail.status !== "closed" && (
+                  <div className="flex gap-2 pt-2">
+                    <button onClick={() => { setResolveId(detail.id); setDetail(null); }}
+                      className="flex-1 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">
+                      Resolve
                     </button>
+                    {detail.status !== "escalated" && (
+                      <button onClick={() => { handleEscalate(detail.id); setDetail(null); }}
+                        className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700">
+                        Escalate
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
-            </motion.div>
-          ))
+            )}
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
 
-      {showForm && (
+      {/* Resolve Modal */}
+      {resolveId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-          >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white">
-              <h3 className="font-bold text-slate-900">Create New Complaint</h3>
-              <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-[#1c1c1c] rounded-2xl shadow-xl w-full max-w-md p-6">
+            <h3 className="font-bold text-slate-900 dark:text-white mb-4">Resolve Complaint</h3>
+            <textarea value={resolveNotes} onChange={(e) => setResolveNotes(e.target.value)}
+              placeholder="Describe how this was resolved (min 10 characters)…" rows={4}
+              className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 bg-white dark:bg-[#111] rounded-lg text-sm focus:outline-none resize-none mb-4" />
+            <div className="flex gap-3">
+              <button onClick={() => { setResolveId(null); setResolveNotes(""); }}
+                className="flex-1 px-4 py-2 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
+              <button onClick={handleResolve} disabled={!!actionLoading}
+                className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />} Mark Resolved
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Title *</label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Brief description of the issue"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Description *</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Provide detailed information"
-                  rows={3}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-300 resize-none"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Category *</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-300"
-                  >
-                    <option value="">Select category</option>
-                    {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Severity</label>
-                  <select
-                    value={formData.severity}
-                    onChange={(e) => setFormData({ ...formData, severity: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-300"
-                  >
-                    {severities.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Room Number</label>
-                  <input
-                    type="text"
-                    value={formData.roomNumber}
-                    onChange={(e) => setFormData({ ...formData, roomNumber: e.target.value })}
-                    placeholder="e.g. 305"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-300"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Assign To</label>
-                  <select
-                    value={formData.assignedTo}
-                    onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-300"
-                  >
-                    <option value="">Unassigned</option>
-                    {teamMembers.map((m) => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowForm(false)} className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">
-                  Cancel
-                </button>
-                <button type="submit" className="flex-1 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800">
-                  Create Complaint
-                </button>
-              </div>
-            </form>
           </motion.div>
         </div>
       )}
 
-      {selectedComplaint && (
+      {/* Assign Modal */}
+      {assignId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-md"
-          >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-              <h3 className="font-bold text-slate-900">Manage Complaint</h3>
-              <button onClick={() => setSelectedComplaint(null)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-[#1c1c1c] rounded-2xl shadow-xl w-full max-w-md p-6">
+            <h3 className="font-bold text-slate-900 dark:text-white mb-4">Assign Complaint</h3>
+            <input value={assignUserId} onChange={(e) => setAssignUserId(e.target.value)}
+              placeholder="Staff User ID (UUID)…"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-white/10 bg-white dark:bg-[#111] rounded-lg text-sm focus:outline-none mb-4" />
+            <div className="flex gap-3">
+              <button onClick={() => { setAssignId(null); setAssignUserId(""); }}
+                className="flex-1 px-4 py-2 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
+              <button onClick={handleAssign} disabled={!!actionLoading}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />} Assign
               </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="p-4 bg-slate-50 rounded-lg">
-                <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Title</p>
-                <p className="font-semibold text-slate-900">{selectedComplaint.title}</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Change Status</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["open", "in_progress", "escalated", "resolved"] as const).map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => { handleStatusChange(selectedComplaint.id, s); setSelectedComplaint(null); }}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                        selectedComplaint.status === s
-                          ? "bg-slate-900 text-white border-slate-900"
-                          : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-                      }`}
-                    >
-                      {s.replace("_", " ")}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Assign Staff</label>
-                <select
-                  onChange={(e) => { handleAssign(selectedComplaint.id, e.target.value); setSelectedComplaint(null); }}
-                  value={selectedComplaint.assignedTo || ""}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-300"
-                >
-                  <option value="">Unassigned</option>
-                  {teamMembers.map((m) => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
             </div>
           </motion.div>
         </div>
