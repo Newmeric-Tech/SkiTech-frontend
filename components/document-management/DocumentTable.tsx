@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { 
-  MoreVertical, File, ChevronDown, List, LayoutGrid, Search, 
+  MoreVertical, File, ChevronDown, List, LayoutGrid, Search,
   UploadCloud, Pin, Image as ImageIcon, FileText, FileCode,
   Filter, RotateCcw, X, Eye, Download, Info, Check, ShieldAlert,
-  Calendar, Layers, ShieldCheck, Tag, ZoomIn, ZoomOut, Maximize2, Trash2, Edit3, ArrowRightLeft
+  Calendar, Layers, ShieldCheck, Tag, ZoomIn, ZoomOut, Maximize2, Trash2, Edit3, ArrowRightLeft, Send
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DocumentWithExtra, useDocumentStore, ReviewHistoryEntry } from "@/lib/useDocumentStore";
@@ -241,6 +241,14 @@ export function DocumentTable({
         visibility: editAccess
       });
     }
+  };
+
+  const handlePublish = (doc: DocumentWithExtra, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`Publish "${doc.name}"? It will become Active and visible to the organization.`)) return;
+    store.updateDocument(doc.id, { status: "Active" as any, isShared: doc.visibility !== "Private" }, "Current User");
+    store.addLog("PUBLISH", "Current User", doc.name, "Draft published to Active.");
+    showToast(`"${doc.name}" published successfully.`);
   };
 
   const handleDelete = (doc: DocumentWithExtra, e: React.MouseEvent) => {
@@ -595,13 +603,22 @@ export function DocumentTable({
                             <MoreVertical className="w-4 h-4" />
                           </button>
                           <div className="absolute right-0 bottom-full mb-1 w-44 bg-white border border-black/10 rounded-xl shadow-xl hidden group-hover/menu:block z-50 p-1">
-                            <button 
+                            <button
                               onClick={(e) => handleEditOpen(doc, e)}
                               className="w-full text-left px-3 py-2 text-xs font-bold text-black hover:bg-neutral-50 rounded-lg flex items-center gap-2"
                             >
                               <Edit3 className="w-3.5 h-3.5 text-neutral-500" />
                               Edit Details
                             </button>
+                            {doc.status === "Draft" && (
+                              <button
+                                onClick={(e) => handlePublish(doc, e)}
+                                className="w-full text-left px-3 py-2 text-xs font-bold text-green-700 hover:bg-green-50 rounded-lg flex items-center gap-2"
+                              >
+                                <Send className="w-3.5 h-3.5" />
+                                Publish Draft
+                              </button>
+                            )}
                             {(role === "Owner" || role === "Manager") && doc.status === "Pending Approval" && (
                               <button 
                                 onClick={() => { setReviewingDoc(doc); setShowReviewModal(true); }}
@@ -1064,20 +1081,50 @@ export function DocumentTable({
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-black/10">
-                  <button 
+                <div className="flex justify-between items-center gap-3 pt-4 border-t border-black/10">
+                  <button
                     type="button"
                     onClick={() => setEditingDoc(null)}
                     className="px-5 py-2.5 text-xs font-bold text-neutral-500 hover:text-black"
                   >
                     Cancel
                   </button>
-                  <button 
-                    type="submit"
-                    className="px-5 py-2.5 bg-black hover:bg-neutral-800 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-md transition-colors"
-                  >
-                    Apply Changes
-                  </button>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 bg-black hover:bg-neutral-800 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-md transition-colors"
+                    >
+                      Apply Changes
+                    </button>
+
+                    {editingDoc?.status === "Draft" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!editingDoc) return;
+                          const parsedTags = editTags.split(",").map(t => t.trim()).filter(Boolean);
+                          store.updateDocument(editingDoc.id, {
+                            name: editTitle,
+                            description: editDesc,
+                            department: editDept,
+                            category: editDept,
+                            tags: parsedTags,
+                            visibility: editAccess,
+                            isShared: editAccess !== "Private",
+                            status: "Active" as any,
+                          }, "Current User");
+                          store.addLog("PUBLISH", "Current User", editTitle, "Draft published to Active from Edit modal.");
+                          showToast(`"${editTitle}" published successfully.`);
+                          setEditingDoc(null);
+                        }}
+                        className="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-md transition-colors flex items-center gap-1.5"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        Publish
+                      </button>
+                    )}
+                  </div>
                 </div>
               </form>
             </motion.div>
