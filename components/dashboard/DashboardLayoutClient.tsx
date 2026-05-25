@@ -11,6 +11,7 @@ import {
   Shield, Truck, FileText, Settings, LogOut, ChevronLeft, ChevronRight,
   Bell, Search, Briefcase, Menu, ClipboardList, Clock, Package,
   ShieldCheck, Layers, Lock, X, Sun, Moon, BedDouble,
+  Folder, AlertCircle, Activity, Trophy, CalendarClock, CalendarDays, MessageCircle,
 } from "lucide-react";
 import NotificationPanel from "@/components/dashboard/NotificationPanel";
 import { useDarkMode } from "@/hooks/useDarkMode";
@@ -23,14 +24,20 @@ type NavItem = {
 };
 
 const ownerNav: NavItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/owner" },
-  { icon: Building2, label: "Properties", href: "/owner/properties" },
-  { icon: Briefcase, label: "Managers", href: "/owner/managers" },
-  { icon: Users, label: "Staff", href: "/owner/staff" },
-  { icon: BarChart3, label: "Reports", href: "/owner/reports" },
-  { icon: Shield, label: "KRA Monitoring", href: "/owner/kra" },
-  { icon: Truck, label: "Inventory", href: "/owner/inventory", feature: "inventory" },
-  { icon: FileText, label: "SOP Management", href: "/owner/sop" },
+  { icon: LayoutDashboard, label: "Dashboard",          href: "/owner" },
+  { icon: Building2,       label: "Properties",         href: "/owner/properties" },
+  { icon: Briefcase,       label: "Managers",           href: "/owner/managers" },
+  { icon: Users,           label: "Staff",              href: "/owner/staff" },
+  { icon: MessageCircle,   label: "Chat",               href: "/owner/chat" },
+  { icon: BarChart3,       label: "Reports",            href: "/owner/reports" },
+  { icon: Shield,          label: "KRA Monitoring",     href: "/owner/kra" },
+  { icon: Truck,           label: "Inventory",          href: "/owner/inventory", feature: "inventory" },
+  { icon: FileText,        label: "SOP Management",     href: "/owner/sop" },
+  { icon: CalendarClock,   label: "Employee Scheduling",href: "/owner/master-activity-log" },
+  { icon: AlertCircle,     label: "Error & Complaints", href: "/owner/complaints" },
+  { icon: Folder,          label: "Documents",          href: "/owner/document-management" },
+  { icon: Activity,        label: "Activity Log",       href: "/owner/master-activity-log" },
+  { icon: Trophy,          label: "Employee Ranking",   href: "/owner/employee-ranking/dashboard" },
 ];
 
 const ownerConfigNav: NavItem[] = [
@@ -42,21 +49,31 @@ const ownerConfigNav: NavItem[] = [
 ];
 
 const managerNav: NavItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/manager" },
-  { icon: Clock, label: "Punch In/Out", href: "/manager/punch" },
-  { icon: BedDouble, label: "Room Management", href: "/manager/rooms" },
-  { icon: ClipboardList, label: "Tasks", href: "/manager/tasks" },
-  { icon: UserCheck, label: "Attendance", href: "/manager/attendance" },
-  { icon: Truck, label: "Inventory", href: "/manager/inventory", feature: "inventory" },
-  { icon: BarChart3, label: "Reports", href: "/manager/reports" },
-  { icon: FileText, label: "SOP Management", href: "/manager/sop" },
+  { icon: LayoutDashboard, label: "Dashboard",          href: "/manager" },
+  { icon: Clock,           label: "Punch In/Out",       href: "/manager/punch" },
+  { icon: BedDouble,       label: "Room Management",    href: "/manager/rooms" },
+  { icon: ClipboardList,   label: "Tasks",              href: "/manager/tasks" },
+  { icon: UserCheck,       label: "Attendance",         href: "/manager/attendance" },
+  { icon: Truck,           label: "Inventory",          href: "/manager/inventory", feature: "inventory" },
+  { icon: BarChart3,       label: "Reports",            href: "/manager/reports" },
+  { icon: FileText,        label: "SOP Management",     href: "/manager/sop" },
+  { icon: CalendarDays,    label: "KRA Center",         href: "/manager/kra" },
+  { icon: CalendarClock,   label: "Employee Scheduling",href: "/manager/scheduling" },
+  { icon: AlertCircle,     label: "Error & Complaints", href: "/manager/complaints" },
+  { icon: Folder,          label: "Documents",          href: "/manager/document-management" },
+  { icon: Trophy,          label: "Employee Ranking",   href: "/manager/employee-ranking/dashboard" },
 ];
 
-const staffNav = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/staff" },
-  { icon: Clock, label: "Punch In/Out", href: "/staff/punch" },
-  { icon: ClipboardList, label: "My Tasks", href: "/staff/tasks" },
-  { icon: FileText, label: "SOPs", href: "/staff/sop" },
+const staffNav: NavItem[] = [
+  { icon: LayoutDashboard, label: "Dashboard",          href: "/staff" },
+  { icon: Clock,           label: "Punch In/Out",       href: "/staff/punch" },
+  { icon: ClipboardList,   label: "My Tasks",           href: "/staff/tasks" },
+  { icon: FileText,        label: "SOPs",               href: "/staff/sop" },
+  { icon: CalendarDays,    label: "KRA Center",         href: "/staff/kra" },
+  { icon: CalendarClock,   label: "My Schedule",        href: "/staff/scheduling" },
+  { icon: AlertCircle,     label: "My Complaints",      href: "/staff/complaints" },
+  { icon: Folder,          label: "Documents",          href: "/staff/document-management" },
+  { icon: Trophy,          label: "My Ranking",         href: "/staff/employee-ranking/staff-dashboard" },
 ];
 
 export function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
