@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useCallback, useMemo } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useEffect } from "react";
+import { schedulingAPI, mapBackendRequest } from "@/lib/api/scheduling";
 
 export interface Employee {
   id: string;
@@ -219,6 +220,21 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
   const [timeline, setTimeline] = useState<TimelineEvent[]>(INITIAL_TIMELINE);
   const [pendingNotifications, setPendingNotifications] = useState(2);
 
+  // ── Load real replacement requests from API on mount ──
+  useEffect(() => {
+    schedulingAPI.myDashboard()
+      .then((dash) => {
+        if (dash.emergency_shift_requests.length > 0) {
+          const mapped = dash.emergency_shift_requests.map(mapBackendRequest);
+          setReplacementRequests(mapped);
+          setPendingNotifications(dash.pending_requests_count);
+        }
+      })
+      .catch(() => {
+        // API unavailable — keep mock data
+      });
+  }, []);
+
   const addEmergencyAlert = useCallback((alert: Omit<EmergencyAlert, "id" | "createdAt" | "status">) => {
     const now = new Date().toISOString().replace("T", " ").slice(0, 16);
     setEmergencyAlerts((prev) => [
@@ -260,9 +276,9 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
 
   const acceptReplacementRequest = useCallback((id: string) => {
     const now = new Date().toISOString().replace("T", " ").slice(0, 16);
-    
     const request = replacementRequests.find((r) => r.id === id);
-    
+
+    // Optimistic update
     setReplacementRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: "accepted", respondedAt: now } : r));
     setPendingNotifications((prev) => Math.max(0, prev - 1));
 
@@ -276,14 +292,17 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
         employeeName: request.toEmployeeName,
       };
       setTimeline((prev) => [timelineEvent, ...prev]);
+
+      // Call real API — best effort (mock data IDs won't be valid UUIDs, that's OK)
+      schedulingAPI.acceptReplacement(id, request.toEmployeeId).catch(() => {});
     }
   }, [replacementRequests]);
 
   const rejectReplacementRequest = useCallback((id: string) => {
     const now = new Date().toISOString().replace("T", " ").slice(0, 16);
-    
     const request = replacementRequests.find((r) => r.id === id);
-    
+
+    // Optimistic update
     setReplacementRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: "rejected", respondedAt: now } : r));
     setPendingNotifications((prev) => Math.max(0, prev - 1));
 
@@ -297,6 +316,9 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
         employeeName: request.toEmployeeName,
       };
       setTimeline((prev) => [timelineEvent, ...prev]);
+
+      // Call real API — best effort
+      schedulingAPI.rejectReplacement(id, request.toEmployeeId).catch(() => {});
     }
   }, [replacementRequests]);
 
