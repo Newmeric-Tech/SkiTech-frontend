@@ -77,8 +77,11 @@ export default function DocumentOverviewPage() {
   };
 
   useEffect(() => {
+    const ROLE_DISPLAY: Record<string, string> = {
+      owner: "Owner", manager: "Manager", staff: "Staff", superadmin: "Super Admin",
+    };
     const stored = localStorage.getItem("skitech_role");
-    if (stored) setRole(stored);
+    if (stored) setRole(ROLE_DISPLAY[stored.toLowerCase()] ?? stored);
   }, []);
 
   const showToastMsg = (msg: string) => {

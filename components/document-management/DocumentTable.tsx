@@ -72,9 +72,17 @@ export function DocumentTable({
   const [editAccess, setEditAccess] = useState<any>("Organization Wide");
 
   useEffect(() => {
+    // Auth store saves lowercase keys ("owner", "manager", "staff", "superadmin").
+    // Normalise them so every role === "Owner" etc. check works correctly.
+    const ROLE_DISPLAY: Record<string, string> = {
+      owner:      "Owner",
+      manager:    "Manager",
+      staff:      "Staff",
+      superadmin: "Super Admin",
+    };
     const stored = localStorage.getItem("skitech_role");
     if (stored) {
-      setRole(stored);
+      setRole(ROLE_DISPLAY[stored.toLowerCase()] ?? stored);
     } else if (propRole) {
       setRole(propRole);
     }

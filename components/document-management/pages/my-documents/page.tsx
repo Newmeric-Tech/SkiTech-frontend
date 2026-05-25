@@ -12,8 +12,11 @@ export default function MyDocumentsPage() {
   const [role, setRole] = useState<string>("Owner");
 
   useEffect(() => {
+    const ROLE_DISPLAY: Record<string, string> = {
+      owner: "Owner", manager: "Manager", staff: "Staff", superadmin: "Super Admin",
+    };
     const stored = localStorage.getItem("skitech_role");
-    if (stored) setRole(stored);
+    if (stored) setRole(ROLE_DISPLAY[stored.toLowerCase()] ?? stored);
   }, []);
 
   // Filter documents where current user is owner or uploader
