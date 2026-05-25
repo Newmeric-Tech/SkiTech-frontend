@@ -9,7 +9,7 @@ import {
   Shield, Truck, FileText, Settings, LogOut, ChevronLeft, ChevronRight,
   Bell, Search, Briefcase, Menu, ClipboardList, Clock, Package,
   ShieldCheck, Layers, Lock, X, BarChart2, CalendarDays, MessageCircle,
-  CalendarClock, AlertCircle, AlertTriangle, Folder, Activity
+  CalendarClock, AlertCircle, AlertTriangle, Folder, Activity, Trophy
 } from "lucide-react";
 
 const ownerNav = [
@@ -25,6 +25,7 @@ const ownerNav = [
   { icon: FileText, label: "SOP Management", href: "/owner/sop" },
   { icon: AlertCircle, label: "Error & Complaint Log", href: "/operational" },
   { icon: Activity, label: "Activity Log", href: "/owner/master-activity-log" },
+  { icon: Trophy, label: "Employee Ranking", href: "/owner/employee-ranking/dashboard" },
 ];
 
 const ownerConfigNav = [
@@ -47,6 +48,7 @@ const managerNav = [
   { icon: CalendarDays, label: "KRA Center", href: "/manager/kra" },
   { icon: CalendarClock, label: "Employee Scheduling", href: "/manager/scheduling" },
   { icon: AlertCircle, label: "Error & Complaint Log", href: "/operational" },
+  { icon: Trophy, label: "Employee Ranking", href: "/manager/employee-ranking/dashboard" },
 ];
 
 const staffNav = [
@@ -58,6 +60,7 @@ const staffNav = [
   { icon: AlertCircle, label: "My Complaints", href: "/staff/complaints" },
   { icon: CalendarDays, label: "KRA Center", href: "/staff/kra" },
   { icon: CalendarClock, label: "Employee Scheduling", href: "/staff/scheduling" },
+  { icon: Trophy, label: "Employee Ranking", href: "/staff/employee-ranking/staff-dashboard" },
 ];
 
 export function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
@@ -145,7 +148,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
           <div className="space-y-1">
              {!collapsed && <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">Main Menu</p>}
              {navItems.map((item) => {
-               const isActive = pathname === item.href;
+               const isActive = pathname === item.href || (item.href.includes('employee-ranking') && pathname.startsWith(item.href.replace(/\/dashboard$|\/staff-dashboard$/, '')));
                return (
                  <Link
                    key={item.href}
@@ -217,7 +220,13 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
       </motion.aside>
 
       {/* ── Main Content Area ── */}
-      <div className="flex-1 flex flex-col h-full relative z-0">
+      <div className={`flex-1 flex flex-col h-full relative z-0 ${
+        pathname.includes('/scheduling') || 
+        pathname.includes('/document-management') || 
+        pathname.includes('/employee-ranking') || 
+        pathname.includes('/operational') || 
+        pathname.includes('/master-activity-log') ? 'font-merriweather' : ''
+      }`}>
         {/* Header */}
         <header className="h-20 bg-white/70 backdrop-blur-xl border-b border-black/10 flex items-center justify-between px-6 lg:px-10 shrink-0">
           <div className="flex items-center gap-4">
