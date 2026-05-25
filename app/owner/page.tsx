@@ -179,12 +179,10 @@ export default function OwnerDashboard() {
             <div className="col-span-1 bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6 flex flex-col">
               <div className="mb-6">
                 <h3 className="font-bold text-slate-950 text-lg">Recent Alerts</h3>
-                <p className="text-slate-500 text-sm mt-0.5">Latest pending tasks</p>
+                <p className="text-slate-500 text-sm mt-0.5">Operational tasks &amp; inventory notices</p>
               </div>
               <div className="flex-1 overflow-y-auto space-y-3">
-                {alerts.length === 0 ? (
-                  <p className="text-slate-400 text-sm text-center py-8">No pending alerts</p>
-                ) : (
+                {alerts.length > 0 ? (
                   alerts.map((item, i) => (
                     <div key={i} className="flex gap-3 p-3.5 rounded-xl hover:bg-slate-50/80 transition-colors">
                       <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
@@ -198,6 +196,33 @@ export default function OwnerDashboard() {
                       </div>
                     </div>
                   ))
+                ) : dashboard?.pending_tasks && dashboard.pending_tasks > 0 ? (
+                  <>
+                    <div className="flex gap-3 p-3.5 rounded-xl hover:bg-slate-50/80 transition-colors">
+                      <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                        <AlertCircle className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold text-slate-950">
+                          {dashboard.pending_tasks} task{dashboard.pending_tasks !== 1 ? "s" : ""} pending completion
+                        </h4>
+                        <span className="text-xs text-slate-400">Review your task list to take action</span>
+                      </div>
+                    </div>
+                    {(dashboard?.total_tasks ?? 0) > (dashboard?.completed_tasks ?? 0) + (dashboard?.pending_tasks ?? 0) && (
+                      <div className="flex gap-3 p-3.5 rounded-xl hover:bg-slate-50/80 transition-colors">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                          <AlertCircle className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-slate-950">Tasks require assignment</h4>
+                          <span className="text-xs text-slate-400">Unassigned items found in the system</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-slate-400 text-sm text-center py-8">No active alerts</p>
                 )}
               </div>
             </div>

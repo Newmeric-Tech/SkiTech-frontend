@@ -104,6 +104,39 @@ export default function DocumentOverviewPage() {
     showToastMsg("Alert restored successfully.");
   };
 
+  // Editor textarea ref for formatting
+  const editorTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const applyFormat = (format: string) => {
+    const textarea = editorTextareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end   = textarea.selectionEnd;
+    const selected = editorContent.substring(start, end);
+    const before  = editorContent.substring(0, start);
+    const after   = editorContent.substring(end);
+
+    let replacement = "";
+    switch (format) {
+      case "bold":      replacement = `**${selected || "bold text"}**`; break;
+      case "italic":    replacement = `*${selected || "italic text"}*`; break;
+      case "underline": replacement = `<u>${selected || "underlined text"}</u>`; break;
+      case "h1":        replacement = `\n# ${selected || "Heading 1"}\n`; break;
+      case "h2":        replacement = `\n## ${selected || "Heading 2"}\n`; break;
+      case "list":      replacement = `\n- ${selected || "List item"}\n`; break;
+      case "quote":     replacement = `\n> ${selected || "Blockquote"}\n`; break;
+      default: return;
+    }
+
+    const newContent = before + replacement + after;
+    setEditorContent(newContent);
+    setTimeout(() => {
+      textarea.focus();
+      const pos = start + replacement.length;
+      textarea.setSelectionRange(pos, pos);
+    }, 0);
+  };
+
   // File Upload Handlers
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -883,15 +916,15 @@ export default function DocumentOverviewPage() {
 
                   {/* Formatting helper bar */}
                   <div className="flex items-center gap-2 bg-[#1a1a1a] rounded-xl px-3 py-2 border border-white/5 text-xs text-neutral-400 shrink-0 font-sans">
-                    <button type="button" className="p-1 hover:text-white transition-colors"><b>B</b></button>
-                    <button type="button" className="p-1 hover:text-white transition-colors"><i>I</i></button>
-                    <button type="button" className="p-1 hover:text-white transition-colors"><span className="underline">U</span></button>
+                    <button type="button" onClick={() => applyFormat("bold")} className="p-1 hover:text-white transition-colors" title="Bold (**text**)"><b>B</b></button>
+                    <button type="button" onClick={() => applyFormat("italic")} className="p-1 hover:text-white transition-colors" title="Italic (*text*)"><i>I</i></button>
+                    <button type="button" onClick={() => applyFormat("underline")} className="p-1 hover:text-white transition-colors" title="Underline"><span className="underline">U</span></button>
                     <div className="w-[1px] h-4 bg-white/10 mx-2" />
-                    <button type="button" className="p-1 hover:text-white transition-colors">H1</button>
-                    <button type="button" className="p-1 hover:text-white transition-colors">H2</button>
+                    <button type="button" onClick={() => applyFormat("h1")} className="p-1 hover:text-white transition-colors" title="Heading 1 (# text)">H1</button>
+                    <button type="button" onClick={() => applyFormat("h2")} className="p-1 hover:text-white transition-colors" title="Heading 2 (## text)">H2</button>
                     <div className="w-[1px] h-4 bg-white/10 mx-2" />
-                    <button type="button" className="p-1 hover:text-white transition-colors">List</button>
-                    <button type="button" className="p-1 hover:text-white transition-colors">Quote</button>
+                    <button type="button" onClick={() => applyFormat("list")} className="p-1 hover:text-white transition-colors" title="Bullet list (- item)">List</button>
+                    <button type="button" onClick={() => applyFormat("quote")} className="p-1 hover:text-white transition-colors" title="Blockquote (&gt; text)">Quote</button>
                   </div>
 
                   {/* Document Summary input */}
@@ -904,7 +937,8 @@ export default function DocumentOverviewPage() {
                   />
 
                   {/* Core Composition Content */}
-                  <textarea 
+                  <textarea
+                    ref={editorTextareaRef}
                     value={editorContent}
                     onChange={(e) => setEditorContent(e.target.value)}
                     placeholder="Start composition here..."

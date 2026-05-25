@@ -28,7 +28,6 @@ const ownerNav: NavItem[] = [
   { icon: Building2,       label: "Properties",         href: "/owner/properties" },
   { icon: Briefcase,       label: "Managers",           href: "/owner/managers" },
   { icon: Users,           label: "Staff",              href: "/owner/staff" },
-  { icon: MessageCircle,   label: "Chat",               href: "/owner/chat" },
   { icon: BarChart3,       label: "Reports",            href: "/owner/reports" },
   { icon: Shield,          label: "KRA Monitoring",     href: "/owner/kra" },
   { icon: Truck,           label: "Inventory",          href: "/owner/inventory", feature: "inventory" },
@@ -80,6 +79,8 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
   const [mounted, setMounted] = useState(false);
   const { dark, toggle: toggleDark } = useDarkMode();
   const [notifOpen, setNotifOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -197,16 +198,16 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative ${
+                  className={`flex items-center ${collapsed ? "justify-center px-2" : "gap-3 px-3"} py-2.5 rounded-lg transition-all duration-200 group relative ${
                     isActive
                       ? "bg-black dark:bg-white text-white dark:text-black shadow-md shadow-black/10"
                       : "hover:bg-black/5 dark:hover:bg-white/10 text-neutral-700 dark:text-[#c8c8c8]"
                   }`}
                 >
-                  <item.icon className={`w-5 h-5 ${isActive ? "text-white dark:text-black" : "text-neutral-500 dark:text-[#a0a0a0] group-hover:text-black dark:group-hover:text-white"}`} />
+                  <item.icon className={`w-[22px] h-[22px] shrink-0 ${isActive ? "text-white dark:text-black" : "text-neutral-500 dark:text-[#a0a0a0] group-hover:text-black dark:group-hover:text-white"}`} />
                   {!collapsed && <span className="font-medium whitespace-nowrap">{item.label}</span>}
                   {collapsed && (
-                    <div className="absolute left-full ml-4 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
+                    <div className="absolute left-full ml-3 bg-black text-white text-xs px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none shadow-lg">
                       {item.label}
                     </div>
                   )}
@@ -226,16 +227,16 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative ${
+                    className={`flex items-center ${collapsed ? "justify-center px-2" : "gap-3 px-3"} py-2.5 rounded-lg transition-all duration-200 group relative ${
                       isActive
                         ? "bg-black dark:bg-white text-white dark:text-black shadow-md shadow-black/10"
                         : "hover:bg-black/5 dark:hover:bg-white/10 text-neutral-700 dark:text-[#c8c8c8]"
                     }`}
                   >
-                    <item.icon className={`w-5 h-5 ${isActive ? "text-white dark:text-black" : "text-neutral-500 dark:text-[#a0a0a0] group-hover:text-black dark:group-hover:text-white"}`} />
+                    <item.icon className={`w-[22px] h-[22px] shrink-0 ${isActive ? "text-white dark:text-black" : "text-neutral-500 dark:text-[#a0a0a0] group-hover:text-black dark:group-hover:text-white"}`} />
                     {!collapsed && <span className="font-medium whitespace-nowrap">{item.label}</span>}
                     {collapsed && (
-                      <div className="absolute left-full ml-4 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
+                      <div className="absolute left-full ml-3 bg-black text-white text-xs px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none shadow-lg">
                         {item.label}
                       </div>
                     )}
@@ -258,7 +259,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
       </motion.aside>
 
       {/* ── Main Content Area ── */}
-      <div className="flex-1 flex flex-col h-full relative z-0">
+      <div className="flex-1 flex flex-col h-full relative z-0 min-w-0 overflow-x-hidden">
         {/* Header */}
         <header className="h-20 bg-white/70 dark:bg-[#1c1c1c]/80 backdrop-blur-xl border-b border-black/10 dark:border-white/10 flex items-center justify-between px-6 lg:px-10 shrink-0">
           <div className="flex items-center gap-4">
@@ -288,6 +289,35 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                 <span className="absolute top-0 right-0 w-2 h-2 bg-black dark:bg-white rounded-full border-2 border-white dark:border-[#111111]" />
               </button>
               <NotificationPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
+            </div>
+
+            {/* Search */}
+            <div className="relative hidden sm:block">
+              {searchOpen ? (
+                <div className="flex items-center gap-2 bg-black/5 dark:bg-white/8 rounded-lg px-3 py-1.5 border border-black/10 dark:border-white/15">
+                  <Search className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                  <input
+                    autoFocus
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onBlur={() => { if (!searchQuery) setSearchOpen(false); }}
+                    placeholder="Search..."
+                    className="bg-transparent w-36 text-sm text-black dark:text-white placeholder:text-neutral-400 focus:outline-none"
+                  />
+                  <button onClick={() => { setSearchOpen(false); setSearchQuery(""); }} className="text-neutral-400 hover:text-black dark:hover:text-white transition-colors">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setSearchOpen(true)}
+                  className="flex items-center justify-center w-9 h-9 rounded-lg border border-black/10 dark:border-white/15 bg-white/60 dark:bg-white/5 text-neutral-600 dark:text-[#c0c0c0] hover:bg-black/5 dark:hover:bg-white/10 transition-all"
+                  title="Search"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             <div className="h-8 w-[1px] bg-black/10 dark:bg-white/10 hidden sm:block" />
@@ -340,18 +370,6 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                         </div>
                       </div>
 
-                      {/* Search */}
-                      <div className="px-4 py-3 border-b border-black/8 dark:border-white/8">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
-                          <input
-                            type="text"
-                            placeholder="Search..."
-                            className="w-full pl-9 pr-3 py-2 bg-black/5 dark:bg-white/8 rounded-lg text-sm text-black dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/15 transition-all"
-                          />
-                        </div>
-                      </div>
-
                       {/* Sign out */}
                       <div className="p-2">
                         <button
@@ -372,7 +390,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
         </header>
 
         {/* Scrollable Page Content */}
-        <main className="flex-1 overflow-y-auto bg-[#f8f7f4] dark:bg-[#111111] p-6 lg:p-10">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#f8f7f4] dark:bg-[#111111] p-6 lg:p-10">
           {children}
         </main>
       </div>
