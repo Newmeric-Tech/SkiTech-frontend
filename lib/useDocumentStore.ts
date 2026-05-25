@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { dummyDocuments, dummyUpdates, DocumentType, UpdateNotification } from "./document-management";
+import { documentsAPI } from "./api/documents";
 
 export interface ReviewHistoryEntry {
   id: string;
@@ -41,81 +42,56 @@ export function useDocumentStore() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Load documents
-    const storedDocs = localStorage.getItem("skitech_docs");
-    let currentDocs: DocumentWithExtra[] = [];
-    if (storedDocs) {
-      currentDocs = JSON.parse(storedDocs);
-    } else {
-      currentDocs = dummyDocuments.map((doc) => ({
-        ...doc,
-        uploadedBy: doc.owner,
-        reviewerComments: doc.status === "Pending Approval" ? ["Awaiting legal clearance."] : [],
-        reviewHistory: doc.status === "Pending Approval" ? [
-          {
-            id: "rev-init",
-            reviewer: "System",
-            status: "Pending",
-            comments: "Document submitted for standard operational compliance review.",
-            timestamp: "2026-05-01 10:00 AM",
-          }
-        ] : [],
-        content: doc.description + "\n\nThis is a standard document template.",
-        collaborators: ["Jane Doe", "Sarah Williams"],
-        versionHistory: [
-          {
-            version: "1.0",
-            date: doc.uploadDate,
-            author: doc.owner,
-            summary: "Initial upload",
-            content: doc.description + "\n\nThis is a standard document template.",
-          }
-        ],
-      }));
-      localStorage.setItem("skitech_docs", JSON.stringify(currentDocs));
-    }
-    setDocuments(currentDocs);
-
-    // Load updates
+    // Load updates from localStorage (always local)
     const storedUpdates = localStorage.getItem("skitech_updates");
-    let currentUpdates: UpdateNotification[] = [];
     if (storedUpdates) {
-      currentUpdates = JSON.parse(storedUpdates);
+      setUpdates(JSON.parse(storedUpdates));
     } else {
-      currentUpdates = dummyUpdates;
-      localStorage.setItem("skitech_updates", JSON.stringify(currentUpdates));
+      setUpdates(dummyUpdates);
+      localStorage.setItem("skitech_updates", JSON.stringify(dummyUpdates));
     }
-    setUpdates(currentUpdates);
 
-    // Load logs
+    // Load activity logs from localStorage (always local)
     const storedLogs = localStorage.getItem("skitech_activity_logs");
-    let currentLogs: ActivityLog[] = [];
     if (storedLogs) {
-      currentLogs = JSON.parse(storedLogs);
+      setActivityLogs(JSON.parse(storedLogs));
     } else {
-      currentLogs = [
-        {
-          id: "log-1",
-          action: "UPLOAD",
-          actor: "Jane Doe",
-          documentName: "Q3 Financial Report",
-          timestamp: "2 hours ago",
-          details: "Uploaded file Q3_Financial_Strategy.pdf",
-        },
-        {
-          id: "log-2",
-          action: "REVIEW_SUBMIT",
-          actor: "System",
-          documentName: "Compliance Audit Form",
-          timestamp: "1 week ago",
-          details: "Pending audit review checklist.",
-        }
+      const seedLogs: ActivityLog[] = [
+        { id: "log-1", action: "UPLOAD", actor: "Jane Doe", documentName: "Q3 Financial Report", timestamp: "2 hours ago", details: "Uploaded file Q3_Financial_Strategy.pdf" },
+        { id: "log-2", action: "REVIEW_SUBMIT", actor: "System", documentName: "Compliance Audit Form", timestamp: "1 week ago", details: "Pending audit review checklist." },
       ];
-      localStorage.setItem("skitech_activity_logs", JSON.stringify(currentLogs));
+      setActivityLogs(seedLogs);
+      localStorage.setItem("skitech_activity_logs", JSON.stringify(seedLogs));
     }
-    setActivityLogs(currentLogs);
 
-    setLoading(false);
+    // Try real API for documents; fall back to localStorage → dummy data
+    documentsAPI.list(0, 100)
+      .then((apiDocs) => {
+        setDocuments(apiDocs);
+        localStorage.setItem("skitech_docs", JSON.stringify(apiDocs));
+        setLoading(false);
+      })
+      .catch(() => {
+        const storedDocs = localStorage.getItem("skitech_docs");
+        if (storedDocs) {
+          setDocuments(JSON.parse(storedDocs));
+        } else {
+          const fallback: DocumentWithExtra[] = dummyDocuments.map((doc) => ({
+            ...doc,
+            uploadedBy: doc.owner,
+            reviewerComments: doc.status === "Pending Approval" ? ["Awaiting legal clearance."] : [],
+            reviewHistory: doc.status === "Pending Approval"
+              ? [{ id: "rev-init", reviewer: "System", status: "Pending" as const, comments: "Document submitted for standard operational compliance review.", timestamp: "2026-05-01 10:00 AM" }]
+              : [],
+            content: doc.description + "\n\nThis is a standard document template.",
+            collaborators: ["Jane Doe", "Sarah Williams"],
+            versionHistory: [{ version: "1.0", date: doc.uploadDate, author: doc.owner, summary: "Initial upload", content: doc.description + "\n\nThis is a standard document template." }],
+          }));
+          setDocuments(fallback);
+          localStorage.setItem("skitech_docs", JSON.stringify(fallback));
+        }
+        setLoading(false);
+      });
   }, []);
 
   // Helper: Save docs

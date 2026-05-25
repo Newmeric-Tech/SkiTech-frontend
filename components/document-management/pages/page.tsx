@@ -176,15 +176,17 @@ export default function DocumentOverviewPage() {
     const fileExt = firstFile.name.split(".").pop()?.toUpperCase() as any;
 
     const mockFormData = new FormData();
-    mockFormData.append("name", uploadTitle);
-    mockFormData.append("description", uploadDesc);
-    mockFormData.append("category", uploadDept);
-    mockFormData.append("uploadedBy", "Current User");
-    mockFormData.append("fileType", fileExt || "PDF");
-    mockFormData.append("visibility", uploadAccess);
-    mockFormData.append("tags", uploadTags);
+    mockFormData.append("name",            uploadTitle);
+    mockFormData.append("description",     uploadDesc);
+    mockFormData.append("category",        uploadDept);
+    mockFormData.append("uploadedBy",      "Current User");
+    mockFormData.append("fileType",        fileExt || "PDF");
+    mockFormData.append("visibility",      uploadAccess);
+    mockFormData.append("tags",            uploadTags);
     mockFormData.append("assignedReviewer", uploadReviewer);
-    mockFormData.append("status", "Pending Approval");
+    mockFormData.append("status",          "Pending Approval");
+    // Include actual file so backend can store it
+    mockFormData.append("file",            firstFile, firstFile.name);
 
     try {
       await documentApi.uploadDocument(mockFormData, role);

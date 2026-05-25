@@ -1,5 +1,6 @@
 import api from "@/lib/config/app";
 import { DocumentWithExtra, ReviewHistoryEntry } from "./useDocumentStore";
+import { mapToDocumentWithExtra, BackendDocumentMeta } from "./api/documents";
 
 /**
  * Enterprise Document Management System API Services
@@ -16,10 +17,10 @@ export const documentApi = {
    */
   getDocuments: async (role: string): Promise<DocumentWithExtra[]> => {
     try {
-      const { data } = await api.get<DocumentWithExtra[]>("/documents", {
-        headers: { "X-User-Role": role } // Middleware routing helper
+      const { data } = await api.get<BackendDocumentMeta[]>("/documents", {
+        headers: { "X-User-Role": role },
       });
-      return data;
+      return data.map(mapToDocumentWithExtra);
     } catch (err) {
       console.warn("Backend /documents offline. Accessing secure local sandbox storage.", err);
       const stored = localStorage.getItem("skitech_docs");
@@ -52,14 +53,38 @@ export const documentApi = {
     }
 
     try {
-      const { data } = await api.post<DocumentWithExtra>("/documents/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          "X-User-Role": role
-        },
-        onUploadProgress
+      // Re-map field names to what the backend expects
+      const backendForm = new FormData();
+      // Map frontend "name" → backend "title"
+      const title = formData.get("name") as string;
+      backendForm.append("title",    title || "Untitled");
+      backendForm.append("category", formData.get("category") as string || "General");
+      const desc = formData.get("description") as string;
+      if (desc) backendForm.append("description", desc);
+      const dept = formData.get("uploadedBy") as string; // reuse as department hint
+      if (dept) backendForm.append("department", dept);
+      const tags = formData.get("tags") as string;
+      if (tags) backendForm.append("tags", tags);
+      // Map frontend "visibility" → backend "access_scope"
+      const vis = formData.get("visibility") as string;
+      const scopeMap: Record<string, string> = {
+        "Organization Wide": "organization_wide",
+        "Department":        "department",
+        "Private":           "private",
+        "Team Only":         "department",
+      };
+      backendForm.append("access_scope", scopeMap[vis] || "organization_wide");
+      // Attach actual file if present
+      const fileObj = formData.get("file") as File | null;
+      if (fileObj && fileObj instanceof File) {
+        backendForm.append("file", fileObj, fileObj.name);
+      }
+
+      const { data } = await api.post<BackendDocumentMeta>("/documents/upload", backendForm, {
+        headers: { "Content-Type": "multipart/form-data", "X-User-Role": role },
+        onUploadProgress,
       });
-      return data;
+      return mapToDocumentWithExtra(data);
     } catch (err) {
       console.warn("FastAPI upload offline. Performing sandboxed local mock file processing.", err);
       // Simulate slow upload progress then return standard sandbox entry
