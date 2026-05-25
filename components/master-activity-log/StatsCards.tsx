@@ -1,12 +1,17 @@
 import React from 'react';
 import StatsCard from './StatsCard';
+import { ActivitySummary } from '@/lib/api/activity-log';
 
-const StatsCards: React.FC = () => {
+interface StatsCardsProps {
+  summary: ActivitySummary | null;
+}
+
+const StatsCards: React.FC<StatsCardsProps> = ({ summary }) => {
   const stats = [
-    { label: 'Events Today', value: 120 },
-    { label: 'Warnings', value: 15 },
-    { label: 'Critical', value: 5 },
-    { label: 'Log Size', value: '1.2GB' },
+    { label: 'Events (7 days)', value: summary?.total_events ?? '—' },
+    { label: 'Warnings',        value: summary?.warnings     ?? '—' },
+    { label: 'Critical',        value: summary?.critical     ?? '—' },
+    { label: 'Log Size (est.)', value: summary ? `${summary.log_size_gb} GB` : '—' },
   ];
 
   return (
