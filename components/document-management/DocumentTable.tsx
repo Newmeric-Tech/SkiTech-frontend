@@ -564,13 +564,23 @@ export function DocumentTable({
                           <Eye className="w-4 h-4" />
                         </button>
                         
-                        <button 
+                        <button
                           onClick={(e) => handleDownload(doc, e)}
                           className="p-1.5 text-neutral-400 hover:text-black hover:bg-neutral-50 rounded-lg transition-colors shrink-0"
                           title="Download File"
                         >
                           <Download className="w-4 h-4" />
                         </button>
+
+                        {role === "Owner" && (
+                          <button
+                            onClick={(e) => handleDelete(doc, e)}
+                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                            title="Delete Document"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
 
                         <div className="relative group/menu shrink-0">
                           <button className="p-1.5 text-neutral-400 hover:text-black hover:bg-neutral-50 rounded-lg transition-colors">
@@ -593,15 +603,7 @@ export function DocumentTable({
                                 Review Document
                               </button>
                             )}
-                            {role === "Owner" && (
-                              <button 
-                                onClick={(e) => handleDelete(doc, e)}
-                                className="w-full text-left px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2 border-t border-black/5"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                Delete File
-                              </button>
-                            )}
+                            {/* Delete is now a direct button in the actions row for Owners */}
                           </div>
                         </div>
                       </div>
