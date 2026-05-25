@@ -13,6 +13,7 @@ import {
   AttendanceRecord,
 } from "@/lib/api/attendance";
 import api from "@/lib/config/app";
+import { useAuthStore } from "@/store/authStore";
 
 interface Property {
   id: string;
@@ -36,6 +37,7 @@ function fmtHours(h: number | null) {
 }
 
 export default function PunchPage() {
+  const { user } = useAuthStore();
   const [properties, setProperties] = useState<Property[]>([]);
   const [propertyId, setPropertyId] = useState<string>("");
   const [punchedIn, setPunchedIn] = useState(false);
@@ -53,14 +55,22 @@ export default function PunchPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Load properties
+  // Load properties — manager is locked to their assigned property
   useEffect(() => {
     api.get("/v1/properties/").then((res) => {
       const list = res.data?.data ?? res.data ?? [];
       setProperties(list);
-      if (list.length > 0) setPropertyId(list[0].id);
-    }).catch(() => {});
-  }, []);
+      // If manager has an assigned property, use that; otherwise fall back to first
+      if (user?.property_id) {
+        setPropertyId(user.property_id);
+      } else if (list.length > 0) {
+        setPropertyId(list[0].id);
+      }
+    }).catch(() => {
+      // If properties fail, use manager's property_id from token
+      if (user?.property_id) setPropertyId(user.property_id);
+    });
+  }, [user?.property_id]);
 
   // Load punch status + history when property selected
   const loadStatus = useCallback(async () => {
@@ -172,21 +182,13 @@ export default function PunchPage() {
         </div>
       </div>
 
-      {/* Property selector */}
-      {properties.length > 1 && (
-        <div className="flex items-center gap-3">
-          <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-          <select
-            value={propertyId}
-            onChange={(e) => setPropertyId(e.target.value)}
-            className="px-4 py-2 bg-white border border-slate-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
-          >
-            {properties.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-        </div>
-      )}
+      {/* Property display — manager is locked to assigned property, no switching */}
+      <div className="flex items-center gap-2 text-sm text-slate-600">
+        <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+        <span className="font-medium">
+          {properties.find(p => p.id === propertyId)?.name ?? "Loading property…"}
+        </span>
+      </div>
 
       {/* Location error banner */}
       {locationError && (

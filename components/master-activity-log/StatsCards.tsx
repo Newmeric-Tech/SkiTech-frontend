@@ -8,7 +8,7 @@ interface StatsCardsProps {
 
 const StatsCards: React.FC<StatsCardsProps> = ({ summary }) => {
   const stats = [
-    { label: 'Events (7 days)', value: summary?.total_events ?? '—' },
+    { label: 'Total Events',    value: summary?.total_events ?? '—' },
     { label: 'Warnings',        value: summary?.warnings     ?? '—' },
     { label: 'Critical',        value: summary?.critical     ?? '—' },
     { label: 'Log Size (est.)', value: summary ? `${summary.log_size_gb} GB` : '—' },

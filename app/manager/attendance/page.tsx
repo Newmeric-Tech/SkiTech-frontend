@@ -164,18 +164,13 @@ export default function AttendancePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {properties.length > 0 && (
+          {/* Manager is locked to their assigned property — show name, no dropdown */}
+          {propertyId && (
             <div className="flex items-center gap-2 bg-white border border-slate-200/60 px-3 py-2 rounded-xl">
               <MapPin className="w-4 h-4 text-slate-400" />
-              <select
-                value={propertyId}
-                onChange={(e) => setPropertyId(e.target.value)}
-                className="text-sm focus:outline-none bg-transparent"
-              >
-                {properties.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
+              <span className="text-sm text-slate-700 font-medium">
+                {properties.find(p => p.id === propertyId)?.name ?? "Your Property"}
+              </span>
             </div>
           )}
         </div>

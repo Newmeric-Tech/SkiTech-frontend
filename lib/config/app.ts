@@ -36,8 +36,11 @@ api.interceptors.response.use(
 
       const refreshToken = localStorage.getItem("skitech_refresh_token");
       if (!refreshToken) {
-        // No refresh token → logout
-        localStorage.clear();
+        // No refresh token → clear only auth keys, don't wipe entire storage
+        localStorage.removeItem("skitech_access_token");
+        localStorage.removeItem("skitech_refresh_token");
+        localStorage.removeItem("skitech_role");
+        localStorage.removeItem("skitech_auth");
         window.location.href = "/auth/login";
         return Promise.reject(error);
       }
@@ -55,8 +58,11 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${access_token}`;
         return api(originalRequest);
       } catch {
-        // Refresh failed → logout
-        localStorage.clear();
+        // Refresh failed → clear only auth keys, don't wipe entire storage
+        localStorage.removeItem("skitech_access_token");
+        localStorage.removeItem("skitech_refresh_token");
+        localStorage.removeItem("skitech_role");
+        localStorage.removeItem("skitech_auth");
         window.location.href = "/auth/login";
         return Promise.reject(error);
       }

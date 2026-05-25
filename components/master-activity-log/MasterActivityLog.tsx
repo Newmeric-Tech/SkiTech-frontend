@@ -37,7 +37,7 @@ const MasterActivityLog: React.FC = () => {
       const rawSeverity = displayToRaw[selectedSeverity];
 
       const [summaryData, [items, count]] = await Promise.all([
-        activityLogAPI.summary(7),
+        activityLogAPI.summary(365),
         activityLogAPI.list({
           skip:     0,
           limit:    100,

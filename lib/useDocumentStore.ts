@@ -67,8 +67,14 @@ export function useDocumentStore() {
     // Try real API for documents; fall back to localStorage → dummy data
     documentsAPI.list(0, 100)
       .then((apiDocs) => {
-        setDocuments(apiDocs);
-        localStorage.setItem("skitech_docs", JSON.stringify(apiDocs));
+        // Merge: keep locally created docs (id starts with "doc-") not present in API
+        const stored = localStorage.getItem("skitech_docs");
+        const storedDocs: DocumentWithExtra[] = stored ? JSON.parse(stored) : [];
+        const apiIds = new Set(apiDocs.map((d: any) => d.id));
+        const localOnly = storedDocs.filter(d => !apiIds.has(d.id) && String(d.id).startsWith("doc-"));
+        const merged = [...apiDocs, ...localOnly];
+        setDocuments(merged);
+        localStorage.setItem("skitech_docs", JSON.stringify(merged));
         setLoading(false);
       })
       .catch(() => {

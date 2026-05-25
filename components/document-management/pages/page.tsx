@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { DocTabs } from "@/components/document-management/DocTabs";
 import { 
   FileText, ShieldAlert, ArrowRight, Download, MoreVertical,
@@ -10,12 +11,15 @@ import {
 } from "lucide-react";
 import { useDocumentStore, DocumentWithExtra, ActivityLog } from "@/lib/useDocumentStore";
 import { documentApi } from "@/lib/document-api";
+import { usersAPI } from "@/lib/api/users";
 import { DocumentTable, StatCard, StatusBadge } from "@/components/document-management";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function DocumentOverviewPage() {
   const store = useDocumentStore();
   const [role, setRole] = useState<string>("Owner");
+  const [domReady, setDomReady] = useState(false);
+  useEffect(() => { setDomReady(true); }, []);
 
   // Nav views state
   const [viewMode, setViewMode] = useState<"dashboard" | "table">("dashboard");
@@ -54,6 +58,7 @@ export default function DocumentOverviewPage() {
   const [editorTags, setEditorTags] = useState("");
   const [editorCollaborators, setEditorCollaborators] = useState<string[]>([]);
   const [editorAttachments, setEditorAttachments] = useState<string[]>([]);
+  const [staffList, setStaffList] = useState<{ id: string; name: string }[]>([]);
   const [autoSaveStatus, setAutoSaveStatus] = useState("Saved as Draft");
   const [activeTemplate, setActiveTemplate] = useState("blank");
 
@@ -265,6 +270,27 @@ export default function DocumentOverviewPage() {
     setEditorContent(templates[key].content);
     showToastMsg(`Template applied: ${key.toUpperCase()}`);
   };
+
+  // Fetch real staff list when editor opens
+  useEffect(() => {
+    if (!showEditorModal) return;
+    usersAPI.list().then((res) => {
+      const users = res.data ?? [];
+      const mapped = users
+        .filter((u) => u.is_active && (u.first_name || u.last_name))
+        .map((u) => ({
+          id: u.id,
+          name: [u.first_name, u.last_name].filter(Boolean).join(" "),
+        }));
+      if (mapped.length > 0) setStaffList(mapped);
+    }).catch(() => {
+      // Fall back to placeholder names if API fails
+      setStaffList([
+        { id: "s1", name: "Manager" },
+        { id: "s2", name: "Staff" },
+      ]);
+    });
+  }, [showEditorModal]);
 
   // Simulating auto-saving draft in background
   useEffect(() => {
@@ -828,9 +854,10 @@ export default function DocumentOverviewPage() {
       </AnimatePresence>
 
       {/* ── CREATE DOCUMENT WORKSPACE MODAL (Rich Text Editor, Autosaver, Versions) ── */}
+      {domReady && createPortal(
       <AnimatePresence>
         {showEditorModal && (
-          <div className="fixed inset-0 z-50 bg-[#141414] text-white flex flex-col overflow-hidden font-sans">
+          <div className="fixed inset-0 z-[9999] bg-[#141414] text-white flex flex-col overflow-hidden font-sans">
             
             {/* Editor Topbar */}
             <div className="h-16 bg-[#1a1a1a] border-b border-white/10 flex items-center justify-between px-6 shrink-0 z-50">
@@ -1000,20 +1027,22 @@ export default function DocumentOverviewPage() {
                     <Users className="w-4 h-4 text-neutral-400" />
                     Team Collaborators
                   </h4>
-                  <div className="space-y-2 bg-[#262626] p-3 rounded-2xl border border-white/5 text-neutral-300">
-                    {["Jane Doe", "Sarah Williams", "Corporate Legal Review"].map(user => {
-                      const isSelected = editorCollaborators.includes(user);
+                  <div className="space-y-2 bg-[#262626] p-3 rounded-2xl border border-white/5 text-neutral-300 max-h-36 overflow-y-auto custom-scrollbar">
+                    {staffList.length === 0 ? (
+                      <p className="text-xs text-neutral-500 text-center py-2">Loading team members…</p>
+                    ) : staffList.map(member => {
+                      const isSelected = editorCollaborators.includes(member.id);
                       return (
-                        <label key={user} className="flex items-center gap-2 cursor-pointer py-1 font-medium">
-                          <input 
-                            type="checkbox" 
+                        <label key={member.id} className="flex items-center gap-2 cursor-pointer py-1 font-medium">
+                          <input
+                            type="checkbox"
                             checked={isSelected}
                             onChange={() => {
-                              setEditorCollaborators(prev => isSelected ? prev.filter(u => u !== user) : [...prev, user]);
+                              setEditorCollaborators(prev => isSelected ? prev.filter(u => u !== member.id) : [...prev, member.id]);
                             }}
                             className="rounded border-white/10 bg-transparent text-white focus:ring-white/20"
                           />
-                          {user}
+                          {member.name}
                         </label>
                       );
                     })}
@@ -1043,7 +1072,9 @@ export default function DocumentOverviewPage() {
             </div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+      )}
 
     </div>
   );
