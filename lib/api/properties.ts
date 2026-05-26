@@ -92,6 +92,11 @@ export const propertiesAPI = {
     return api.post<{ url: string; storage: string }>(
       `/v1/properties/${propertyId}/images/upload`,
       form,
+      {
+        // Let the browser set Content-Type: multipart/form-data; boundary=...
+        // The instance default of "application/json" must not override this.
+        headers: { "Content-Type": undefined },
+      },
     );
   },
 
