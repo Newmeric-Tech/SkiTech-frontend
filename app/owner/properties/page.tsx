@@ -142,8 +142,16 @@ export default function PropertiesPage() {
               className="bg-white/70 backdrop-blur rounded-2xl border border-black/10 shadow-sm overflow-hidden group"
             >
               {/* Card header */}
-              <div className="relative h-36 bg-gradient-to-br from-neutral-800 to-neutral-950 flex items-center justify-center">
-                <Building2 className="w-14 h-14 text-white/10" />
+              <div className="relative h-36 bg-gradient-to-br from-neutral-800 to-neutral-950 flex items-center justify-center overflow-hidden">
+                {p.image_urls && p.image_urls.length > 0 ? (
+                  <img
+                    src={p.image_urls[0]}
+                    alt={p.name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <Building2 className="w-14 h-14 text-white/10" />
+                )}
                 <div className="absolute top-3 right-3">
                   <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
                     p.is_active ? "bg-emerald-500/90 text-white" : "bg-red-500/90 text-white"
