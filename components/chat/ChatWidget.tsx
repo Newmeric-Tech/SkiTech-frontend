@@ -450,9 +450,25 @@ export default function ChatWidget() {
       ? "-6px 0 32px rgba(0,0,0,0.14)"
       : "0 8px 32px rgba(0,0,0,0.14)";
 
-  const handleMinimize = () => { setIsMinimized(p => { if (!p) setIsMaximized(false); return !p; }); };
+  const handleMinimize = () => {
+    setIsMinimized(p => {
+      if (!p) {
+        // Currently open → minimizing
+        setIsMaximized(false);
+      } else {
+        // Currently minimized → RESTORING → show chat-only, no sidebar
+        setShowSidebar(false);
+      }
+      return !p;
+    });
+  };
   const handleMaximize = () => { setIsMaximized(p => { if (!p) setIsMinimized(false); return !p; }); };
-  const handleClose = () => { setIsOpen(false); setIsMaximized(false); setIsMinimized(false); };
+  const handleClose = () => {
+    setIsOpen(false);
+    setIsMaximized(false);
+    setIsMinimized(false);
+    setShowSidebar(false); // reset so next open starts chat-only
+  };
 
   const filteredChats = chats.filter(c => {
     const matchesFilter = activeFilter === "all" || c.type === activeFilter;
