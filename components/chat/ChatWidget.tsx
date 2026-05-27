@@ -108,6 +108,9 @@ export default function ChatWidget() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  // showSidebar: true only when user is actively browsing the list (enables split view)
+  // false when widget is reopened via FAB → show only the chat window
+  const [showSidebar, setShowSidebar] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
@@ -428,16 +431,17 @@ export default function ChatWidget() {
   // Side-panel: open, non-maximized, non-minimized, not a small phone
   const isSidePanel = isOpen && !isMinimized && !isMaximized && !isMobile;
 
-  // Expand from 380px (list only) to 640px (list + chat) when a conversation is open
+  // Expand to 640px (split view) only when user is browsing the list with a chat open.
+  // When reopened via FAB with an existing chat, stay narrow (380px) → chat-only view.
   const panelWidth = isMaximized
     ? windowWidth
     : isMobile
       ? windowWidth
-      : selectedChat
+      : (selectedChat && showSidebar)
         ? Math.min(640, windowWidth)
         : Math.min(380, windowWidth);
-  // Split view (list sidebar + chat window) whenever the panel is wide enough
-  const showSplitView = panelWidth >= 580;
+  // Split view only when panel is wide enough AND sidebar is explicitly shown
+  const showSplitView = panelWidth >= 580 && showSidebar;
   const panelHeight = isMinimized ? 56 : windowHeight;
   const panelRadius = isMaximized || (isMobile && !isMinimized) ? 0 : isSidePanel ? "16px 0 0 16px" : 14;
   const panelShadow = isMaximized || (isMobile && !isMinimized)
@@ -457,9 +461,15 @@ export default function ChatWidget() {
 
   const activeChat = selectedChat ? (chats.find(c => c.id === selectedChat.id) ?? selectedChat) : null;
 
+  // Selecting a chat from the list → enable split view (sidebar stays visible)
+  const handleSelectChat = useCallback((chat: Chat) => {
+    setSelectedChat(chat);
+    setShowSidebar(true);
+  }, []);
+
   const sharedListProps = {
     chats: filteredChats,
-    onSelectChat: setSelectedChat,
+    onSelectChat: handleSelectChat,
     onClose: handleClose,
     onMinimize: handleMinimize,
     onMaximize: handleMaximize,
@@ -531,7 +541,7 @@ export default function ChatWidget() {
                   <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                     <ChatWindow
                       chat={activeChat} messages={messages} messagesLoading={messagesLoading}
-                      onBack={() => setSelectedChat(null)}
+                      onBack={() => { setSelectedChat(null); setShowSidebar(true); }}
                       onSendMessage={(msg) => handleSendMessage(activeChat.id, msg)}
                       onSendFile={(file, type, url) => handleSendFile(activeChat.id, file, type, url)}
                       onClose={handleClose} onMinimize={handleMinimize} onMaximize={handleMaximize}
@@ -547,7 +557,7 @@ export default function ChatWidget() {
               /* ── Narrow panel: active chat ── */
               <ChatWindow
                 chat={activeChat} messages={messages} messagesLoading={messagesLoading}
-                onBack={() => setSelectedChat(null)}
+                onBack={() => { setSelectedChat(null); setShowSidebar(true); }}
                 onSendMessage={(msg) => handleSendMessage(activeChat.id, msg)}
                 onSendFile={(file, type, url) => handleSendFile(activeChat.id, file, type, url)}
                 onClose={handleClose} onMinimize={handleMinimize} onMaximize={handleMaximize}
@@ -567,7 +577,7 @@ export default function ChatWidget() {
             key="chat-fab"
             initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
             whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.93 }}
-            onClick={() => setIsOpen(p => !p)}
+            onClick={() => { setIsOpen(p => !p); setShowSidebar(false); }}
             style={{
               width: 56, height: 56, borderRadius: "50%",
               background: "#111111", border: "none", cursor: "pointer",
