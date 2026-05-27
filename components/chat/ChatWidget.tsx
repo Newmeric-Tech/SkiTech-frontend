@@ -431,25 +431,24 @@ export default function ChatWidget() {
   // Side-panel: open, non-maximized, non-minimized, not a small phone
   const isSidePanel = isOpen && !isMinimized && !isMaximized && !isMobile;
 
-  // Maximized = full height, narrow (380px) side panel on the right — not full screen.
+  // Maximized = true full screen (windowWidth × windowHeight).
   // Split view (640px) only when user is actively browsing the list with a chat open.
-  const panelWidth = isMobile
+  const panelWidth = isMaximized
     ? windowWidth
-    : isMaximized
-      ? Math.min(380, windowWidth)
+    : isMobile
+      ? windowWidth
       : (selectedChat && showSidebar)
         ? Math.min(640, windowWidth)
         : Math.min(380, windowWidth);
   // Split view only when panel is wide enough AND sidebar is explicitly shown
   const showSplitView = panelWidth >= 580 && showSidebar;
-  // Floating widget: fixed 600px height. Maximized / side panel: full viewport height.
+  // Floating widget: fixed 600px height. Maximized / side panel / mobile: full height.
   const isFullHeight = isMaximized || isSidePanel || (isMobile && isOpen && !isMinimized);
   const panelHeight = isMinimized ? 56 : isFullHeight ? windowHeight : Math.min(600, windowHeight - 48);
-  // Maximized & side-panel use rounded left corners; floating uses all-around radius
-  const panelRadius = (isMobile && !isMinimized) ? 0 : (isMaximized || isSidePanel) ? "16px 0 0 16px" : 14;
-  const panelShadow = (isMobile && !isMinimized)
+  const panelRadius = isMaximized || (isMobile && !isMinimized) ? 0 : isSidePanel ? "16px 0 0 16px" : 14;
+  const panelShadow = isMaximized || (isMobile && !isMinimized)
     ? "none"
-    : (isMaximized || isSidePanel)
+    : isSidePanel
       ? "-6px 0 32px rgba(0,0,0,0.14)"
       : "0 8px 32px rgba(0,0,0,0.14)";
 
@@ -517,10 +516,10 @@ export default function ChatWidget() {
       display: "flex", flexDirection: "column",
       alignItems: "flex-end", justifyContent: "flex-end",
       gap: 0,
-      ...((isMobile && isOpen && !isMinimized)
-        ? { top: 0, left: 0, right: 0, bottom: 0 }   // mobile: true full screen
-        : (isMaximized || isSidePanel)
-          ? { top: 0, right: 0, bottom: 0 }           // maximized + side panel: full-height right edge
+      ...((isMaximized || (isMobile && isOpen && !isMinimized))
+        ? { top: 0, left: 0, right: 0, bottom: 0 }   // full screen
+        : isSidePanel
+          ? { top: 0, right: 0, bottom: 0 }           // side panel: full-height right edge
           : { bottom: 24, right: 24 }                  // default: floating bottom-right
       ),
     }}>
