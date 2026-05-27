@@ -431,22 +431,23 @@ export default function ChatWidget() {
   // Side-panel: open, non-maximized, non-minimized, not a small phone
   const isSidePanel = isOpen && !isMinimized && !isMaximized && !isMobile;
 
-  // Expand to 640px (split view) only when user is browsing the list with a chat open.
-  // When reopened via FAB with an existing chat, stay narrow (380px) → chat-only view.
-  const panelWidth = isMaximized
+  // Maximized = full height, narrow (380px) side panel on the right — not full screen.
+  // Split view (640px) only when user is actively browsing the list with a chat open.
+  const panelWidth = isMobile
     ? windowWidth
-    : isMobile
-      ? windowWidth
+    : isMaximized
+      ? Math.min(380, windowWidth)
       : (selectedChat && showSidebar)
         ? Math.min(640, windowWidth)
         : Math.min(380, windowWidth);
   // Split view only when panel is wide enough AND sidebar is explicitly shown
   const showSplitView = panelWidth >= 580 && showSidebar;
   const panelHeight = isMinimized ? 56 : windowHeight;
-  const panelRadius = isMaximized || (isMobile && !isMinimized) ? 0 : isSidePanel ? "16px 0 0 16px" : 14;
-  const panelShadow = isMaximized || (isMobile && !isMinimized)
+  // Maximized uses side-panel style (rounded left corners, no right corners)
+  const panelRadius = (isMobile && !isMinimized) ? 0 : (isMaximized || isSidePanel) ? "16px 0 0 16px" : 14;
+  const panelShadow = (isMobile && !isMinimized)
     ? "none"
-    : isSidePanel
+    : (isMaximized || isSidePanel)
       ? "-6px 0 32px rgba(0,0,0,0.14)"
       : "0 8px 32px rgba(0,0,0,0.14)";
 
@@ -514,11 +515,11 @@ export default function ChatWidget() {
       display: "flex", flexDirection: "column",
       alignItems: "flex-end", justifyContent: "flex-end",
       gap: 0,
-      ...((isMaximized || (isMobile && isOpen && !isMinimized))
-        ? { top: 0, left: 0, right: 0, bottom: 0 }
-        : isSidePanel
-          ? { top: 0, right: 0, bottom: 0 }  // full-height right-edge attachment
-          : { bottom: 24, right: 24 }
+      ...((isMobile && isOpen && !isMinimized)
+        ? { top: 0, left: 0, right: 0, bottom: 0 }   // mobile: true full screen
+        : (isMaximized || isSidePanel)
+          ? { top: 0, right: 0, bottom: 0 }           // maximized + side panel: full-height right edge
+          : { bottom: 24, right: 24 }                  // default: floating bottom-right
       ),
     }}>
       <AnimatePresence>
