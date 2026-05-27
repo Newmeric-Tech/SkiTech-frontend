@@ -464,7 +464,16 @@ export default function ChatWidget() {
       return !p;
     });
   };
-  const handleMaximize = () => { setIsMaximized(p => { if (!p) setIsMinimized(false); return !p; }); };
+  const handleMaximize = () => {
+    setIsMaximized(p => {
+      if (!p) {
+        setIsMinimized(false); // maximizing → un-minimize
+      } else {
+        setShowSidebar(false); // restoring from maximized → chat-only view
+      }
+      return !p;
+    });
+  };
   const handleClose = () => {
     setIsOpen(false);
     setIsMaximized(false);
@@ -917,7 +926,7 @@ function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMini
               <IconBtn onClick={() => onNewChat("group")} title="New group"><Users size={13} /></IconBtn>
               <IconBtn onClick={() => onNewChat("direct")} title="New chat"><UserPlus size={14} /></IconBtn>
               {onSettings && <IconBtn onClick={onSettings} title="Settings"><Settings size={13} /></IconBtn>}
-              <IconBtn onClick={onMaximize} title="Restore to widget"><Minimize2 size={14} /></IconBtn>
+              <IconBtn onClick={onMinimize} title="Minimise"><Minimize2 size={14} /></IconBtn>
               <IconBtn onClick={onClose} title="Close chat"><X size={14} /></IconBtn>
             </div>
           </div>
