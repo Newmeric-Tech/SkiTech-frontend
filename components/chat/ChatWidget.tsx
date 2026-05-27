@@ -442,8 +442,10 @@ export default function ChatWidget() {
         : Math.min(380, windowWidth);
   // Split view only when panel is wide enough AND sidebar is explicitly shown
   const showSplitView = panelWidth >= 580 && showSidebar;
-  const panelHeight = isMinimized ? 56 : windowHeight;
-  // Maximized uses side-panel style (rounded left corners, no right corners)
+  // Floating widget: fixed 600px height. Maximized / side panel: full viewport height.
+  const isFullHeight = isMaximized || isSidePanel || (isMobile && isOpen && !isMinimized);
+  const panelHeight = isMinimized ? 56 : isFullHeight ? windowHeight : Math.min(600, windowHeight - 48);
+  // Maximized & side-panel use rounded left corners; floating uses all-around radius
   const panelRadius = (isMobile && !isMinimized) ? 0 : (isMaximized || isSidePanel) ? "16px 0 0 16px" : 14;
   const panelShadow = (isMobile && !isMinimized)
     ? "none"
