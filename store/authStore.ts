@@ -57,6 +57,7 @@ interface AuthState {
   features: PlanFeatures;
 
   login: (email: string, password: string, selectedRole?: string) => Promise<string>;
+  googleLogin: (credential: string, selectedRole?: string) => Promise<string>;
   logout: () => void;
   clearError: () => void;
   refreshFeatures: () => Promise<void>;
@@ -202,6 +203,56 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
           });
 
+          throw new Error(message);
+        }
+      },
+
+      googleLogin: async (credential: string, selectedRole?: string) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          const res = await api.post("/v1/auth/google", {
+            credential,
+            expected_role: selectedRole || null,
+          });
+
+          const { access_token, refresh_token } = res.data;
+
+          localStorage.setItem("skitech_access_token", access_token);
+          localStorage.setItem("skitech_refresh_token", refresh_token);
+
+          const user = decodeJWT(access_token);
+          if (!user) throw new Error("Invalid token received");
+
+          localStorage.setItem("skitech_role", getRoleStorageKey(user.role));
+          setAuthCookie(user);
+
+          set({ user, access_token, refresh_token, isAuthenticated: true, isLoading: false, error: null });
+
+          // Fetch subscription features
+          if (user.role === "Super Admin") {
+            const allEnabled: PlanFeatures = {
+              reports: true, kra: true, sop: true,
+              attendance: true, vendor_management: true, inventory: true, governance: true,
+              employee_scheduling: true, chat: true, employee_ranking: true, master_log: true,
+            };
+            set({ features: allEnabled });
+          } else {
+            try {
+              const planRes = await api.get("/v1/subscriptions/my-plan");
+              set({ features: planRes.data?.features ?? DEFAULT_FEATURES });
+            } catch {
+              set({ features: DEFAULT_FEATURES });
+            }
+          }
+
+          return ROLE_ROUTES[user.role] || "/staff";
+        } catch (err: any) {
+          const message =
+            err?.response?.data?.detail ||
+            err?.message ||
+            "Google sign-in failed. Please try again.";
+          set({ isLoading: false, error: message, isAuthenticated: false });
           throw new Error(message);
         }
       },

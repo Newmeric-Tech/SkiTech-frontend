@@ -5,6 +5,7 @@ import { SharedStoreProvider } from "../store/SharedStore";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import ChatWidgetGate from "@/components/chat/ChatWidgetGate";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const merriweather = Merriweather({
   subsets: ["latin"],
@@ -26,13 +27,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${merriweather.variable} font-sans antialiased`}>
-        <ThemeProvider attribute="data-theme" enableSystem={false} storageKey="next-theme-unused">
-          <SharedStoreProvider>
-            {children}
-            <Toaster richColors position="top-right" />
-            <ChatWidgetGate />
-          </SharedStoreProvider>
-        </ThemeProvider>
+        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
+          <ThemeProvider attribute="data-theme" enableSystem={false} storageKey="next-theme-unused">
+            <SharedStoreProvider>
+              {children}
+              <Toaster richColors position="top-right" />
+              <ChatWidgetGate />
+            </SharedStoreProvider>
+          </ThemeProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );

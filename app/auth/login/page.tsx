@@ -6,6 +6,7 @@ import { Zap, Eye, EyeOff, ArrowRight, Sun, Moon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function LoginPage() {
   const [role, setRole] = useState<"owner" | "manager" | "staff" | "">("");
@@ -15,7 +16,7 @@ export default function LoginPage() {
   const [dark, setDark] = useState(false);
   const router = useRouter();
 
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const { login, googleLogin, isLoading, error, clearError } = useAuthStore();
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -300,7 +301,48 @@ export default function LoginPage() {
               </motion.button>
             </form>
 
-            <p className="text-center text-black/50 dark:text-[#707070] text-xs mt-7 font-light">
+            {/* ── Divider ── */}
+            <div className="flex items-center gap-3 mt-6">
+              <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
+              <span className="text-black/35 dark:text-[#555555] text-[10px] uppercase tracking-widest font-bold">or</span>
+              <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
+            </div>
+
+            {/* ── Google Sign-In ── */}
+            <div className="mt-4">
+              {!role && (
+                <p className="text-center text-black/45 dark:text-[#606060] text-[11px] mb-3 italic font-light">
+                  Select a role above to sign in with Google
+                </p>
+              )}
+              <div className={`flex justify-center transition-opacity duration-200 ${!role ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
+                <GoogleLogin
+                  onSuccess={async (credentialResponse) => {
+                    if (!credentialResponse.credential) return;
+                    clearError();
+                    try {
+                      const redirectPath = await googleLogin(
+                        credentialResponse.credential,
+                        role || undefined
+                      );
+                      router.push(redirectPath);
+                    } catch {
+                      // error is set in store
+                    }
+                  }}
+                  onError={() => {
+                    // handled by store error state
+                  }}
+                  theme={dark ? "filled_black" : "outline"}
+                  size="large"
+                  text="signin_with"
+                  shape="rectangular"
+                  width="360"
+                />
+              </div>
+            </div>
+
+            <p className="text-center text-black/50 dark:text-[#707070] text-xs mt-6 font-light">
               Don&apos;t have an account?{" "}
               <Link href="/demo" className="text-black dark:text-[#f0f0f0] font-bold hover:text-black/70 dark:hover:text-[#c8c8c8] transition-colors">
                 Request Demo
