@@ -420,7 +420,12 @@ export default function ChatWidget() {
     try {
       const res = await chatAPI.sendMessageWithMedia(chatId, user.tenant_id, propId, file);
       const real = mapMsg(res.data, myProfile.id);
-      setMessages(prev => prev.map(m => m.id === tempId ? real : m));
+      // Merge: keep the local blob URLs so the image/file preview stays visible
+      setMessages(prev => prev.map(m =>
+        m.id === tempId
+          ? { ...real, imageUrl: m.imageUrl ?? real.imageUrl, fileUrl: m.fileUrl ?? real.fileUrl }
+          : m
+      ));
     } catch {
       // optimistic bubble stays visible on error
     }
