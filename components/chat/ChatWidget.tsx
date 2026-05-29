@@ -951,7 +951,7 @@ function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMini
       </div>
 
       {/* ── List body ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px" }}>
         {isLoading ? (
           [0, 1, 2, 3].map(i => <SkeletonItem key={i} />)
         ) : chats.length === 0 ? (
@@ -971,7 +971,12 @@ function ChatList({ chats, onSelectChat, onClose, onMinimize, onMaximize, isMini
             </div>
           </div>
         ) : (
-          chats.map(chat => <ChatItem key={chat.id} chat={chat} onClick={() => onSelectChat(chat)} isSelected={chat.id === selectedChatId} />)
+          chats.map((chat, i) => (
+            <div key={chat.id}>
+              <ChatItem chat={chat} onClick={() => onSelectChat(chat)} isSelected={chat.id === selectedChatId} />
+              {i < chats.length - 1 && <div style={{ height: 1, background: "#f0f0f0", margin: "0 4px" }} />}
+            </div>
+          ))
         )}
       </div>
     </div>
@@ -987,7 +992,7 @@ function ChatItem({ chat, onClick, isSelected }: { chat: Chat; onClick: () => vo
       onHoverStart={() => setHovered(true)} onHoverEnd={() => setHovered(false)}
       animate={{ background: isSelected ? "#e8e8e8" : hovered ? "#f5f5f7" : "#ffffff" }}
       onClick={onClick}
-      style={{ width: "100%", padding: "11px 16px", borderRadius: 0, display: "flex", alignItems: "center", gap: 13, border: "none", cursor: "pointer", textAlign: "left", fontFamily: "'Merriweather', serif" }}
+      style={{ width: "100%", padding: "11px 14px", borderRadius: 12, display: "flex", alignItems: "center", gap: 13, border: "none", cursor: "pointer", textAlign: "left", fontFamily: "'Merriweather', serif" }}
     >
       <div style={{ position: "relative", flexShrink: 0 }}>
         <div style={{ width: 46, height: 46, borderRadius: "50%", background: gradient, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
