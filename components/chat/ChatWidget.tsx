@@ -440,8 +440,8 @@ export default function ChatWidget() {
       : (selectedChat && showSidebar)
         ? Math.min(640, windowWidth)
         : Math.min(380, windowWidth);
-  // Split view only when panel is wide enough AND sidebar is explicitly shown
-  const showSplitView = panelWidth >= 580 && showSidebar;
+  // Split view: always in maximized mode; otherwise only when wide enough with sidebar shown
+  const showSplitView = isMaximized || (panelWidth >= 580 && showSidebar);
   // Floating widget: fixed 600px height. Maximized / side panel / mobile: full height.
   const isFullHeight = isMaximized || isSidePanel || (isMobile && isOpen && !isMinimized);
   const panelHeight = isMinimized ? 56 : isFullHeight ? windowHeight : Math.min(600, windowHeight - 48);
@@ -550,11 +550,11 @@ export default function ChatWidget() {
             {showSplitView ? (
               /* ── Wide panel: full-width list OR left sidebar + right chat ── */
               <div style={{ display: "flex", flex: 1, width: "100%", minHeight: 0 }}>
-                {/* Left: full-width when no chat selected, 300px sidebar when chat is open */}
+                {/* Left: fixed 360px in maximized, full-width only in compact non-maximized split */}
                 <div style={{
-                  width: activeChat ? 300 : "100%",
+                  width: isMaximized ? (activeChat ? 320 : 360) : (activeChat ? 300 : "100%"),
                   flexShrink: 0,
-                  borderRight: activeChat ? "1.5px solid #e5e7eb" : "none",
+                  borderRight: (isMaximized || activeChat) ? "1.5px solid #e5e7eb" : "none",
                   display: "flex", flexDirection: "column",
                 }}>
                   {showNewChat ? (
