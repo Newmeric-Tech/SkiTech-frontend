@@ -426,8 +426,16 @@ export default function ChatWidget() {
           ? { ...real, imageUrl: m.imageUrl ?? real.imageUrl, fileUrl: m.fileUrl ?? real.fileUrl }
           : m
       ));
-    } catch {
-      // optimistic bubble stays visible on error
+    } catch (err: unknown) {
+      const detail = (err as any)?.response?.data?.detail;
+      const status = (err as any)?.response?.status;
+      console.error("[Chat] sendMessageWithMedia failed:", status, detail ?? err);
+      // Optimistic bubble stays visible; mark it as failed so the user sees it
+      setMessages(prev => prev.map(m =>
+        m.id === tempId
+          ? { ...m, text: `⚠ Failed to upload ${file.name}` }
+          : m
+      ));
     }
   }, [chats, effectivePropertyId, user?.tenant_id, myProfile]);
 
