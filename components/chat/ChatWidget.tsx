@@ -417,13 +417,13 @@ export default function ChatWidget() {
     };
     setMessages(prev => [...prev, localMsg]);
     setChats(prev => prev.map(c => c.id === chatId ? { ...c, lastMessage: `[${type}]`, timestamp: ts } : c));
-    chatAPI.sendMessage(chatId, user.tenant_id, propId, file.name)
-      .then(msgRes => {
-        const msgId = msgRes.data.id;
-        setMessages(prev => prev.map(m => m.id === tempId ? { ...localMsg, id: msgId } : m));
-        return chatAPI.uploadMedia(chatId, user.tenant_id!, propId, msgId, file);
-      })
-      .catch(() => {});
+    try {
+      const res = await chatAPI.sendMessageWithMedia(chatId, user.tenant_id, propId, file);
+      const real = mapMsg(res.data, myProfile.id);
+      setMessages(prev => prev.map(m => m.id === tempId ? real : m));
+    } catch {
+      // optimistic bubble stays visible on error
+    }
   }, [chats, effectivePropertyId, user?.tenant_id, myProfile]);
 
   // Full-screen only on small phones; side panel on everything wider

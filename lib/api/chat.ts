@@ -138,4 +138,24 @@ export const chatAPI = {
       }
     );
   },
+
+  sendMessageWithMedia: (
+    conversationId: string,
+    tenantId: string,
+    propertyId: string | null | undefined,
+    file: File,
+    content = ""
+  ) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("content", content);
+    return api.post<MessageItem>(
+      `/v1/chat/conversations/${conversationId}/messages/with-media`,
+      formData,
+      {
+        params: { tenant_id: tenantId, ...(propertyId ? { property_id: propertyId } : {}) },
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+  },
 };
