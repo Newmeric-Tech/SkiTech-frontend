@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Download, RefreshCw, AlertCircle } from "lucide-react";
+import { Download, RefreshCw, AlertCircle } from "lucide-react"; // AlertCircle used in error banner
 import RankingTable from "@/components/employee-ranking/RankingTable";
 import { useAuthStore } from "@/store/authStore";
 import { rankingAPI, mapRankingItem, getPeriodDates, RankingPeriodType } from "@/lib/api/ranking";
 import { EmployeeRanking } from "@/types/employee-ranking";
+import PropertySelector from "@/components/employee-ranking/PropertySelector";
 
 const PERIOD_OPTIONS: { label: string; value: RankingPeriodType }[] = [
   { label: "Weekly",  value: "weekly"  },
@@ -18,12 +19,13 @@ export default function RankingTablePage() {
 
   const [period, setPeriod] = useState<RankingPeriodType>("weekly");
   const [rankings, setRankings] = useState<EmployeeRanking[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
 
-  const tenantId   = user?.tenant_id   ?? "";
-  const propertyId = user?.property_id ?? "";
+  const tenantId   = user?.tenant_id ?? "";
+  const propertyId = selectedPropertyId;
 
   const fetchRankings = useCallback(async () => {
     if (!tenantId || !propertyId) return;
@@ -55,15 +57,6 @@ export default function RankingTablePage() {
     }
   };
 
-  if (!propertyId) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-        <AlertCircle className="w-10 h-10 text-slate-400" />
-        <p className="text-slate-600 font-medium">No property linked to your account.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -72,6 +65,10 @@ export default function RankingTablePage() {
           <p className="text-slate-500 text-sm mt-1">Complete employee ranking directory with advanced filtering</p>
         </div>
         <div className="flex gap-3">
+          <PropertySelector
+            selectedId={selectedPropertyId}
+            onChange={(id) => setSelectedPropertyId(id)}
+          />
           <button
             onClick={handleRecalculate}
             disabled={recalculating}

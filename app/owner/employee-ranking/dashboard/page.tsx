@@ -16,6 +16,7 @@ import {
   BackendDashboardStats, RankingPeriodType,
 } from "@/lib/api/ranking";
 import { EmployeeRanking } from "@/types/employee-ranking";
+import PropertySelector from "@/components/employee-ranking/PropertySelector";
 
 const PERIOD_OPTIONS: { label: string; value: RankingPeriodType }[] = [
   { label: "Weekly",  value: "weekly"  },
@@ -30,12 +31,15 @@ export default function EmployeeRankingDashboard() {
   const [period, setPeriod] = useState<RankingPeriodType>("weekly");
   const [dashboard, setDashboard] = useState<BackendDashboardStats | null>(null);
   const [rankings, setRankings] = useState<EmployeeRanking[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
+  const [selectedPropertyName, setSelectedPropertyName] = useState<string>("");
 
-  const tenantId  = user?.tenant_id   ?? "";
-  const propertyId = user?.property_id ?? "";
+  const tenantId   = user?.tenant_id ?? "";
+  // Owner has null property_id in JWT — use the property selector instead
+  const propertyId = selectedPropertyId;
 
   const fetchData = useCallback(async () => {
     if (!tenantId || !propertyId) return;
@@ -109,16 +113,6 @@ export default function EmployeeRankingDashboard() {
     },
   ];
 
-  if (!propertyId) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-        <AlertCircle className="w-10 h-10 text-slate-400" />
-        <p className="text-slate-600 font-medium">No property linked to your account.</p>
-        <p className="text-sm text-slate-400">Contact your administrator to assign a property.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -128,6 +122,10 @@ export default function EmployeeRankingDashboard() {
           <p className="text-slate-500 text-sm mt-1">Monitor workforce performance and track employee rankings</p>
         </div>
         <div className="flex items-center gap-3">
+          <PropertySelector
+            selectedId={selectedPropertyId}
+            onChange={(id, name) => { setSelectedPropertyId(id); setSelectedPropertyName(name); }}
+          />
           <button
             onClick={handleRecalculate}
             disabled={recalculating}
