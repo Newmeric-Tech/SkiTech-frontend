@@ -135,6 +135,14 @@ export const rankingAPI = {
     return data;
   },
 
+  /** Get the current staff member's own ranking (uses their linked employee record) */
+  getMyRanking: async (rankingType: RankingPeriodType = "weekly") => {
+    const { data } = await api.get<BackendEmployeeRanking>("/v1/rankings/me", {
+      params: { ranking_type: rankingType },
+    });
+    return data;
+  },
+
   /** Trigger full ranking recalculation for a property + period */
   recalculate: async (
     propertyId: string,
