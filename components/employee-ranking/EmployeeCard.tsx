@@ -8,9 +8,10 @@ import { useRouter } from "next/navigation";
 interface EmployeeCardProps {
   ranking: EmployeeRanking;
   index?: number;
+  basePath?: string;
 }
 
-export default function EmployeeCard({ ranking, index = 0 }: EmployeeCardProps) {
+export default function EmployeeCard({ ranking, index = 0, basePath = "/manager/employee-ranking" }: EmployeeCardProps) {
   const router = useRouter();
 
   const getInitials = (name: string) =>
@@ -54,7 +55,7 @@ export default function EmployeeCard({ ranking, index = 0 }: EmployeeCardProps) 
       <div className="w-full h-px bg-slate-100 mb-4" />
 
       <button
-        onClick={() => router.push(`/owner/employee-ranking/staff/${ranking.employeeId}`)}
+        onClick={() => router.push(`${basePath}/staff/${ranking.employeeId}`)}
         className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-950 transition-colors group-hover:text-slate-950"
       >
         View Details
