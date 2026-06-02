@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Search, Plus, Edit, Trash2, X, Crown, Briefcase, User, Ban, CheckCircle2, Loader2, Mail, Clock, RefreshCw } from "lucide-react";
+import { Search, Plus, Edit, Trash2, X, Crown, Briefcase, User, Ban, CheckCircle2, Loader2, Mail, Clock, Copy, CheckCheck, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { superadminAPI, SuperadminUser, InviteUserPayload } from "@/lib/api/superadmin";
 
@@ -38,6 +38,8 @@ export default function AllUsers() {
   const [editRole, setEditRole] = useState("");
   const [saving, setSaving] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
+  const [copied, setCopied] = useState<"email" | "password" | null>(null);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -66,16 +68,26 @@ export default function AllUsers() {
     if (!inviteForm.email || !inviteForm.full_name) return toast.error("Fill all required fields");
     try {
       setSaving(true);
-      await superadminAPI.inviteUser(inviteForm);
-      toast.success(`Invite sent to ${inviteForm.email} — OTP & temporary password emailed.`);
+      const res = await superadminAPI.inviteUser(inviteForm);
       setShowInviteModal(false);
       setInviteForm({ full_name: "", email: "", role: "Owner" });
+      if (res.data?.temp_password) {
+        setCredentials({ email: inviteForm.email, password: res.data.temp_password });
+      } else {
+        toast.success(`Invite sent to ${inviteForm.email}`);
+      }
       fetchUsers();
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Failed to send invite");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCopy = (type: "email" | "password", value: string) => {
+    navigator.clipboard.writeText(value);
+    setCopied(type);
+    setTimeout(() => setCopied(null), 2000);
   };
 
   const handleResendInvite = async (user: SuperadminUser) => {
@@ -342,6 +354,53 @@ export default function AllUsers() {
                 </button>
               </div>
             </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Credentials Modal — shown after invite when email may not deliver */}
+      {credentials && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative bg-white rounded-2xl border border-black/10 shadow-xl p-6 w-full max-w-md mx-4">
+            <div className="flex flex-col items-center text-center mb-5">
+              <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-full flex items-center justify-center mb-3">
+                <KeyRound className="w-7 h-7 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-black" style={{ fontFamily: "'Merriweather', Georgia, serif" }}>User Invited!</h2>
+              <p className="text-neutral-500 text-sm mt-1">
+                Share these credentials with <span className="font-medium text-black">{credentials.email}</span>.<br />
+                An email was also sent (check spam if not received).
+              </p>
+            </div>
+
+            <div className="space-y-3 mb-5">
+              <div className="bg-neutral-50 border border-black/10 rounded-xl p-4">
+                <p className="text-xs text-neutral-400 mb-1">Email</p>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-black break-all">{credentials.email}</span>
+                  <button onClick={() => handleCopy("email", credentials.email)} className="shrink-0 p-1.5 hover:bg-black/5 rounded-lg transition-colors">
+                    {copied === "email" ? <CheckCheck className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-neutral-400" />}
+                  </button>
+                </div>
+              </div>
+              <div className="bg-neutral-50 border border-black/10 rounded-xl p-4">
+                <p className="text-xs text-neutral-400 mb-1">Temporary Password</p>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-mono font-bold text-black tracking-wider">{credentials.password}</span>
+                  <button onClick={() => handleCopy("password", credentials.password)} className="shrink-0 p-1.5 hover:bg-black/5 rounded-lg transition-colors">
+                    {copied === "password" ? <CheckCheck className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-neutral-400" />}
+                  </button>
+                </div>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
+                The user must verify their OTP at <span className="font-medium">skitech-iota.vercel.app/auth/verify-invite</span> before logging in.
+              </div>
+            </div>
+
+            <button onClick={() => setCredentials(null)} className="w-full py-2.5 bg-black text-white rounded-xl text-sm font-medium hover:bg-neutral-800 transition-colors">
+              Done
+            </button>
           </motion.div>
         </div>
       )}

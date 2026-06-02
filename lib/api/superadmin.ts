@@ -161,6 +161,7 @@ export interface SuperadminUser {
   status: "active" | "inactive" | "suspended" | "pending";
   is_verified: boolean;
   invited_at: string;
+  temp_password?: string;
 }
 
 export interface InviteUserPayload {
