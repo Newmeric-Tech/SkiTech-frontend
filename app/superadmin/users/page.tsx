@@ -60,7 +60,7 @@ export default function AllUsers() {
     try {
       setSaving(true);
       await superadminAPI.inviteUser(inviteForm);
-      toast.success("Invite sent successfully");
+      toast.success(`Invite sent to ${inviteForm.email} — OTP & temporary password emailed.`);
       setShowInviteModal(false);
       setInviteForm({ full_name: "", email: "", role: "Owner" });
       fetchUsers();
