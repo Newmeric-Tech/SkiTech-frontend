@@ -158,7 +158,9 @@ export interface SuperadminUser {
   role: string;
   property: string;
   last_active: string;
-  status: "active" | "inactive" | "suspended";
+  status: "active" | "inactive" | "suspended" | "pending";
+  is_verified: boolean;
+  invited_at: string;
 }
 
 export interface InviteUserPayload {
@@ -224,8 +226,12 @@ export const superadminAPI = {
   // Users
   listUsers: (params?: { search?: string; role?: string; status?: string }) =>
     api.get<SuperadminUser[]>("/v1/superadmin/users", { params }),
+  listPendingInvites: () =>
+    api.get<SuperadminUser[]>("/v1/superadmin/users", { params: { status: "pending" } }),
   inviteUser: (data: InviteUserPayload) =>
     api.post<SuperadminUser>("/v1/superadmin/users/invite", data),
+  resendInvite: (email: string) =>
+    api.post("/v1/auth/resend-verification", { email }),
   suspendUser: (id: string) => api.put(`/v1/superadmin/users/${id}/suspend`),
   activateUser: (id: string) => api.put(`/v1/superadmin/users/${id}/activate`),
   deleteUser: (id: string) => api.delete(`/v1/superadmin/users/${id}`),

@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Search, Plus, Users, UserCheck, UserX, Shield, Edit, Trash2, X, Crown, Briefcase, User, Ban, CheckCircle2, Loader2 } from "lucide-react";
+import { Search, Plus, Edit, Trash2, X, Crown, Briefcase, User, Ban, CheckCircle2, Loader2, Mail, Clock, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { superadminAPI, SuperadminUser, InviteUserPayload } from "@/lib/api/superadmin";
 
-const roleFilters = ["All", "Owner", "Manager", "Staff", "Suspended"];
+const TAB_FILTERS = ["All", "Owner", "Manager", "Staff", "Suspended", "Invited"];
 
 const getRoleIcon = (role: string) => {
   switch (role) {
@@ -28,30 +28,37 @@ const getRoleColor = (role: string) => {
 
 export default function AllUsers() {
   const [users, setUsers] = useState<SuperadminUser[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<SuperadminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("All");
+  const [activeTab, setActiveTab] = useState("All");
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [editingUser, setEditingUser] = useState<SuperadminUser | null>(null);
   const [inviteForm, setInviteForm] = useState<InviteUserPayload>({ full_name: "", email: "", role: "Owner" });
   const [editRole, setEditRole] = useState("");
   const [saving, setSaving] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const params: any = {};
       if (search) params.search = search;
-      if (roleFilter !== "All" && roleFilter !== "Suspended") params.role = roleFilter;
-      if (roleFilter === "Suspended") params.status = "suspended";
-      const res = await superadminAPI.listUsers(params);
-      setUsers(res.data);
+      if (activeTab !== "All" && activeTab !== "Suspended" && activeTab !== "Invited") params.role = activeTab;
+      if (activeTab === "Suspended") params.status = "suspended";
+
+      const [usersRes, pendingRes] = await Promise.all([
+        superadminAPI.listUsers(params),
+        superadminAPI.listPendingInvites(),
+      ]);
+      setUsers(usersRes.data);
+      setPendingUsers(pendingRes.data);
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Failed to load users");
     } finally {
       setLoading(false);
     }
-  }, [search, roleFilter]);
+  }, [search, activeTab]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
@@ -68,6 +75,18 @@ export default function AllUsers() {
       toast.error(err?.response?.data?.detail || "Failed to send invite");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleResendInvite = async (user: SuperadminUser) => {
+    setResendingId(user.id);
+    try {
+      await superadminAPI.resendInvite(user.email);
+      toast.success(`Invite resent to ${user.email}`);
+    } catch (err: any) {
+      toast.error("Failed to resend invite");
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -112,12 +131,14 @@ export default function AllUsers() {
     }
   };
 
-  const stats = {
-    total: users.length,
-    activeToday: users.filter((u) => u.last_active.includes("minute") || u.last_active.includes("hour")).length,
-    newThisWeek: 0,
-    suspended: users.filter((u) => u.status === "suspended").length,
-  };
+  const displayedUsers = activeTab === "Invited" ? pendingUsers : users;
+
+  const stats = [
+    { label: "Total Users", value: users.length, color: "text-black" },
+    { label: "Active Today", value: users.filter((u) => u.last_active.includes("T") && new Date(u.last_active) > new Date(Date.now() - 86400000)).length, color: "text-emerald-600" },
+    { label: "Pending Invites", value: pendingUsers.length, color: "text-amber-600" },
+    { label: "Suspended", value: users.filter((u) => u.status === "suspended").length, color: "text-red-500" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -127,12 +148,7 @@ export default function AllUsers() {
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: "Total Users", value: stats.total, color: "text-black" },
-          { label: "Active Today", value: stats.activeToday, color: "text-emerald-600" },
-          { label: "New This Week", value: stats.newThisWeek, color: "text-blue-600" },
-          { label: "Suspended", value: stats.suspended, color: "text-red-500" },
-        ].map((s) => (
+        {stats.map((s) => (
           <div key={s.label} className="bg-white/70 backdrop-blur rounded-xl border border-black/10 shadow-sm p-4">
             <p className="text-sm text-neutral-500">{s.label}</p>
             <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
@@ -148,10 +164,14 @@ export default function AllUsers() {
               className="w-full pl-10 pr-4 py-2 bg-white/50 border border-black/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/20" />
           </div>
           <div className="flex gap-1 bg-black/5 p-1 rounded-lg">
-            {roleFilters.map((role) => (
-              <button key={role} onClick={() => setRoleFilter(role)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${roleFilter === role ? "bg-white text-black shadow-sm" : "text-neutral-600 hover:text-black"}`}>
-                {role}
+            {TAB_FILTERS.map((tab) => (
+              <button key={tab} onClick={() => setActiveTab(tab)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${activeTab === tab ? "bg-white text-black shadow-sm" : "text-neutral-600 hover:text-black"}`}>
+                {tab === "Invited" && <Clock className="w-3.5 h-3.5" />}
+                {tab}
+                {tab === "Invited" && pendingUsers.length > 0 && (
+                  <span className="bg-amber-500 text-white text-xs rounded-full px-1.5 py-0.5 leading-none">{pendingUsers.length}</span>
+                )}
               </button>
             ))}
           </div>
@@ -163,7 +183,64 @@ export default function AllUsers() {
 
         {loading ? (
           <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-neutral-400" /></div>
+        ) : activeTab === "Invited" ? (
+          /* ── Invited / Pending Tab ── */
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-black/10">
+                  {["Name", "Email", "Role", "Invited At", "Status", "Actions"].map((h) => (
+                    <th key={h} className={`p-4 text-sm font-medium text-neutral-500 ${h === "Status" || h === "Actions" ? "text-center" : "text-left"}`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {pendingUsers.map((u, i) => (
+                  <motion.tr key={u.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                    className="border-b border-black/5 hover:bg-black/5 transition-colors">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                          {u.name.split(" ").map((n) => n[0]).join("")}
+                        </div>
+                        <span className="font-medium text-black">{u.name}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm text-neutral-600">{u.email}</td>
+                    <td className="p-4">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getRoleColor(u.role)}`}>
+                        {getRoleIcon(u.role)}{u.role === "Tenant Admin" ? "Owner" : u.role}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm text-neutral-500">
+                      {u.invited_at ? new Date(u.invited_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                    </td>
+                    <td className="p-4 text-center">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200 flex items-center gap-1 w-fit mx-auto">
+                        <Clock className="w-3 h-3" /> Pending
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center justify-center gap-1">
+                        <button onClick={() => handleResendInvite(u)} disabled={resendingId === u.id} title="Resend invite"
+                          className="p-2 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-50">
+                          {resendingId === u.id ? <Loader2 className="w-4 h-4 animate-spin text-amber-500" /> : <Mail className="w-4 h-4 text-amber-500" />}
+                        </button>
+                        <button onClick={() => handleDelete(u.id)} className="p-2 hover:bg-red-50 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+                {pendingUsers.length === 0 && (
+                  <tr><td colSpan={6} className="p-8 text-center text-sm text-neutral-400">No pending invites</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         ) : (
+          /* ── Active / All Users Tab ── */
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -174,7 +251,7 @@ export default function AllUsers() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user, i) => (
+                {displayedUsers.map((user, i) => (
                   <motion.tr key={user.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                     className="border-b border-black/5 hover:bg-black/5 transition-colors">
                     <td className="p-4">
@@ -188,7 +265,7 @@ export default function AllUsers() {
                     <td className="p-4 text-sm text-neutral-600">{user.email}</td>
                     <td className="p-4">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getRoleColor(user.role)}`}>
-                        {getRoleIcon(user.role)}{user.role}
+                        {getRoleIcon(user.role)}{user.role === "Tenant Admin" ? "Owner" : user.role}
                       </span>
                     </td>
                     <td className="p-4 text-sm text-neutral-600">{user.property}</td>
@@ -219,7 +296,7 @@ export default function AllUsers() {
                     </td>
                   </motion.tr>
                 ))}
-                {users.length === 0 && (
+                {displayedUsers.length === 0 && (
                   <tr><td colSpan={7} className="p-8 text-center text-sm text-neutral-400">No users found</td></tr>
                 )}
               </tbody>
@@ -228,6 +305,7 @@ export default function AllUsers() {
         )}
       </div>
 
+      {/* Invite Modal */}
       {showInviteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowInviteModal(false)} />
@@ -256,7 +334,8 @@ export default function AllUsers() {
                   <option>Owner</option><option>Manager</option><option>Staff</option>
                 </select>
               </div>
-              <div className="flex gap-3 pt-4">
+              <p className="text-xs text-neutral-400">An OTP and temporary password will be sent to the user's email.</p>
+              <div className="flex gap-3 pt-2">
                 <button onClick={() => setShowInviteModal(false)} className="flex-1 px-4 py-2.5 border border-black/10 rounded-lg text-sm font-medium hover:bg-black/5 transition-colors">Cancel</button>
                 <button onClick={handleInvite} disabled={saving} className="flex-1 px-4 py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-black/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />} Send Invite
@@ -267,6 +346,7 @@ export default function AllUsers() {
         </div>
       )}
 
+      {/* Edit Role Modal */}
       {editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setEditingUser(null)} />
