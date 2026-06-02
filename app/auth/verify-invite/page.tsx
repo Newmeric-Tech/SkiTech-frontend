@@ -1,4 +1,5 @@
 "use client";
+// OTP verification page for invited users
 
 import { useState, useRef, useEffect, KeyboardEvent, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
