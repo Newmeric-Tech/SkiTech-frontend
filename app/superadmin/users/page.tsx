@@ -70,7 +70,7 @@ export default function AllUsers() {
       setSaving(true);
       const res = await superadminAPI.inviteUser(inviteForm);
       setShowInviteModal(false);
-      setInviteForm({ full_name: "", email: "", role: "Owner" });
+      setInviteForm({ full_name: "", email: "", role: "Owner", business_name: "" });
       if (res.data?.temp_password) {
         setCredentials({ email: inviteForm.email, password: res.data.temp_password });
       } else {
@@ -341,11 +341,21 @@ export default function AllUsers() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">Role</label>
-                <select value={inviteForm.role} onChange={(e) => setInviteForm(f => ({ ...f, role: e.target.value }))}
+                <select value={inviteForm.role} onChange={(e) => setInviteForm(f => ({ ...f, role: e.target.value, business_name: "" }))}
                   className="w-full px-4 py-2.5 bg-white/50 border border-black/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/20">
                   <option>Owner</option><option>Manager</option><option>Staff</option>
                 </select>
               </div>
+              {inviteForm.role === "Owner" && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">Business Name <span className="text-neutral-400 font-normal">(optional)</span></label>
+                  <input type="text" placeholder="e.g. Grand Horizon Hotels"
+                    value={inviteForm.business_name || ""}
+                    onChange={(e) => setInviteForm(f => ({ ...f, business_name: e.target.value }))}
+                    className="w-full px-4 py-2.5 bg-white/50 border border-black/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/20" />
+                  <p className="text-xs text-neutral-400 mt-1">Each Owner gets their own isolated tenant. Leave blank to auto-generate.</p>
+                </div>
+              )}
               <p className="text-xs text-neutral-400">An OTP and temporary password will be sent to the user's email.</p>
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setShowInviteModal(false)} className="flex-1 px-4 py-2.5 border border-black/10 rounded-lg text-sm font-medium hover:bg-black/5 transition-colors">Cancel</button>

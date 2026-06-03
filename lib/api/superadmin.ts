@@ -169,6 +169,8 @@ export interface InviteUserPayload {
   email: string;
   role: string;
   property_id?: string;
+  tenant_id?: string;
+  business_name?: string;
 }
 
 // ── Demo Requests ─────────────────────────────────────────────────────────────
