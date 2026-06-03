@@ -75,12 +75,18 @@ const staffNav: NavItem[] = [
   { icon: Trophy,          label: "My Ranking",         href: "/staff/employee-ranking/staff-dashboard" },
 ];
 
+// Nav items that get a pulse hint when onboarding is incomplete for a new Owner
+const ONBOARDING_PULSE_HREFS = new Set(["/owner/properties", "/owner/managers"]);
+const ONBOARDING_KEY = "skitech_onboarding_complete";
+
 export function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const { dark, toggle: toggleDark } = useDarkMode();
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  // Show pulsing dot on Properties + Managers nav items until onboarding is complete
+  const [showNavPulse, setShowNavPulse] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -100,6 +106,15 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
   const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setDomReady(true); }, []);
+
+  // Show nav pulse hints for new Tenant Admins who haven't finished onboarding
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const done = localStorage.getItem(ONBOARDING_KEY) === "true";
+    const isOwner = user?.role === "Tenant Admin";
+    const noProperty = user?.property_id === null;
+    setShowNavPulse(isOwner && noProperty && !done);
+  }, [user]);
 
   // Refresh features from server on every mount so stale localStorage never persists
   useEffect(() => {
@@ -194,6 +209,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
             {!collapsed && <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">Main Menu</p>}
             {navItems.filter(hasAccess).map((item) => {
               const isActive = pathname === item.href || (item.href.split("/").length > 2 && pathname.startsWith(item.href + "/"));
+              const hasPulse = showNavPulse && ONBOARDING_PULSE_HREFS.has(item.href);
               return (
                 <Link
                   key={item.href}
@@ -205,7 +221,14 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                   }`}
                 >
                   <item.icon className={`w-[22px] h-[22px] shrink-0 ${isActive ? "text-white dark:text-black" : "text-neutral-500 dark:text-[#a0a0a0] group-hover:text-black dark:group-hover:text-white"}`} />
-                  {!collapsed && <span className="font-medium whitespace-nowrap">{item.label}</span>}
+                  {!collapsed && <span className="font-medium whitespace-nowrap flex-1">{item.label}</span>}
+                  {/* Onboarding pulse hint */}
+                  {hasPulse && !isActive && (
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500" />
+                    </span>
+                  )}
                   {collapsed && (
                     <div className="absolute left-full ml-3 bg-black text-white text-xs px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none shadow-lg">
                       {item.label}
