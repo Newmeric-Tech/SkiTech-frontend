@@ -34,6 +34,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
+      // Don't redirect if already on an auth page
+      if (window.location.pathname.startsWith("/auth")) {
+        return Promise.reject(error);
+      }
+
       const refreshToken = localStorage.getItem("skitech_refresh_token");
       if (!refreshToken) {
         // No refresh token → clear only auth keys, don't wipe entire storage
