@@ -28,51 +28,51 @@ const ownerNav: NavItem[] = [
   { icon: Building2,       label: "Properties",         href: "/owner/properties" },
   { icon: Briefcase,       label: "Managers",           href: "/owner/managers" },
   { icon: Users,           label: "Staff",              href: "/owner/staff" },
-  { icon: BarChart3,       label: "Reports",            href: "/owner/reports" },
-  { icon: Shield,          label: "KRA Monitoring",     href: "/owner/kra" },
-  { icon: Truck,           label: "Inventory",          href: "/owner/inventory", feature: "inventory" },
-  { icon: FileText,        label: "SOP Management",     href: "/owner/sop" },
-  { icon: CalendarClock,   label: "Employee Scheduling",href: "/owner/scheduling" },
+  { icon: BarChart3,       label: "Reports",            href: "/owner/reports",                      feature: "reports" },
+  { icon: Shield,          label: "KRA Monitoring",     href: "/owner/kra",                          feature: "kra" },
+  { icon: Truck,           label: "Inventory",          href: "/owner/inventory",                    feature: "inventory" },
+  { icon: FileText,        label: "SOP Management",     href: "/owner/sop",                          feature: "sop" },
+  { icon: CalendarClock,   label: "Employee Scheduling",href: "/owner/scheduling",                   feature: "employee_scheduling" },
   { icon: AlertCircle,     label: "Error & Complaints", href: "/owner/complaints" },
   { icon: Folder,          label: "Documents",          href: "/owner/document-management" },
-  { icon: Activity,        label: "Activity Log",       href: "/owner/master-activity-log" },
-  { icon: Trophy,          label: "Employee Ranking",   href: "/owner/employee-ranking/dashboard" },
+  { icon: Activity,        label: "Activity Log",       href: "/owner/master-activity-log",          feature: "master_log" },
+  { icon: Trophy,          label: "Employee Ranking",   href: "/owner/employee-ranking/dashboard",   feature: "employee_ranking" },
 ];
 
 const ownerConfigNav: NavItem[] = [
-  { icon: Package, label: "Vendors", href: "/owner/vendors" },
-  { icon: UserCheck, label: "Owners", href: "/owner/owners" },
-  { icon: Layers, label: "Departments", href: "/owner/departments" },
-  { icon: Lock, label: "Permissions", href: "/owner/permissions" },
-  { icon: Settings, label: "Settings", href: "/owner/settings" },
+  { icon: Package,   label: "Vendors",     href: "/owner/vendors",     feature: "vendor_management" },
+  { icon: UserCheck, label: "Owners",      href: "/owner/owners" },
+  { icon: Layers,    label: "Departments", href: "/owner/departments" },
+  { icon: Lock,      label: "Permissions", href: "/owner/permissions" },
+  { icon: Settings,  label: "Settings",    href: "/owner/settings" },
 ];
 
 const managerNav: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard",          href: "/manager" },
-  { icon: Clock,           label: "Punch In/Out",       href: "/manager/punch" },
+  { icon: Clock,           label: "Punch In/Out",       href: "/manager/punch",                      feature: "attendance" },
   { icon: BedDouble,       label: "Room Management",    href: "/manager/rooms" },
   { icon: ClipboardList,   label: "Tasks",              href: "/manager/tasks" },
-  { icon: UserCheck,       label: "Attendance",         href: "/manager/attendance" },
-  { icon: Truck,           label: "Inventory",          href: "/manager/inventory", feature: "inventory" },
-  { icon: BarChart3,       label: "Reports",            href: "/manager/reports" },
-  { icon: FileText,        label: "SOP Management",     href: "/manager/sop" },
-  { icon: CalendarDays,    label: "KRA Center",         href: "/manager/kra" },
-  { icon: CalendarClock,   label: "Employee Scheduling",href: "/manager/scheduling" },
+  { icon: UserCheck,       label: "Attendance",         href: "/manager/attendance",                 feature: "attendance" },
+  { icon: Truck,           label: "Inventory",          href: "/manager/inventory",                  feature: "inventory" },
+  { icon: BarChart3,       label: "Reports",            href: "/manager/reports",                    feature: "reports" },
+  { icon: FileText,        label: "SOP Management",     href: "/manager/sop",                        feature: "sop" },
+  { icon: CalendarDays,    label: "KRA Center",         href: "/manager/kra",                        feature: "kra" },
+  { icon: CalendarClock,   label: "Employee Scheduling",href: "/manager/scheduling",                 feature: "employee_scheduling" },
   { icon: AlertCircle,     label: "Error & Complaints", href: "/manager/complaints" },
   { icon: Folder,          label: "Documents",          href: "/manager/document-management" },
-  { icon: Trophy,          label: "Employee Ranking",   href: "/manager/employee-ranking/dashboard" },
+  { icon: Trophy,          label: "Employee Ranking",   href: "/manager/employee-ranking/dashboard", feature: "employee_ranking" },
 ];
 
 const staffNav: NavItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard",          href: "/staff" },
-  { icon: Clock,           label: "Punch In/Out",       href: "/staff/punch" },
-  { icon: ClipboardList,   label: "My Tasks",           href: "/staff/tasks" },
-  { icon: FileText,        label: "SOPs",               href: "/staff/sop" },
-  { icon: CalendarDays,    label: "KRA Center",         href: "/staff/kra" },
-  { icon: CalendarClock,   label: "My Schedule",        href: "/staff/scheduling" },
-  { icon: AlertCircle,     label: "My Complaints",      href: "/staff/complaints" },
-  { icon: Folder,          label: "Documents",          href: "/staff/document-management" },
-  { icon: Trophy,          label: "My Ranking",         href: "/staff/employee-ranking/staff-dashboard" },
+  { icon: LayoutDashboard, label: "Dashboard",    href: "/staff" },
+  { icon: Clock,           label: "Punch In/Out", href: "/staff/punch",                              feature: "attendance" },
+  { icon: ClipboardList,   label: "My Tasks",     href: "/staff/tasks" },
+  { icon: FileText,        label: "SOPs",         href: "/staff/sop",                                feature: "sop" },
+  { icon: CalendarDays,    label: "KRA Center",   href: "/staff/kra",                                feature: "kra" },
+  { icon: CalendarClock,   label: "My Schedule",  href: "/staff/scheduling",                         feature: "employee_scheduling" },
+  { icon: AlertCircle,     label: "My Complaints",href: "/staff/complaints" },
+  { icon: Folder,          label: "Documents",    href: "/staff/document-management" },
+  { icon: Trophy,          label: "My Ranking",   href: "/staff/employee-ranking/staff-dashboard",   feature: "employee_ranking" },
 ];
 
 
@@ -118,6 +118,9 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
   let navItems: NavItem[] = [];
   let configNavItems: NavItem[] = [];
   let roleLabel = "";
+
+  // Upgrade route: owners can go to billing settings; managers/staff see a message
+  const upgradeHref = pathname.startsWith("/owner") ? "/owner/settings" : null;
 
   if (pathname.startsWith("/owner")) {
     navItems = ownerNav;
@@ -192,8 +195,34 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
           {/* Main Nav */}
           <div className="space-y-1">
             {!collapsed && <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">Main Menu</p>}
-            {navItems.filter(hasAccess).map((item) => {
-              const isActive = pathname === item.href || (item.href.split("/").length > 2 && pathname.startsWith(item.href + "/"));
+            {navItems.map((item) => {
+              const accessible = hasAccess(item);
+              const isActive = accessible && (pathname === item.href || (item.href.split("/").length > 2 && pathname.startsWith(item.href + "/")));
+
+              if (!accessible) {
+                return (
+                  <button
+                    key={item.href}
+                    onClick={() => upgradeHref ? router.push(upgradeHref) : undefined}
+                    className={`w-full flex items-center ${collapsed ? "justify-center px-2" : "gap-3 px-3"} py-2.5 rounded-lg transition-all duration-200 group relative opacity-40 cursor-pointer hover:opacity-60`}
+                    title={upgradeHref ? "Upgrade your plan to unlock" : "Not available on your current plan"}
+                  >
+                    <item.icon className="w-[22px] h-[22px] shrink-0 text-neutral-400 dark:text-[#606060]" />
+                    {!collapsed && (
+                      <>
+                        <span className="font-medium whitespace-nowrap flex-1 text-neutral-400 dark:text-[#606060] text-left line-through">{item.label}</span>
+                        <Lock className="w-3 h-3 text-neutral-400 dark:text-[#606060] shrink-0" />
+                      </>
+                    )}
+                    {collapsed && (
+                      <div className="absolute left-full ml-3 bg-neutral-700 text-white text-xs px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none shadow-lg">
+                        🔒 {item.label} — Upgrade to unlock
+                      </div>
+                    )}
+                  </button>
+                );
+              }
+
               return (
                 <Link
                   key={item.href}
@@ -217,11 +246,36 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
           </div>
 
           {/* Configuration Nav (only owner) */}
-          {configNavItems.filter(hasAccess).length > 0 && (
+          {configNavItems.length > 0 && (
             <div className="space-y-1">
               {!collapsed && <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">Configuration</p>}
-              {configNavItems.filter(hasAccess).map((item) => {
-                const isActive = pathname === item.href || (item.href.split("/").length > 2 && pathname.startsWith(item.href + "/"));
+              {configNavItems.map((item) => {
+                const accessible = hasAccess(item);
+                const isActive = accessible && (pathname === item.href || (item.href.split("/").length > 2 && pathname.startsWith(item.href + "/")));
+
+                if (!accessible) {
+                  return (
+                    <button
+                      key={item.href}
+                      onClick={() => upgradeHref ? router.push(upgradeHref) : undefined}
+                      className={`w-full flex items-center ${collapsed ? "justify-center px-2" : "gap-3 px-3"} py-2.5 rounded-lg transition-all duration-200 group relative opacity-40 cursor-pointer hover:opacity-60`}
+                      title={upgradeHref ? "Upgrade your plan to unlock" : "Not available on your current plan"}
+                    >
+                      <item.icon className="w-[22px] h-[22px] shrink-0 text-neutral-400 dark:text-[#606060]" />
+                      {!collapsed && (
+                        <>
+                          <span className="font-medium whitespace-nowrap flex-1 text-neutral-400 dark:text-[#606060] text-left line-through">{item.label}</span>
+                          <Lock className="w-3 h-3 text-neutral-400 dark:text-[#606060] shrink-0" />
+                        </>
+                      )}
+                      {collapsed && (
+                        <div className="absolute left-full ml-3 bg-neutral-700 text-white text-xs px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none shadow-lg">
+                          🔒 {item.label} — Upgrade to unlock
+                        </div>
+                      )}
+                    </button>
+                  );
+                }
 
                 return (
                   <Link
