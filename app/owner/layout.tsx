@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { DashboardLayoutClient } from "@/components/dashboard/DashboardLayoutClient";
 import OwnerOnboardingModal from "@/components/onboarding/OwnerOnboardingModal";
+import PlanSelectionModal, { PLAN_SELECTED_KEY } from "@/components/onboarding/PlanSelectionModal";
 import { useAuthStore } from "@/store/authStore";
 import { propertiesAPI } from "@/lib/api/properties";
+import { subscriptionsAPI, MyPlan } from "@/lib/api/subscriptions";
 
 const ONBOARDING_KEY = "skitech_onboarding_complete";
 
@@ -16,20 +18,32 @@ export default function OwnerLayout({
 }) {
   const { user } = useAuthStore();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showPlanSelect, setShowPlanSelect] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<MyPlan | null>(null);
 
   useEffect(() => {
-    // Only show for Tenant Admin with no property assigned and
-    // only if onboarding hasn't been completed yet.
+    if (user?.role !== "Tenant Admin" || typeof window === "undefined") return;
+
+    // Check subscription — show plan selection modal if user hasn't chosen yet
+    if (localStorage.getItem(PLAN_SELECTED_KEY) !== "true") {
+      subscriptionsAPI.myPlan()
+        .then(res => {
+          setCurrentPlan(res.data);
+          setShowPlanSelect(true);
+        })
+        .catch(() => {
+          // If my-plan fails for any reason, don't block the UI
+        });
+    }
+
+    // Onboarding modal: show only if no property exists yet
     if (
-      user?.role !== "Tenant Admin" ||
       user?.property_id !== null ||
-      typeof window === "undefined" ||
       localStorage.getItem(ONBOARDING_KEY) === "true"
     ) {
       return;
     }
 
-    // Double-check: confirm the tenant truly has no properties yet.
     propertiesAPI
       .list()
       .then((res) => {
@@ -37,13 +51,16 @@ export default function OwnerLayout({
           setShowOnboarding(true);
         }
       })
-      .catch(() => {
-        // If the request fails (e.g. network), don't block the UI.
-      });
+      .catch(() => {});
   }, [user]);
 
   function handleDismissOnboarding() {
     setShowOnboarding(false);
+  }
+
+  function handleDismissPlanSelect(updatedPlan?: MyPlan) {
+    if (updatedPlan) setCurrentPlan(updatedPlan);
+    setShowPlanSelect(false);
   }
 
   return (
@@ -52,6 +69,14 @@ export default function OwnerLayout({
       <AnimatePresence>
         {showOnboarding && (
           <OwnerOnboardingModal onDismiss={handleDismissOnboarding} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showPlanSelect && currentPlan && (
+          <PlanSelectionModal
+            currentPlan={currentPlan}
+            onDismiss={handleDismissPlanSelect}
+          />
         )}
       </AnimatePresence>
     </>

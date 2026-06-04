@@ -36,6 +36,8 @@ export interface MyPlan {
 export const subscriptionsAPI = {
   myPlan: () => api.get<MyPlan>("/v1/subscriptions/my-plan"),
   plans: () => api.get<SubscriptionPlan[]>("/v1/subscriptions/plans"),
+  selectPlan: (planId: string) =>
+    api.post<MyPlan>("/v1/subscriptions/select-plan", { plan_id: planId }),
   assignPlan: (tenantId: string, planId: string) =>
     api.post("/v1/subscriptions/assign", { tenant_id: tenantId, plan_id: planId }),
 };
