@@ -72,6 +72,7 @@ export default function OwnerOnboardingModal({ onDismiss }: Props) {
   // Property form state
   const [propForm, setPropForm] = useState<PropertyCreate>(EMPTY_PROPERTY);
   const [propSubmitting, setPropSubmitting] = useState(false);
+  const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
 
   // Manager invite form
   const [managerForm, setManagerForm] = useState<UserInvite>(EMPTY_MANAGER);
@@ -112,7 +113,8 @@ export default function OwnerOnboardingModal({ onDismiss }: Props) {
     }
     try {
       setPropSubmitting(true);
-      await propertiesAPI.create(propForm);
+      const res = await propertiesAPI.create(propForm);
+      setCreatedPropertyId(res.data.id);
       toast.success("Property created!");
       markStepDone(0);
       setCurrentStep(1);
@@ -130,7 +132,7 @@ export default function OwnerOnboardingModal({ onDismiss }: Props) {
     }
     try {
       setManagerSubmitting(true);
-      await usersAPI.invite({ ...managerForm, role: "Manager" });
+      await usersAPI.invite({ ...managerForm, role: "Manager", property_id: createdPropertyId ?? undefined });
       toast.success("Manager invited!");
       markStepDone(1);
       setCurrentStep(2);
@@ -148,7 +150,7 @@ export default function OwnerOnboardingModal({ onDismiss }: Props) {
     }
     try {
       setStaffSubmitting(true);
-      await usersAPI.invite({ ...staffForm, role: "Staff" });
+      await usersAPI.invite({ ...staffForm, role: "Staff", property_id: createdPropertyId ?? undefined });
       toast.success("Staff member invited!");
       markStepDone(2);
       completeOnboarding();

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Search, Mail, Phone, Building2, CheckCircle2,
-  Loader2, X, MoreHorizontal, UserX, UserCheck, AlertCircle,
+  Loader2, X, MoreHorizontal, UserX, UserCheck, AlertCircle, MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 import { usersAPI, User, UserInvite } from "@/lib/api/users";
@@ -22,7 +22,7 @@ function getInitials(first?: string | null, last?: string | null): string {
   return [(first?.[0] ?? ""), (last?.[0] ?? "")].join("").toUpperCase() || "?";
 }
 
-const EMPTY_INVITE: UserInvite = { email: "", first_name: "", last_name: "", role: "Manager" };
+const EMPTY_INVITE: UserInvite = { email: "", first_name: "", last_name: "", role: "Manager", property_id: undefined };
 
 export default function ManagersPage() {
   const [search, setSearch] = useState("");
@@ -33,6 +33,9 @@ export default function ManagersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [inviteForm, setInviteForm] = useState<UserInvite>(EMPTY_INVITE);
+  const [assignTarget, setAssignTarget] = useState<User | null>(null);
+  const [assignPropertyId, setAssignPropertyId] = useState("");
+  const [assigning, setAssigning] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const fetchData = useCallback(async () => {
@@ -105,6 +108,27 @@ export default function ManagersPage() {
       toast.success("Manager activated");
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Failed to activate");
+    }
+  };
+
+  const openAssign = (manager: User) => {
+    setAssignTarget(manager);
+    setAssignPropertyId(manager.property_id ?? "");
+    setMenuOpen(null);
+  };
+
+  const handleAssignProperty = async () => {
+    if (!assignTarget || !assignPropertyId) return;
+    try {
+      setAssigning(true);
+      const res = await usersAPI.assignProperty(assignTarget.id, assignPropertyId);
+      setManagers(prev => prev.map(m => m.id === assignTarget.id ? res.data : m));
+      setAssignTarget(null);
+      toast.success("Property assigned successfully");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to assign property");
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -202,8 +226,14 @@ export default function ManagersPage() {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: -4 }}
                                 transition={{ duration: 0.12 }}
-                                className="absolute right-0 top-8 bg-white border border-black/10 rounded-xl shadow-lg z-10 w-40 overflow-hidden"
+                                className="absolute right-0 top-8 bg-white border border-black/10 rounded-xl shadow-lg z-10 w-48 overflow-hidden"
                               >
+                                <button
+                                  onClick={() => openAssign(m)}
+                                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-blue-600 hover:bg-blue-50 text-left"
+                                >
+                                  <MapPin className="w-3.5 h-3.5" /> Assign Property
+                                </button>
                                 {m.is_active ? (
                                   <button
                                     onClick={() => { setMenuOpen(null); handleDeactivate(m.id); }}
@@ -319,6 +349,26 @@ export default function ManagersPage() {
                     placeholder="manager@yourproperty.com"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-neutral-700 text-sm mb-1.5 font-medium">
+                    Assign to Property *
+                  </label>
+                  {properties.length === 0 ? (
+                    <p className="text-amber-600 text-xs mt-1">No properties found. Create a property first.</p>
+                  ) : (
+                    <select
+                      value={inviteForm.property_id ?? ""}
+                      onChange={e => setInviteForm(f => ({ ...f, property_id: e.target.value || undefined }))}
+                      className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/30"
+                    >
+                      <option value="">— Select a property —</option>
+                      {properties.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-3 mt-6">
@@ -330,11 +380,70 @@ export default function ManagersPage() {
                 </button>
                 <button
                   onClick={handleInvite}
-                  disabled={submitting || !inviteForm.email.trim()}
+                  disabled={submitting || !inviteForm.email.trim() || !inviteForm.property_id}
                   className="flex-1 py-3 rounded-xl bg-black text-white text-sm font-semibold shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   Send Invite
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Assign Property Modal */}
+      <AnimatePresence>
+        {assignTarget && (
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setAssignTarget(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border border-black/10"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-black font-extrabold text-xl">Assign Property</h2>
+                <button onClick={() => setAssignTarget(null)} className="text-neutral-400 hover:text-neutral-600 p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-neutral-500 text-sm mb-6">
+                Assign <span className="font-semibold text-black">{[assignTarget.first_name, assignTarget.last_name].filter(Boolean).join(" ") || assignTarget.email}</span> to a property.
+              </p>
+
+              <div>
+                <label className="block text-neutral-700 text-sm mb-1.5 font-medium">Property *</label>
+                <select
+                  value={assignPropertyId}
+                  onChange={e => setAssignPropertyId(e.target.value)}
+                  className="w-full bg-black/[0.03] border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/30"
+                >
+                  <option value="">— Select a property —</option>
+                  {properties.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setAssignTarget(null)}
+                  className="flex-1 py-3 rounded-xl border border-black/10 text-neutral-600 text-sm hover:bg-black/[0.03] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAssignProperty}
+                  disabled={assigning || !assignPropertyId}
+                  className="flex-1 py-3 rounded-xl bg-black text-white text-sm font-semibold shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {assigning && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Assign Property
                 </button>
               </div>
             </motion.div>

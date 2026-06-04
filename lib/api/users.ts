@@ -43,4 +43,6 @@ export const usersAPI = {
   deactivate: (userId: string) => api.put<User>(`/v1/users/${userId}/deactivate`),
   activate: (userId: string) => api.put<User>(`/v1/users/${userId}/activate`),
   invite: (data: UserInvite) => api.post<User>("/v1/users/invite", data),
+  assignProperty: (userId: string, propertyId: string | null) =>
+    api.put<User>(`/v1/users/${userId}/property`, { property_id: propertyId }),
 };
