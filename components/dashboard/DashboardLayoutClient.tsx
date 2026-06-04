@@ -119,9 +119,6 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
   let configNavItems: NavItem[] = [];
   let roleLabel = "";
 
-  // Upgrade route: owners can go to billing settings; managers/staff see a message
-  const upgradeHref = pathname.startsWith("/owner") ? "/owner/settings" : null;
-
   if (pathname.startsWith("/owner")) {
     navItems = ownerNav;
     configNavItems = ownerConfigNav;
@@ -195,34 +192,8 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
           {/* Main Nav */}
           <div className="space-y-1">
             {!collapsed && <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">Main Menu</p>}
-            {navItems.map((item) => {
-              const accessible = hasAccess(item);
-              const isActive = accessible && (pathname === item.href || (item.href.split("/").length > 2 && pathname.startsWith(item.href + "/")));
-
-              if (!accessible) {
-                return (
-                  <button
-                    key={item.href}
-                    onClick={() => upgradeHref ? router.push(upgradeHref) : undefined}
-                    className={`w-full flex items-center ${collapsed ? "justify-center px-2" : "gap-3 px-3"} py-2.5 rounded-lg transition-all duration-200 group relative opacity-40 cursor-pointer hover:opacity-60`}
-                    title={upgradeHref ? "Upgrade your plan to unlock" : "Not available on your current plan"}
-                  >
-                    <item.icon className="w-[22px] h-[22px] shrink-0 text-neutral-400 dark:text-[#606060]" />
-                    {!collapsed && (
-                      <>
-                        <span className="font-medium whitespace-nowrap flex-1 text-neutral-400 dark:text-[#606060] text-left line-through">{item.label}</span>
-                        <Lock className="w-3 h-3 text-neutral-400 dark:text-[#606060] shrink-0" />
-                      </>
-                    )}
-                    {collapsed && (
-                      <div className="absolute left-full ml-3 bg-neutral-700 text-white text-xs px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none shadow-lg">
-                        🔒 {item.label} — Upgrade to unlock
-                      </div>
-                    )}
-                  </button>
-                );
-              }
-
+            {navItems.filter(hasAccess).map((item) => {
+              const isActive = pathname === item.href || (item.href.split("/").length > 2 && pathname.startsWith(item.href + "/"));
               return (
                 <Link
                   key={item.href}
@@ -246,37 +217,11 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
           </div>
 
           {/* Configuration Nav (only owner) */}
-          {configNavItems.length > 0 && (
+          {configNavItems.filter(hasAccess).length > 0 && (
             <div className="space-y-1">
               {!collapsed && <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">Configuration</p>}
-              {configNavItems.map((item) => {
-                const accessible = hasAccess(item);
-                const isActive = accessible && (pathname === item.href || (item.href.split("/").length > 2 && pathname.startsWith(item.href + "/")));
-
-                if (!accessible) {
-                  return (
-                    <button
-                      key={item.href}
-                      onClick={() => upgradeHref ? router.push(upgradeHref) : undefined}
-                      className={`w-full flex items-center ${collapsed ? "justify-center px-2" : "gap-3 px-3"} py-2.5 rounded-lg transition-all duration-200 group relative opacity-40 cursor-pointer hover:opacity-60`}
-                      title={upgradeHref ? "Upgrade your plan to unlock" : "Not available on your current plan"}
-                    >
-                      <item.icon className="w-[22px] h-[22px] shrink-0 text-neutral-400 dark:text-[#606060]" />
-                      {!collapsed && (
-                        <>
-                          <span className="font-medium whitespace-nowrap flex-1 text-neutral-400 dark:text-[#606060] text-left line-through">{item.label}</span>
-                          <Lock className="w-3 h-3 text-neutral-400 dark:text-[#606060] shrink-0" />
-                        </>
-                      )}
-                      {collapsed && (
-                        <div className="absolute left-full ml-3 bg-neutral-700 text-white text-xs px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none shadow-lg">
-                          🔒 {item.label} — Upgrade to unlock
-                        </div>
-                      )}
-                    </button>
-                  );
-                }
-
+              {configNavItems.filter(hasAccess).map((item) => {
+                const isActive = pathname === item.href || (item.href.split("/").length > 2 && pathname.startsWith(item.href + "/"));
                 return (
                   <Link
                     key={item.href}
