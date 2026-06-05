@@ -20,6 +20,8 @@ interface PlanSummary {
 
 interface TenantRow {
   tenant_id: string;
+  user_id: string;
+  user_name: string;
   business_name: string;
   contact_email: string;
   subscription_status: string;
@@ -97,8 +99,9 @@ export default function SuperadminSubscriptionsPage() {
   };
 
   const filtered = (data?.tenants ?? []).filter(t =>
-    t.business_name.toLowerCase().includes(search.toLowerCase()) ||
-    t.contact_email.toLowerCase().includes(search.toLowerCase())
+    t.user_name.toLowerCase().includes(search.toLowerCase()) ||
+    t.contact_email.toLowerCase().includes(search.toLowerCase()) ||
+    t.business_name.toLowerCase().includes(search.toLowerCase())
   );
 
   const planStats = data
@@ -192,14 +195,15 @@ export default function SuperadminSubscriptionsPage() {
                   animate={{ opacity: 1 }}
                   transition={{ delay: idx * 0.03 }}
                   className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-                  {/* Tenant info */}
+                  {/* User / Tenant info */}
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-black to-neutral-700 flex items-center justify-center text-white text-sm font-bold shrink-0">
-                      {tenant.business_name[0]?.toUpperCase() ?? "?"}
+                      {tenant.user_name[0]?.toUpperCase() ?? "?"}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-black dark:text-white truncate">{tenant.business_name}</p>
-                      <p className="text-xs text-neutral-400 truncate">{tenant.contact_email || "—"}</p>
+                      <p className="text-sm font-semibold text-black dark:text-white truncate">{tenant.user_name}</p>
+                      <p className="text-xs text-neutral-400 truncate">{tenant.contact_email}</p>
+                      <p className="text-xs text-neutral-300 truncate">{tenant.business_name}</p>
                     </div>
                   </div>
 
