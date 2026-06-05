@@ -40,4 +40,11 @@ export const subscriptionsAPI = {
     api.post<MyPlan>("/v1/subscriptions/select-plan", { plan_id: planId }),
   assignPlan: (tenantId: string, planId: string) =>
     api.post("/v1/subscriptions/assign", { tenant_id: tenantId, plan_id: planId }),
+  createCheckoutSession: (planId: string) =>
+    api.post<{ session_url: string; session_id: string }>(
+      "/v1/subscriptions/create-checkout-session",
+      { plan_id: planId }
+    ),
+  createPortalSession: () =>
+    api.post<{ portal_url: string }>("/v1/subscriptions/create-portal-session"),
 };

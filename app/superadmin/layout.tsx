@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, LayoutDashboard, Building2, Users, Shield, BarChart3,
   Settings, LogOut, ChevronLeft, ChevronRight, Menu, X,
-  Eye, AlertTriangle, Bell, Search, FileText, Sun, Moon,
+  Eye, AlertTriangle, Bell, Search, FileText, Sun, Moon, CreditCard,
 } from "lucide-react";
 
 const superadminNav = [
@@ -19,6 +19,7 @@ const superadminNav = [
   { icon: AlertTriangle, label: "Audit Log", href: "/superadmin/audit" },
   { icon: Eye, label: "System Health", href: "/superadmin/health" },
   { icon: FileText, label: "Demo Requests", href: "/superadmin/demo-requests" },
+  { icon: CreditCard, label: "Subscriptions", href: "/superadmin/subscriptions" },
 ];
 
 const configNav = [

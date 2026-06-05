@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Bell, Shield, CreditCard, Save, Loader2, Check, X, Zap, Building2, Users, ArrowUpRight } from "lucide-react";
+import { User, Bell, Shield, CreditCard, Save, Loader2, Check, X, Zap, Building2, Users, ArrowUpRight, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { usersAPI } from "@/lib/api/users";
 import { subscriptionsAPI, MyPlan, SubscriptionPlan } from "@/lib/api/subscriptions";
@@ -34,7 +35,8 @@ const FEATURE_LABELS = [
 
 export default function SettingsPage() {
   const { user: authUser } = useAuthStore();
-  const [tab, setTab] = useState("profile");
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState(() => searchParams.get("tab") || "profile");
 
   // Profile
   const [firstName, setFirstName] = useState("");
@@ -53,6 +55,8 @@ export default function SettingsPage() {
   const [myPlan, setMyPlan] = useState<MyPlan | null>(null);
   const [allPlans, setAllPlans] = useState<SubscriptionPlan[]>([]);
   const [billingLoading, setBillingLoading] = useState(false);
+  const [upgradingPlanId, setUpgradingPlanId] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -97,8 +101,7 @@ export default function SettingsPage() {
     }
   };
 
-  const loadBilling = useCallback(async () => {
-    if (billingLoading || myPlan) return;
+  const fetchBillingData = async () => {
     setBillingLoading(true);
     try {
       const [planRes, plansRes] = await Promise.all([
@@ -112,11 +115,67 @@ export default function SettingsPage() {
     } finally {
       setBillingLoading(false);
     }
+  };
+
+  const loadBilling = useCallback(async () => {
+    if (billingLoading || myPlan) return;
+    await fetchBillingData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [billingLoading, myPlan]);
 
   useEffect(() => {
     if (tab === "billing") loadBilling();
   }, [tab, loadBilling]);
+
+  // Show toast based on Stripe redirect result
+  useEffect(() => {
+    const payment = searchParams.get("payment");
+    if (payment === "success") {
+      toast.success("Payment successful! Your plan has been upgraded.");
+      fetchBillingData();
+    } else if (payment === "cancelled") {
+      toast.info("Payment cancelled. Your plan was not changed.");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleUpgrade = async (plan: SubscriptionPlan) => {
+    if (plan.price === 0) {
+      // Free plan — switch directly, no payment needed
+      try {
+        setUpgradingPlanId(plan.id);
+        await subscriptionsAPI.selectPlan(plan.id);
+        toast.success(`Switched to ${plan.name} plan`);
+        await fetchBillingData();
+      } catch (err: any) {
+        toast.error(err?.response?.data?.detail || "Failed to switch plan");
+      } finally {
+        setUpgradingPlanId(null);
+      }
+      return;
+    }
+    // Paid plan — redirect to Stripe Checkout
+    try {
+      setUpgradingPlanId(plan.id);
+      const res = await subscriptionsAPI.createCheckoutSession(plan.id);
+      window.location.href = res.data.session_url;
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to initiate payment");
+      setUpgradingPlanId(null);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      setPortalLoading(true);
+      const res = await subscriptionsAPI.createPortalSession();
+      window.location.href = res.data.portal_url;
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to open billing portal");
+    } finally {
+      setPortalLoading(false);
+    }
+  };
 
   const initials = [firstName[0], lastName[0]].filter(Boolean).join("").toUpperCase() || authUser?.email?.[0]?.toUpperCase() || "?";
 
@@ -324,13 +383,22 @@ export default function SettingsPage() {
                     <div className="bg-white/70 backdrop-blur rounded-2xl border border-black/10 shadow-sm p-8">
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-black" style={{ fontWeight: 700, fontSize: "1.05rem" }}>Available Plans</h2>
-                        <p className="text-xs text-neutral-400">Contact support to change your plan</p>
+                        {myPlan.plan.price > 0 && (
+                          <button
+                            onClick={handleManageSubscription}
+                            disabled={portalLoading}
+                            className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-black transition-colors disabled:opacity-50">
+                            {portalLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                            Manage billing
+                          </button>
+                        )}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {[...allPlans].sort((a, b) => a.price - b.price).map((plan) => {
                           const isCurrent = plan.id === myPlan.plan.id;
                           const isUpgrade = plan.price > myPlan.plan.price;
                           const isFree = plan.price === 0;
+                          const isUpgrading = upgradingPlanId === plan.id;
                           return (
                             <div key={plan.id} className={`relative rounded-2xl border p-6 flex flex-col ${isCurrent ? "border-black bg-black text-white shadow-xl" : "border-black/10 bg-white/50"}`}>
                               {isCurrent && (
@@ -373,20 +441,21 @@ export default function SettingsPage() {
                               </div>
                               {!isCurrent && (
                                 <button
-                                  onClick={() => toast.info("Contact support at SkiTech@newmerictech.com to change your plan.")}
-                                  className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm transition-all ${isUpgrade ? "bg-black text-white hover:bg-neutral-800" : "bg-black/5 text-neutral-500 hover:bg-black/10"}`}
+                                  onClick={() => handleUpgrade(plan)}
+                                  disabled={isUpgrading || !!upgradingPlanId}
+                                  className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm transition-all disabled:opacity-60 ${isUpgrade ? "bg-black text-white hover:bg-neutral-800" : "bg-black/5 text-neutral-500 hover:bg-black/10"}`}
                                   style={{ fontWeight: 600 }}>
-                                  {isUpgrade ? <><ArrowUpRight className="w-4 h-4" /> Upgrade</> : "Downgrade"}
+                                  {isUpgrading
+                                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>
+                                    : isUpgrade
+                                      ? <><ArrowUpRight className="w-4 h-4" /> Upgrade</>
+                                      : "Downgrade"}
                                 </button>
                               )}
                             </div>
                           );
                         })}
                       </div>
-                      <p className="text-center text-xs text-neutral-400 mt-6">
-                        To change your subscription plan, contact us at{" "}
-                        <a href="mailto:SkiTech@newmerictech.com" className="text-black underline underline-offset-2">SkiTech@newmerictech.com</a>
-                      </p>
                     </div>
                   )}
                 </>
