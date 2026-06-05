@@ -130,9 +130,17 @@ export default function SettingsPage() {
   // Show toast based on Stripe redirect result
   useEffect(() => {
     const payment = searchParams.get("payment");
+    const sessionId = searchParams.get("session_id");
     if (payment === "success") {
       toast.success("Payment successful! Your plan has been upgraded.");
-      fetchBillingData();
+      if (sessionId) {
+        // Verify session with Stripe directly — ensures plan updates even if webhook is delayed
+        subscriptionsAPI.verifySession(sessionId)
+          .then(() => fetchBillingData())
+          .catch(() => fetchBillingData());
+      } else {
+        fetchBillingData();
+      }
     } else if (payment === "cancelled") {
       toast.info("Payment cancelled. Your plan was not changed.");
     }

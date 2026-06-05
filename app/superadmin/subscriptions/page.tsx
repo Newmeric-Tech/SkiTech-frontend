@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   CreditCard, Loader2, Search, Building2, CheckCircle2,
-  ChevronDown, RefreshCw, AlertCircle, TrendingUp,
+  ChevronDown, RefreshCw, AlertCircle, TrendingUp, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/config/app";
@@ -39,6 +39,8 @@ export default function SuperadminSubscriptionsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<Record<string, string>>({});
 
   const loadData = useCallback(async () => {
@@ -60,6 +62,20 @@ export default function SuperadminSubscriptionsPage() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  const handleDeleteTenant = async (tenantId: string) => {
+    setDeletingId(tenantId);
+    try {
+      await api.delete(`/v1/superadmin/tenants/${tenantId}`);
+      toast.success("Tenant deleted");
+      setConfirmDeleteId(null);
+      await loadData();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to delete tenant");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleAssign = async (tenantId: string) => {
     const planId = selectedPlan[tenantId];
@@ -202,6 +218,33 @@ export default function SuperadminSubscriptionsPage() {
                         <AlertCircle className="w-3.5 h-3.5" />
                         No plan
                       </span>
+                    )}
+                  </div>
+
+                  {/* Delete */}
+                  <div className="shrink-0">
+                    {confirmDeleteId === tenant.tenant_id ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-red-500 font-medium">Confirm?</span>
+                        <button
+                          onClick={() => handleDeleteTenant(tenant.tenant_id)}
+                          disabled={!!deletingId}
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-500 text-white hover:bg-red-600 transition-all disabled:opacity-50">
+                          {deletingId === tenant.tenant_id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Yes, delete"}
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-black/5 text-neutral-600 hover:bg-black/10 transition-all">
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDeleteId(tenant.tenant_id)}
+                        className="p-2 rounded-lg text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                        title="Delete tenant">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     )}
                   </div>
 

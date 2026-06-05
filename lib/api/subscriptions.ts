@@ -45,6 +45,8 @@ export const subscriptionsAPI = {
       "/v1/subscriptions/create-checkout-session",
       { plan_id: planId }
     ),
+  verifySession: (sessionId: string) =>
+    api.post<MyPlan>("/v1/subscriptions/verify-session", { session_id: sessionId }),
   createPortalSession: () =>
     api.post<{ portal_url: string }>("/v1/subscriptions/create-portal-session"),
 };
