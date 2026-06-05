@@ -157,6 +157,7 @@ export interface SuperadminUser {
   email: string;
   role: string;
   property: string;
+  property_id: string;
   last_active: string;
   status: "active" | "inactive" | "suspended" | "pending";
   is_verified: boolean;
@@ -238,8 +239,8 @@ export const superadminAPI = {
   suspendUser: (id: string) => api.put(`/v1/superadmin/users/${id}/suspend`),
   activateUser: (id: string) => api.put(`/v1/superadmin/users/${id}/activate`),
   deleteUser: (id: string) => api.delete(`/v1/superadmin/users/${id}`),
-  updateUserRole: (id: string, role: string) =>
-    api.put(`/v1/superadmin/users/${id}/role`, { role }),
+  updateUserRole: (id: string, role: string, property_id?: string) =>
+    api.put(`/v1/superadmin/users/${id}/role`, { role, property_id: property_id ?? null }),
 
   // Demo Requests
   listDemoRequests: (params?: { search?: string; status?: string }) =>

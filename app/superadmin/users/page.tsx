@@ -36,6 +36,8 @@ export default function AllUsers() {
   const [editingUser, setEditingUser] = useState<SuperadminUser | null>(null);
   const [inviteForm, setInviteForm] = useState<InviteUserPayload>({ full_name: "", email: "", role: "Owner" });
   const [editRole, setEditRole] = useState("");
+  const [editPropertyId, setEditPropertyId] = useState("");
+  const [allProperties, setAllProperties] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
@@ -63,6 +65,13 @@ export default function AllUsers() {
   }, [search, activeTab]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
+
+  // Load all properties once for the edit modal dropdown
+  useEffect(() => {
+    superadminAPI.listProperties({}).then(res => {
+      setAllProperties((res.data as any[]).map((p: any) => ({ id: p.id, name: p.name })));
+    }).catch(() => {});
+  }, []);
 
   const handleInvite = async () => {
     if (!inviteForm.email || !inviteForm.full_name) return toast.error("Fill all required fields");
@@ -102,16 +111,22 @@ export default function AllUsers() {
     }
   };
 
+  const openEditModal = (u: SuperadminUser) => {
+    setEditingUser(u);
+    setEditRole(u.role);
+    setEditPropertyId(u.property_id || "");
+  };
+
   const handleSaveRole = async () => {
     if (!editingUser) return;
     try {
       setSaving(true);
-      await superadminAPI.updateUserRole(editingUser.id, editRole);
-      toast.success("Role updated");
+      await superadminAPI.updateUserRole(editingUser.id, editRole, editPropertyId || undefined);
+      toast.success("User updated");
       setEditingUser(null);
       fetchUsers();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to update role");
+      toast.error(err?.response?.data?.detail || "Failed to update user");
     } finally {
       setSaving(false);
     }
@@ -289,7 +304,7 @@ export default function AllUsers() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => { setEditingUser(user); setEditRole(user.role); }} className="p-2 hover:bg-black/5 rounded-lg transition-colors">
+                        <button onClick={() => openEditModal(user)} className="p-2 hover:bg-black/5 rounded-lg transition-colors">
                           <Edit className="w-4 h-4 text-neutral-600" />
                         </button>
                         {user.status === "suspended" ? (
@@ -438,6 +453,20 @@ export default function AllUsers() {
                   <option>Owner</option><option>Manager</option><option>Staff</option>
                 </select>
               </div>
+              {(editRole === "Manager" || editRole === "Staff") && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">Assigned Property</label>
+                  <select
+                    value={editPropertyId}
+                    onChange={(e) => setEditPropertyId(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white/50 border border-black/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/20">
+                    <option value="">— No property —</option>
+                    {allProperties.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="flex gap-3 pt-4">
                 <button onClick={() => setEditingUser(null)} className="flex-1 px-4 py-2.5 border border-black/10 rounded-lg text-sm font-medium hover:bg-black/5 transition-colors">Cancel</button>
                 <button onClick={handleSaveRole} disabled={saving} className="flex-1 px-4 py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-black/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
