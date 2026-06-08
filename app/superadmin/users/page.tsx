@@ -75,6 +75,8 @@ export default function AllUsers() {
 
   const handleInvite = async () => {
     if (!inviteForm.email || !inviteForm.full_name) return toast.error("Fill all required fields");
+    if ((inviteForm.role === "Manager" || inviteForm.role === "Staff") && !inviteForm.property_id)
+      return toast.error("Please select a property for this role");
     try {
       setSaving(true);
       const res = await superadminAPI.inviteUser(inviteForm);
@@ -356,11 +358,27 @@ export default function AllUsers() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">Role</label>
-                <select value={inviteForm.role} onChange={(e) => setInviteForm(f => ({ ...f, role: e.target.value, business_name: "" }))}
+                <select value={inviteForm.role} onChange={(e) => setInviteForm(f => ({ ...f, role: e.target.value, business_name: "", property_id: "" }))}
                   className="w-full px-4 py-2.5 bg-white/50 border border-black/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/20">
                   <option>Owner</option><option>Manager</option><option>Staff</option>
                 </select>
               </div>
+              {(inviteForm.role === "Manager" || inviteForm.role === "Staff") && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Assigned Property <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={inviteForm.property_id || ""}
+                    onChange={(e) => setInviteForm(f => ({ ...f, property_id: e.target.value }))}
+                    className="w-full px-4 py-2.5 bg-white/50 border border-black/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/20">
+                    <option value="">— Select a property —</option>
+                    {allProperties.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               {inviteForm.role === "Owner" && (
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">Business Name <span className="text-neutral-400 font-normal">(optional)</span></label>
