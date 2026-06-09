@@ -16,8 +16,9 @@ const PUBLIC_ROUTES = [
 const ROLE_ACCESS: Record<string, string[]> = {
   "Super Admin": ["/superadmin", "/owner", "/manager", "/staff"],
   "Tenant Admin": ["/owner", "/manager", "/staff"],
-  "Manager": ["/manager", "/staff"],
-  "Staff": ["/staff"],
+  "Co Admin":    ["/owner"],
+  "Manager":     ["/manager", "/staff"],
+  "Staff":       ["/staff"],
 };
 
 export function proxy(request: NextRequest) {
