@@ -9,7 +9,7 @@ import { useAuthStore } from "@/store/authStore";
 import { GoogleLogin } from "@react-oauth/google";
 
 export default function LoginPage() {
-  const [role, setRole] = useState<"owner" | "manager" | "staff" | "">("");
+  const [role, setRole] = useState<"owner" | "co-admin" | "manager" | "staff" | "">("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -48,9 +48,10 @@ export default function LoginPage() {
   };
 
   const roleConfig = [
-    { id: "owner" as const, label: "Owner", desc: "Full property control" },
-    { id: "manager" as const, label: "Manager", desc: "Daily operations" },
-    { id: "staff" as const, label: "Staff", desc: "Assigned tasks" },
+    { id: "owner" as const,     label: "Owner",     desc: "Full property control" },
+    { id: "co-admin" as const,  label: "Co Admin",  desc: "Property partner access" },
+    { id: "manager" as const,   label: "Manager",   desc: "Daily operations" },
+    { id: "staff" as const,     label: "Staff",     desc: "Assigned tasks" },
   ];
 
   return (
@@ -216,7 +217,7 @@ export default function LoginPage() {
                 <label className="block text-black/55 dark:text-[#707070] text-[10px] uppercase tracking-widest mb-3 font-bold">
                   I am a
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {roleConfig.map(({ id, label, desc }) => (
                     <motion.button
                       key={id}
