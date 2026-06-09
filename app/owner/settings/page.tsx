@@ -9,11 +9,11 @@ import { usersAPI } from "@/lib/api/users";
 import { subscriptionsAPI, MyPlan, SubscriptionPlan } from "@/lib/api/subscriptions";
 import { useAuthStore } from "@/store/authStore";
 
-const tabs = [
+const ALL_TABS = [
   { id: "profile", label: "Profile", icon: User },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "security", label: "Security", icon: Shield },
-  { id: "billing", label: "Billing", icon: CreditCard },
+  { id: "billing", label: "Billing", icon: CreditCard, coAdminHidden: true },
 ];
 
 const FEATURE_LABELS = [
@@ -35,6 +35,8 @@ const FEATURE_LABELS = [
 
 export default function SettingsPage() {
   const { user: authUser } = useAuthStore();
+  const isCoAdmin = authUser?.role === "Co Admin";
+  const tabs = ALL_TABS.filter(t => !(t.coAdminHidden && isCoAdmin));
   const searchParams = useSearchParams();
   const [tab, setTab] = useState(() => searchParams.get("tab") || "profile");
 

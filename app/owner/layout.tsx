@@ -22,7 +22,7 @@ export default function OwnerLayout({
   const [currentPlan, setCurrentPlan] = useState<MyPlan | null>(null);
 
   useEffect(() => {
-    if (user?.role !== "Tenant Admin" || typeof window === "undefined") return;
+    if (!["Tenant Admin"].includes(user?.role ?? "") || typeof window === "undefined") return;
 
     // Check subscription — show plan selection modal if user hasn't chosen yet
     if (localStorage.getItem(PLAN_SELECTED_KEY) !== "true") {
