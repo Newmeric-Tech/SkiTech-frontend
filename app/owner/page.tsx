@@ -36,27 +36,26 @@ export default function OwnerDashboard() {
   const [alerts, setAlerts] = useState<DashboardAlert[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const isCoAdmin = user?.role === "Co Admin";
+
   const fetchAll = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [summaryRes, revenueRes, alertsRes] = await Promise.all([
-        dashboardAPI.summary(),
-        reportsAPI.revenue(6),
-        dashboardAPI.alerts(),
-      ]);
-      setDashboard(summaryRes.data);
+    setLoading(true);
+    const [summaryRes, revenueRes, alertsRes] = await Promise.allSettled([
+      dashboardAPI.summary(),
+      reportsAPI.revenue(6),
+      dashboardAPI.alerts(),
+    ]);
+    if (summaryRes.status === "fulfilled") setDashboard(summaryRes.value.data);
+    if (revenueRes.status === "fulfilled") {
       setRevenueTrend(
-        (revenueRes.data.data as RevenueMonth[]).map((d) => ({
+        (revenueRes.value.data.data as RevenueMonth[]).map((d) => ({
           month: d.month,
           total: d.total,
         }))
       );
-      setAlerts(alertsRes.data);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to load dashboard");
-    } finally {
-      setLoading(false);
     }
+    if (alertsRes.status === "fulfilled") setAlerts(alertsRes.value.data);
+    setLoading(false);
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -67,14 +66,14 @@ export default function OwnerDashboard() {
     { icon: ClipboardList, label: "Total SOPs", value: dashboard?.total_sops ?? 0, color: "#3B82F6", trend: "up", positive: true },
     { icon: Users, label: "Total Tasks", value: dashboard?.total_tasks ?? 0, color: "#6366F1", trend: "up", positive: true },
     { icon: CheckCircle2, label: "Completed Tasks", value: dashboard?.completed_tasks ?? 0, color: "#10B981", trend: "up", positive: true },
-    {
+    ...(!isCoAdmin ? [{
       icon: IndianRupee,
       label: "6-Month Revenue",
       value: totalRevenue > 0 ? `₹${(totalRevenue / 1000).toFixed(0)}k` : "—",
       color: "#F59E0B",
       trend: "up",
       positive: true,
-    },
+    }] : []),
   ];
 
   return (
@@ -129,7 +128,7 @@ export default function OwnerDashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="col-span-1 lg:col-span-2 bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
+            {!isCoAdmin && <div className="col-span-1 lg:col-span-2 bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="font-bold text-slate-950 text-lg">Revenue Trend</h3>
@@ -174,9 +173,9 @@ export default function OwnerDashboard() {
                   )}
                 </ResponsiveContainer>
               </div>
-            </div>
+            </div>}
 
-            <div className="col-span-1 bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6 flex flex-col">
+            <div className={`${isCoAdmin ? "col-span-1 lg:col-span-3" : "col-span-1"} bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6 flex flex-col`}>
               <div className="mb-6">
                 <h3 className="font-bold text-slate-950 text-lg">Recent Alerts</h3>
                 <p className="text-slate-500 text-sm mt-0.5">Operational tasks &amp; inventory notices</p>
