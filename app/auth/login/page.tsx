@@ -198,11 +198,11 @@ export default function LoginPage() {
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
           className="w-full max-w-[560px]"
         >
-          <div className="rounded-3xl p-10 border border-black/10 dark:border-white/10 bg-white/85 dark:bg-[#1c1c1c]/90 backdrop-blur-xl shadow-xl shadow-black/[0.08] dark:shadow-black/40">
-            <div className="mb-9">
-              <p className="text-black/50 dark:text-[#707070] uppercase tracking-[0.2em] text-[10px] mb-2 font-bold">Sign in</p>
-              <h1 className="text-black dark:text-[#f0f0f0] font-black text-3xl leading-tight tracking-tight">Welcome back</h1>
-              <p className="text-black/55 dark:text-[#a0a0a0] text-sm mt-1.5 font-light italic">Select your role and sign in to continue</p>
+          <div className="rounded-3xl p-7 border border-black/10 dark:border-white/10 bg-white/85 dark:bg-[#1c1c1c]/90 backdrop-blur-xl shadow-xl shadow-black/[0.08] dark:shadow-black/40">
+            <div className="mb-5">
+              <p className="text-black/50 dark:text-[#707070] uppercase tracking-[0.2em] text-[10px] mb-1 font-bold">Sign in</p>
+              <h1 className="text-black dark:text-[#f0f0f0] font-black text-2xl leading-tight tracking-tight">Welcome back</h1>
+              <p className="text-black/55 dark:text-[#a0a0a0] text-sm mt-1 font-light italic">Select your role and sign in to continue</p>
             </div>
 
             {error && (
@@ -211,33 +211,33 @@ export default function LoginPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-7">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* Role Selection */}
               <div>
-                <label className="block text-black/55 dark:text-[#707070] text-[10px] uppercase tracking-widest mb-3 font-bold">
+                <label className="block text-black/55 dark:text-[#707070] text-[10px] uppercase tracking-widest mb-2 font-bold">
                   I am a
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   {roleConfig.map(({ id, label, desc }) => (
                     <motion.button
                       key={id}
                       type="button"
                       whileTap={{ scale: 0.97 }}
                       onClick={() => setRole(id)}
-                      className={`role-btn rounded-xl px-4 py-4 flex flex-col gap-2.5 text-left ${role === id ? "selected" : ""}`}
+                      className={`role-btn rounded-xl px-3 py-2.5 flex items-center gap-2.5 text-left ${role === id ? "selected" : ""}`}
                     >
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-200 flex-shrink-0 ${
+                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center transition-all duration-200 flex-shrink-0 ${
                         role === id
                           ? "border-black dark:border-[#e0e0e0] bg-black dark:bg-[#e0e0e0]"
                           : "border-black/30 dark:border-white/25 bg-transparent"
                       }`}>
-                        {role === id && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-black" />}
+                        {role === id && <div className="w-1 h-1 rounded-full bg-white dark:bg-black" />}
                       </div>
                       <div>
                         <p className={`font-bold text-sm leading-tight transition-colors duration-200 ${
                           role === id ? "text-black dark:text-[#f0f0f0]" : "text-black/60 dark:text-[#a0a0a0]"
                         }`}>{label}</p>
-                        <p className="text-black/45 dark:text-[#707070] text-[11px] font-light leading-tight mt-0.5">{desc}</p>
+                        <p className="text-black/45 dark:text-[#707070] text-[10px] font-light leading-tight">{desc}</p>
                       </div>
                     </motion.button>
                   ))}
@@ -248,7 +248,7 @@ export default function LoginPage() {
 
               {/* Email */}
               <div>
-                <label className="block text-black/55 dark:text-[#707070] text-[10px] uppercase tracking-widest mb-2 font-bold">
+                <label className="block text-black/55 dark:text-[#707070] text-[10px] uppercase tracking-widest mb-1.5 font-bold">
                   Email address
                 </label>
                 <input
@@ -256,7 +256,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-field w-full rounded-xl px-4 py-3.5 text-sm"
+                  className="input-field w-full rounded-xl px-4 py-2.5 text-sm"
                   placeholder="you@company.com"
                   style={{ fontFamily: "'Merriweather', serif" }}
                 />
@@ -264,7 +264,7 @@ export default function LoginPage() {
 
               {/* Password */}
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-1.5">
                   <label className="text-black/55 dark:text-[#707070] text-[10px] uppercase tracking-widest font-bold">Password</label>
                   <Link href="/auth/forgot-password" className="text-black/50 dark:text-[#707070] text-xs hover:text-black dark:hover:text-[#f0f0f0] transition-colors font-light italic">
                     Forgot password?
@@ -276,7 +276,7 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="input-field w-full rounded-xl px-4 py-3.5 pr-12 text-sm"
+                    className="input-field w-full rounded-xl px-4 py-2.5 pr-12 text-sm"
                     placeholder="Enter your password"
                     style={{ fontFamily: "'Merriweather', serif" }}
                   />
@@ -296,21 +296,21 @@ export default function LoginPage() {
                 whileTap={{ scale: 0.97 }}
                 type="submit"
                 disabled={!role || !email || !password || isLoading}
-                className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-xl flex items-center justify-center gap-2 font-black text-sm shadow-lg shadow-black/15 hover:bg-neutral-800 dark:hover:bg-[#e0e0e0] transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:scale-100"
+                className="w-full bg-black dark:bg-white text-white dark:text-black py-3 rounded-xl flex items-center justify-center gap-2 font-black text-sm shadow-lg shadow-black/15 hover:bg-neutral-800 dark:hover:bg-[#e0e0e0] transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:scale-100"
               >
                 {isLoading ? "Signing in..." : (<>Sign In <ArrowRight className="w-4 h-4" /></>)}
               </motion.button>
             </form>
 
             {/* ── Divider ── */}
-            <div className="flex items-center gap-3 mt-6">
+            <div className="flex items-center gap-3 mt-4">
               <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
               <span className="text-black/35 dark:text-[#555555] text-[10px] uppercase tracking-widest font-bold">or</span>
               <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
             </div>
 
             {/* ── Google Sign-In ── */}
-            <div className="mt-4">
+            <div className="mt-3">
               {!role && (
                 <p className="text-center text-black/45 dark:text-[#606060] text-[11px] mb-3 italic font-light">
                   Select a role above to sign in with Google
@@ -343,7 +343,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <p className="text-center text-black/50 dark:text-[#707070] text-xs mt-6 font-light">
+            <p className="text-center text-black/50 dark:text-[#707070] text-xs mt-3 font-light">
               Don&apos;t have an account?{" "}
               <Link href="/demo" className="text-black dark:text-[#f0f0f0] font-bold hover:text-black/70 dark:hover:text-[#c8c8c8] transition-colors">
                 Request Demo
