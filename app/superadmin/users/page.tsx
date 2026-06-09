@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Search, Plus, Edit, Trash2, X, Crown, Briefcase, User, Ban, CheckCircle2, Loader2, Mail, Clock, Copy, CheckCheck, KeyRound } from "lucide-react";
 import { toast } from "sonner";
-import { superadminAPI, SuperadminUser, InviteUserPayload } from "@/lib/api/superadmin";
+import { superadminAPI, SuperadminUser, InviteUserPayload, TenantListItem } from "@/lib/api/superadmin";
 
-const TAB_FILTERS = ["All", "Owner", "Manager", "Staff", "Suspended", "Invited"];
+const TAB_FILTERS = ["All", "Owner", "Co Admin", "Manager", "Staff", "Suspended", "Invited"];
 
 const getRoleIcon = (role: string) => {
   switch (role) {
     case "Owner": return <Crown className="w-4 h-4" />;
+    case "Co Admin": return <Crown className="w-4 h-4" />;
     case "Manager": return <Briefcase className="w-4 h-4" />;
     case "Staff": return <User className="w-4 h-4" />;
     default: return <User className="w-4 h-4" />;
@@ -20,6 +21,7 @@ const getRoleIcon = (role: string) => {
 const getRoleColor = (role: string) => {
   switch (role) {
     case "Owner": return "bg-amber-100 text-amber-700 border-amber-200";
+    case "Co Admin": return "bg-purple-100 text-purple-700 border-purple-200";
     case "Manager": return "bg-blue-100 text-blue-700 border-blue-200";
     case "Staff": return "bg-emerald-100 text-emerald-700 border-emerald-200";
     default: return "bg-neutral-100 text-neutral-700 border-neutral-200";
@@ -38,6 +40,8 @@ export default function AllUsers() {
   const [editRole, setEditRole] = useState("");
   const [editPropertyId, setEditPropertyId] = useState("");
   const [allProperties, setAllProperties] = useState<{ id: string; name: string }[]>([]);
+  const [allTenants, setAllTenants] = useState<TenantListItem[]>([]);
+  const [tenantProperties, setTenantProperties] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
@@ -66,17 +70,35 @@ export default function AllUsers() {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  // Load all properties once for the edit modal dropdown
+  // Load all properties + tenants once for the invite/edit modal dropdowns
   useEffect(() => {
     superadminAPI.listProperties({}).then(res => {
       setAllProperties((res.data as any[]).map((p: any) => ({ id: p.id, name: p.name })));
     }).catch(() => {});
+    superadminAPI.listTenants().then(res => {
+      setAllTenants(res.data);
+    }).catch(() => {});
   }, []);
+
+  // When a tenant is selected for Co Admin invite, fetch that tenant's properties
+  useEffect(() => {
+    if (inviteForm.role === "Co Admin" && inviteForm.tenant_id) {
+      superadminAPI.listTenantProperties(inviteForm.tenant_id).then(res => {
+        setTenantProperties(res.data);
+      }).catch(() => setTenantProperties([]));
+    } else {
+      setTenantProperties([]);
+    }
+  }, [inviteForm.role, inviteForm.tenant_id]);
 
   const handleInvite = async () => {
     if (!inviteForm.email || !inviteForm.full_name) return toast.error("Fill all required fields");
     if ((inviteForm.role === "Manager" || inviteForm.role === "Staff") && !inviteForm.property_id)
       return toast.error("Please select a property for this role");
+    if (inviteForm.role === "Co Admin" && !inviteForm.tenant_id)
+      return toast.error("Please select a tenant for Co Admin");
+    if (inviteForm.role === "Co Admin" && !inviteForm.property_id)
+      return toast.error("Please select a property for Co Admin");
     try {
       setSaving(true);
       const res = await superadminAPI.inviteUser(inviteForm);
@@ -358,9 +380,12 @@ export default function AllUsers() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">Role</label>
-                <select value={inviteForm.role} onChange={(e) => setInviteForm(f => ({ ...f, role: e.target.value, business_name: "", property_id: "" }))}
+                <select value={inviteForm.role} onChange={(e) => { setInviteForm(f => ({ ...f, role: e.target.value, business_name: "", property_id: "", tenant_id: "" })); setTenantProperties([]); }}
                   className="w-full px-4 py-2.5 bg-white/50 border border-black/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/20">
-                  <option>Owner</option><option>Manager</option><option>Staff</option>
+                  <option>Owner</option>
+                  <option>Co Admin</option>
+                  <option>Manager</option>
+                  <option>Staff</option>
                 </select>
               </div>
               {(inviteForm.role === "Manager" || inviteForm.role === "Staff") && (
@@ -378,6 +403,42 @@ export default function AllUsers() {
                     ))}
                   </select>
                 </div>
+              )}
+              {inviteForm.role === "Co Admin" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      Tenant (Owner's Account) <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={inviteForm.tenant_id || ""}
+                      onChange={(e) => setInviteForm(f => ({ ...f, tenant_id: e.target.value, property_id: "" }))}
+                      className="w-full px-4 py-2.5 bg-white/50 border border-black/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/20">
+                      <option value="">— Select a tenant —</option>
+                      {allTenants.map(t => (
+                        <option key={t.id} value={t.id}>{t.name} ({t.owner_name})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      Assigned Property <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={inviteForm.property_id || ""}
+                      onChange={(e) => setInviteForm(f => ({ ...f, property_id: e.target.value }))}
+                      disabled={!inviteForm.tenant_id}
+                      className="w-full px-4 py-2.5 bg-white/50 border border-black/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/20 disabled:opacity-50">
+                      <option value="">— {inviteForm.tenant_id ? "Select a property" : "Select a tenant first"} —</option>
+                      {tenantProperties.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <p className="text-xs text-purple-600 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
+                    Co Admin will only see and manage the selected property within this tenant's account.
+                  </p>
+                </>
               )}
               {inviteForm.role === "Owner" && (
                 <div>

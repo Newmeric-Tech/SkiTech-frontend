@@ -174,6 +174,29 @@ export interface InviteUserPayload {
   business_name?: string;
 }
 
+// ── Co-Admin Requests ─────────────────────────────────────────────────────────
+export interface CoAdminRequest {
+  id: string;
+  status: "pending" | "approved" | "rejected";
+  proposed_email: string;
+  proposed_name: string;
+  property_id: string;
+  property_name: string;
+  tenant_id: string;
+  tenant_name: string;
+  requester_name: string;
+  requester_email: string;
+  superadmin_note: string | null;
+  created_at: string;
+}
+
+export interface TenantListItem {
+  id: string;
+  name: string;
+  owner_name: string;
+  contact_email: string;
+}
+
 // ── Demo Requests ─────────────────────────────────────────────────────────────
 export interface DemoRequest {
   id: string;
@@ -241,6 +264,20 @@ export const superadminAPI = {
   deleteUser: (id: string) => api.delete(`/v1/superadmin/users/${id}`),
   updateUserRole: (id: string, role: string, property_id?: string) =>
     api.put(`/v1/superadmin/users/${id}/role`, { role, property_id: property_id ?? null }),
+
+  // Tenants (for Co Admin invite)
+  listTenants: (params?: { search?: string }) =>
+    api.get<TenantListItem[]>("/v1/superadmin/tenants", { params }),
+  listTenantProperties: (tenantId: string) =>
+    api.get<{ id: string; name: string }[]>(`/v1/superadmin/tenants/${tenantId}/properties`),
+
+  // Co-Admin Requests (superadmin side)
+  listCoAdminRequests: (status?: string) =>
+    api.get<CoAdminRequest[]>("/v1/superadmin/co-admin-requests", { params: status ? { status } : {} }),
+  approveCoAdminRequest: (id: string) =>
+    api.post(`/v1/superadmin/co-admin-requests/${id}/approve`),
+  rejectCoAdminRequest: (id: string, note: string) =>
+    api.post(`/v1/superadmin/co-admin-requests/${id}/reject`, { note }),
 
   // Demo Requests
   listDemoRequests: (params?: { search?: string; status?: string }) =>

@@ -92,6 +92,7 @@ function decodeJWT(token: string): User | null {
 export const ROLE_ROUTES: Record<string, string> = {
   "Super Admin": "/superadmin",
   "Tenant Admin": "/owner",
+  "Co Admin": "/owner",
   "Manager": "/manager",
   "Staff": "/staff",
 };
@@ -101,6 +102,7 @@ function getRoleStorageKey(jwtRole: string): string {
   const roleMap: Record<string, string> = {
     "Super Admin": "superadmin",
     "Tenant Admin": "owner",
+    "Co Admin": "owner",
     "Manager": "manager",
     "Staff": "staff",
   };

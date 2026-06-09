@@ -123,6 +123,16 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
     navItems = ownerNav;
     configNavItems = ownerConfigNav;
     roleLabel = "Access"; // Simplified
+
+    // Co Admin: hide nav items that expose cross-property or admin-only data
+    if (user?.role === "Co Admin") {
+      navItems = navItems.filter(item =>
+        item.href !== "/owner/master-activity-log"
+      );
+      configNavItems = configNavItems.filter(item =>
+        item.href !== "/owner/owners" && item.href !== "/owner/permissions"
+      );
+    }
   } else if (pathname.startsWith("/manager")) {
     navItems = managerNav;
     configNavItems = []; // No config for managers as per example

@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Search, Building2, Mail, Phone, MapPin, Eye,
-  Edit2, X, Loader2, ChevronDown,
+  Edit2, X, Loader2, ChevronDown, ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { propertiesAPI, OwnerDetails, OwnerDetailsCreate, OwnerDetailsUpdate, Property } from "@/lib/api/properties";
+import { coAdminAPI } from "@/lib/api/co-admin";
+import { useAuthStore } from "@/store/authStore";
 
 const AVATAR_COLORS = ["#3B82F6", "#6366F1", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
 
@@ -240,12 +242,37 @@ function OwnerFormModal({ owner, properties, onClose, onSaved }: {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function OwnersPage() {
+  const { user } = useAuthStore();
   const [owners, setOwners] = useState<OwnerWithProperty[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [profileOwner, setProfileOwner] = useState<OwnerWithProperty | null>(null);
   const [formOwner, setFormOwner] = useState<OwnerWithProperty | null | "new">(null);
+  const [grantAccessOwner, setGrantAccessOwner] = useState<OwnerWithProperty | null>(null);
+  const [grantingAccess, setGrantingAccess] = useState(false);
+
+  const handleGrantAccess = async () => {
+    if (!grantAccessOwner) return;
+    if (!grantAccessOwner.email) {
+      toast.error("This owner has no email address. Please add one before granting access.");
+      return;
+    }
+    try {
+      setGrantingAccess(true);
+      await coAdminAPI.submitRequest({
+        proposed_email: grantAccessOwner.email,
+        proposed_name: grantAccessOwner.owner_name,
+        property_id: grantAccessOwner.property_id,
+      });
+      toast.success(`Co-admin access request sent for ${grantAccessOwner.owner_name}. Awaiting superadmin approval.`);
+      setGrantAccessOwner(null);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to submit request");
+    } finally {
+      setGrantingAccess(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -378,12 +405,18 @@ export default function OwnersPage() {
                 <div className="pt-4 border-t border-black/10 flex items-center gap-2">
                   <button onClick={() => setProfileOwner(o)}
                     className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-black/10 text-neutral-600 text-xs hover:bg-white/50 transition-colors" style={{ fontWeight: 500 }}>
-                    <Eye className="w-3.5 h-3.5" /> View Profile
+                    <Eye className="w-3.5 h-3.5" /> View
                   </button>
                   <button onClick={() => setFormOwner(o)}
                     className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-black/[0.04] text-black text-xs hover:bg-[#DBEAFE] transition-colors" style={{ fontWeight: 500 }}>
                     <Edit2 className="w-3.5 h-3.5" /> Edit
                   </button>
+                  {o.ownership_type === "partnership" && user?.role === "Tenant Admin" && (
+                    <button onClick={() => setGrantAccessOwner(o)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-purple-50 text-purple-700 text-xs hover:bg-purple-100 transition-colors border border-purple-200" style={{ fontWeight: 500 }}>
+                      <ShieldCheck className="w-3.5 h-3.5" /> Grant Access
+                    </button>
+                  )}
                 </div>
               </motion.div>
             );
@@ -400,6 +433,44 @@ export default function OwnersPage() {
             onClose={() => setFormOwner(null)}
             onSaved={() => { setFormOwner(null); fetchData(); }}
           />
+        )}
+        {grantAccessOwner && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-black/10">
+              <div className="flex items-center justify-between px-6 py-5 border-b border-black/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <h2 className="text-black text-base" style={{ fontWeight: 700 }}>Grant System Access</h2>
+                </div>
+                <button onClick={() => setGrantAccessOwner(null)} className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-neutral-600 text-sm">
+                  You are requesting Co-Admin access for <span className="font-semibold text-black">{grantAccessOwner.owner_name}</span> on property <span className="font-semibold text-black">{grantAccessOwner.propertyName}</span>.
+                </p>
+                <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 text-sm text-purple-800 space-y-1">
+                  <p><span className="font-semibold">Email:</span> {grantAccessOwner.email || <span className="text-red-500 italic">No email on file — please add one first</span>}</p>
+                  <p className="text-xs text-purple-600 mt-2">A superadmin will review and approve this request. Once approved, an invite will be sent to their email.</p>
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-black/10 flex gap-3">
+                <button onClick={() => setGrantAccessOwner(null)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-black/10 text-neutral-600 text-sm hover:bg-black/[0.04] transition-colors" style={{ fontWeight: 500 }}>
+                  Cancel
+                </button>
+                <button onClick={handleGrantAccess} disabled={grantingAccess || !grantAccessOwner.email}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-purple-600 text-white text-sm hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2" style={{ fontWeight: 600 }}>
+                  {grantingAccess && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Send Request
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

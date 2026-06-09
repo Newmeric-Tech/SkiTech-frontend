@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { propertiesAPI, Property, PropertyCreate } from "@/lib/api/properties";
+import { useAuthStore } from "@/store/authStore";
 
 const FRANCHISE_TYPES = ["owner-operated", "franchise", "managed", "leased"];
 
@@ -30,6 +31,8 @@ const EMPTY_FORM: PropertyCreate = {
 };
 
 export default function PropertiesPage() {
+  const { user } = useAuthStore();
+  const isCoAdmin = user?.role === "Co Admin";
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -44,13 +47,19 @@ export default function PropertiesPage() {
     try {
       setLoading(true);
       const res = await propertiesAPI.list();
-      setProperties(res.data);
+      // Co Admin can only see their assigned property
+      const all = res.data;
+      setProperties(
+        isCoAdmin && user?.property_id
+          ? all.filter(p => p.id === user.property_id)
+          : all
+      );
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Failed to load properties");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isCoAdmin, user?.property_id]);
 
   useEffect(() => { fetchProperties(); }, [fetchProperties]);
 
@@ -104,15 +113,17 @@ export default function PropertiesPage() {
             {loading ? "Loading…" : `${properties.length} propert${properties.length === 1 ? "y" : "ies"} in your portfolio`}
           </p>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded-xl text-sm shadow-md"
-          style={{ fontWeight: 600 }}
-        >
-          <Plus className="w-4 h-4" /> Add Property
-        </motion.button>
+        {!isCoAdmin && (
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded-xl text-sm shadow-md"
+            style={{ fontWeight: 600 }}
+          >
+            <Plus className="w-4 h-4" /> Add Property
+          </motion.button>
+        )}
       </div>
 
       {/* Search */}
