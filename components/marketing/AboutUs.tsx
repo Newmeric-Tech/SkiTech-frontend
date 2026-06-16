@@ -130,6 +130,7 @@ export default function AboutUs() {
 
   return (
     <div
+      id="about-us"
       className="bg-black text-white min-h-screen overflow-x-hidden"
       style={{ fontFamily: "'Merriweather', Georgia, serif" }}
     >

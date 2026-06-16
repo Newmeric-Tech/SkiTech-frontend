@@ -771,7 +771,7 @@ export function Solutions() {
   const filtered = activeTab === "All" ? solutions : solutions.filter((s) => s.tab === activeTab);
 
   return (
-    <section className="relative w-full bg-white overflow-hidden py-24 md:py-36 px-6 lg:px-12"
+    <section id="solutions" className="relative w-full bg-white overflow-hidden py-24 md:py-36 px-6 lg:px-12"
       style={{ fontFamily: "'Merriweather', Georgia, serif" }}>
 
 

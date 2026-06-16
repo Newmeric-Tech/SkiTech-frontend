@@ -141,7 +141,7 @@ export function FAQ() {
 
   return (
     <section
-      id="faq"
+      id="faqs"
       ref={ref}
       className="py-28 bg-[#F7F8FA]"
       style={{ fontFamily: font }}

@@ -8,7 +8,7 @@ import Link from "next/link";
 const menuLinks = [
   {
     label: "Home",
-    href: "/",
+    href: "/#home",
     number: "01",
     tag: "Start here",
     img: "https://images.unsplash.com/photo-1497366754035-f200581374c7?auto=format&fit=crop&w=900&q=80",
@@ -17,7 +17,7 @@ const menuLinks = [
   },
   {
     label: "About Us",
-    href: "/about",
+    href: "/#about-us",
     number: "02",
     tag: "Our story",
     img: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=900&q=80",
@@ -26,7 +26,7 @@ const menuLinks = [
   },
   {
     label: "Features",
-    href: "/features",
+    href: "/#features",
     number: "03",
     tag: "What we do",
     img: "https://images.unsplash.com/photo-1531973576160-7125cd663d86?auto=format&fit=crop&w=900&q=80",
@@ -35,7 +35,7 @@ const menuLinks = [
   },
   {
     label: "Solutions",
-    href: "/solutions",
+    href: "/#solutions",
     number: "04",
     tag: "For you",
     img: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=900&q=80",
@@ -44,7 +44,7 @@ const menuLinks = [
   },
   {
     label: "Why SkiTech",
-    href: "/why-skitec",
+    href: "/#why-skitech",
     number: "05",
     tag: "The case",
     img: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=900&q=80",
@@ -53,7 +53,7 @@ const menuLinks = [
   },
   {
     label: "Pricing",
-    href: "/pricing",
+    href: "/#pricing",
     number: "06",
     tag: "Fair & clear",
     img: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=900&q=80",
@@ -62,7 +62,7 @@ const menuLinks = [
   },
   {
     label: "FAQs",
-    href: "/faqs",
+    href: "/#faqs",
     number: "07",
     tag: "Got questions?",
     img: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=900&q=80",

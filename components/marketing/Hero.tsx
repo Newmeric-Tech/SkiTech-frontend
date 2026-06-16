@@ -181,6 +181,7 @@ export default function Hero() {
 
   return (
     <section
+      id="home"
       ref={sectionRef}
       className="relative w-full min-h-screen bg-white overflow-hidden px-4 pt-32 pb-24 flex flex-col justify-center"
     >

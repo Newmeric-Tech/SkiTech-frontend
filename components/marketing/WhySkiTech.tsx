@@ -73,7 +73,7 @@ export function WhySkiTech() {
   return (
     <>
       {/* ═══ Why Section ═══ */}
-      <section id="why" ref={ref} className="py-28 bg-white" style={{ fontFamily: font }}>
+      <section id="why-skitech" ref={ref} className="py-28 bg-white" style={{ fontFamily: font }}>
         <div className="max-w-6xl mx-auto px-6 lg:px-10">
 
           {/* Header */}
