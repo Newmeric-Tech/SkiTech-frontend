@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Bell, Shield, CreditCard, Save, Loader2, Check, X, Zap, Building2, Users, ArrowUpRight, ExternalLink } from "lucide-react";
+import { User, Bell, Shield, CreditCard, Save, Loader2, Check, X, Zap, Building2, Users, ArrowUpRight, ExternalLink, Key, Plus, Clock, CheckCircle2, XCircle, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { usersAPI } from "@/lib/api/users";
 import { subscriptionsAPI, MyPlan, SubscriptionPlan } from "@/lib/api/subscriptions";
+import { coAdminAPI, CoAdminRequestItem } from "@/lib/api/co-admin";
+import { propertiesAPI, Property } from "@/lib/api/properties";
 import { useAuthStore } from "@/store/authStore";
 
 const ALL_TABS = [
@@ -14,6 +16,7 @@ const ALL_TABS = [
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "security", label: "Security", icon: Shield },
   { id: "billing", label: "Billing", icon: CreditCard, coAdminHidden: true },
+  { id: "permissions", label: "Permissions", icon: Key, coAdminHidden: true },
 ];
 
 const FEATURE_LABELS = [
@@ -59,6 +62,14 @@ export default function SettingsPage() {
   const [billingLoading, setBillingLoading] = useState(false);
   const [upgradingPlanId, setUpgradingPlanId] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
+
+  // Permissions
+  const [coAdminRequests, setCoAdminRequests] = useState<CoAdminRequestItem[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [permissionsLoading, setPermissionsLoading] = useState(false);
+  const [showCoAdminForm, setShowCoAdminForm] = useState(false);
+  const [coAdminForm, setCoAdminForm] = useState({ property_id: "", proposed_name: "", proposed_email: "" });
+  const [coAdminSubmitting, setCoAdminSubmitting] = useState(false);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -184,6 +195,45 @@ export default function SettingsPage() {
       toast.error(err?.response?.data?.detail || "Failed to open billing portal");
     } finally {
       setPortalLoading(false);
+    }
+  };
+
+  const loadPermissions = useCallback(async () => {
+    setPermissionsLoading(true);
+    try {
+      const [reqRes, propRes] = await Promise.all([
+        coAdminAPI.listMyRequests(),
+        propertiesAPI.list(),
+      ]);
+      setCoAdminRequests(reqRes.data);
+      setProperties(propRes.data);
+    } catch {
+      toast.error("Failed to load permissions data");
+    } finally {
+      setPermissionsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tab === "permissions") loadPermissions();
+  }, [tab, loadPermissions]);
+
+  const handleSubmitCoAdmin = async () => {
+    if (!coAdminForm.property_id || !coAdminForm.proposed_name.trim() || !coAdminForm.proposed_email.trim()) {
+      toast.error("All fields are required");
+      return;
+    }
+    setCoAdminSubmitting(true);
+    try {
+      await coAdminAPI.submitRequest(coAdminForm);
+      toast.success("Co-Owner request submitted — pending superadmin approval");
+      setShowCoAdminForm(false);
+      setCoAdminForm({ property_id: "", proposed_name: "", proposed_email: "" });
+      await loadPermissions();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to submit request");
+    } finally {
+      setCoAdminSubmitting(false);
     }
   };
 
@@ -365,7 +415,7 @@ export default function SettingsPage() {
                     <div>
                       <p className="text-neutral-500 text-xs font-semibold uppercase tracking-wider mb-4">Included Features</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {FEATURE_LABELS.map(({ key, label, desc, soon }) => {
+                        {FEATURE_LABELS.map(({ key, label, desc }) => {
                           const enabled = myPlan.features[key] === true;
                           return (
                             <div key={key} className={`flex items-start gap-3 p-3 rounded-xl border ${enabled ? "border-emerald-200/60 bg-emerald-50/50" : "border-black/5 bg-black/[0.02] opacity-40"}`}>
@@ -375,9 +425,6 @@ export default function SettingsPage() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <p className="text-sm font-semibold text-black">{label}</p>
-                                  {soon && enabled && (
-                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 leading-none">COMING SOON</span>
-                                  )}
                                 </div>
                                 <p className="text-xs text-neutral-400 mt-0.5">{desc}</p>
                               </div>
@@ -433,7 +480,7 @@ export default function SettingsPage() {
                                 )}
                               </div>
                               <div className="space-y-2 mb-6 flex-1">
-                                {FEATURE_LABELS.map(({ key, label, soon }) => {
+                                {FEATURE_LABELS.map(({ key, label }) => {
                                   const has = plan.features?.[key] === true;
                                   return (
                                     <div key={key} className="flex items-center gap-2">
@@ -443,7 +490,6 @@ export default function SettingsPage() {
                                       }
                                       <span className={`text-xs flex items-center gap-1.5 ${has ? (isCurrent ? "text-white/80" : "text-neutral-700") : (isCurrent ? "text-white/25" : "text-neutral-300")}`}>
                                         {label}
-                                        {has && soon && <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-amber-500/20 text-amber-600 leading-none">SOON</span>}
                                       </span>
                                     </div>
                                   );
@@ -476,6 +522,135 @@ export default function SettingsPage() {
                   <p className="text-neutral-400 text-xs mt-1">Contact your administrator to assign a plan.</p>
                 </div>
               )}
+            </motion.div>
+          )}
+          {tab === "permissions" && (
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <div className="bg-white/70 backdrop-blur rounded-2xl border border-black/10 shadow-sm p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-black" style={{ fontWeight: 700, fontSize: "1.05rem" }}>Co-Owner Permissions</h2>
+                    <p className="text-neutral-400 text-xs mt-1">Grant partner owners access to a specific property</p>
+                  </div>
+                  {!showCoAdminForm && (
+                    <button
+                      onClick={() => setShowCoAdminForm(true)}
+                      className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded-xl text-sm shadow-md hover:bg-neutral-800 transition-colors"
+                      style={{ fontWeight: 600 }}>
+                      <Plus className="w-4 h-4" />
+                      Add Co-Owner
+                    </button>
+                  )}
+                </div>
+
+                {/* Add Co-Owner Form */}
+                {showCoAdminForm && (
+                  <div className="mb-6 p-5 rounded-2xl border border-black/10 bg-black/[0.02]">
+                    <p className="text-black text-sm mb-4" style={{ fontWeight: 600 }}>New Co-Owner Request</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-neutral-700 text-xs mb-1.5" style={{ fontWeight: 500 }}>Property</label>
+                        <div className="relative">
+                          <select
+                            value={coAdminForm.property_id}
+                            onChange={e => setCoAdminForm(f => ({ ...f, property_id: e.target.value }))}
+                            className="w-full appearance-none bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 transition-all pr-9">
+                            <option value="">Select property…</option>
+                            {properties.map(p => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-neutral-700 text-xs mb-1.5" style={{ fontWeight: 500 }}>Full Name</label>
+                        <input
+                          value={coAdminForm.proposed_name}
+                          onChange={e => setCoAdminForm(f => ({ ...f, proposed_name: e.target.value }))}
+                          placeholder="Partner's full name"
+                          className="w-full bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 transition-all" />
+                      </div>
+                      <div>
+                        <label className="block text-neutral-700 text-xs mb-1.5" style={{ fontWeight: 500 }}>Email Address</label>
+                        <input
+                          type="email"
+                          value={coAdminForm.proposed_email}
+                          onChange={e => setCoAdminForm(f => ({ ...f, proposed_email: e.target.value }))}
+                          placeholder="partner@email.com"
+                          className="w-full bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 transition-all" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 mt-4">
+                      <button
+                        onClick={handleSubmitCoAdmin}
+                        disabled={coAdminSubmitting}
+                        className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl text-sm disabled:opacity-50"
+                        style={{ fontWeight: 600 }}>
+                        {coAdminSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                        {coAdminSubmitting ? "Submitting…" : "Submit Request"}
+                      </button>
+                      <button
+                        onClick={() => { setShowCoAdminForm(false); setCoAdminForm({ property_id: "", proposed_name: "", proposed_email: "" }); }}
+                        className="px-5 py-2.5 rounded-xl text-sm text-neutral-500 hover:bg-black/5 transition-colors"
+                        style={{ fontWeight: 500 }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Requests List */}
+                {permissionsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-neutral-300" />
+                  </div>
+                ) : coAdminRequests.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Key className="w-8 h-8 text-neutral-200 mx-auto mb-3" />
+                    <p className="text-neutral-400 text-sm">No co-owner requests yet</p>
+                    <p className="text-neutral-300 text-xs mt-1">Submit a request to grant property access to a partner</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {coAdminRequests.map(req => {
+                      const statusConfig = {
+                        pending:  { icon: Clock,         color: "text-amber-600",   bg: "bg-amber-50  border-amber-200",   label: "Pending"  },
+                        approved: { icon: CheckCircle2,  color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200", label: "Approved" },
+                        rejected: { icon: XCircle,       color: "text-red-500",     bg: "bg-red-50    border-red-200",      label: "Rejected" },
+                      }[req.status];
+                      const StatusIcon = statusConfig.icon;
+                      return (
+                        <div key={req.id} className="flex items-center justify-between p-4 rounded-xl border border-black/5 bg-black/[0.015] hover:bg-black/[0.03] transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-black/10 to-neutral-200/60 flex items-center justify-center shrink-0">
+                              <Users className="w-4 h-4 text-neutral-500" />
+                            </div>
+                            <div>
+                              <p className="text-black text-sm" style={{ fontWeight: 600 }}>{req.proposed_name}</p>
+                              <p className="text-neutral-400 text-xs">{req.proposed_email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-6 text-right">
+                            <div className="hidden sm:block">
+                              <p className="text-neutral-500 text-xs" style={{ fontWeight: 500 }}>Property</p>
+                              <p className="text-black text-xs mt-0.5">{req.property_name || "—"}</p>
+                            </div>
+                            <div className="hidden sm:block">
+                              <p className="text-neutral-500 text-xs" style={{ fontWeight: 500 }}>Requested</p>
+                              <p className="text-black text-xs mt-0.5">{new Date(req.created_at).toLocaleDateString()}</p>
+                            </div>
+                            <span className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${statusConfig.bg} ${statusConfig.color}`}>
+                              <StatusIcon className="w-3.5 h-3.5" />
+                              {statusConfig.label}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
         </div>

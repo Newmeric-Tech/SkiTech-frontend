@@ -192,6 +192,7 @@ export default function PunchPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [geofenceWarning, setGeofenceWarning] = useState<string | null>(null);
 
   // Clock tick
   useEffect(() => {
@@ -240,6 +241,7 @@ export default function PunchPage() {
   const handlePunch = async () => {
     if (!propertyId) { toast.error("No property assigned to your account"); return; }
     setLocationError(null);
+    setGeofenceWarning(null);
     setIsLoading(true);
     try {
       const coords = await getCurrentPosition();
@@ -249,14 +251,14 @@ export default function PunchPage() {
         setPunchInTime(null);
         setCurrentStatus(null);
         toast.success("Punched out successfully", { description: `Hours worked: ${fmtHours(res.hours_worked)}` });
-        if (res.warning) toast.warning(res.warning);
+        if (res.warning) setGeofenceWarning(res.warning);
       } else {
         const res = await attendanceAPI.punchIn(propertyId, coords);
         setPunchedIn(true);
         setPunchInTime(new Date().toISOString());
         setHoursSoFar(0);
         toast.success("Punched in successfully");
-        if (res.warning) toast.warning(res.warning);
+        if (res.warning) setGeofenceWarning(res.warning);
       }
       await loadStatus();
     } catch (err: any) {
@@ -323,7 +325,7 @@ export default function PunchPage() {
         </span>
       </div>
 
-      {/* Location error */}
+      {/* Location permission error */}
       {locationError && (
         <div className="flex items-start gap-3 bg-amber-50 border border-amber-200/60 rounded-xl p-4">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -333,6 +335,32 @@ export default function PunchPage() {
           </div>
         </div>
       )}
+
+      {/* Outside geofence warning */}
+      <AnimatePresence>
+        {geofenceWarning && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="flex items-start gap-3 bg-orange-50 border border-orange-200 rounded-xl p-4"
+          >
+            <AlertTriangle className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-orange-800">Outside Property Area</p>
+              <p className="text-xs text-orange-600 mt-0.5">{geofenceWarning}</p>
+              <p className="text-xs text-orange-500 mt-1">Your punch was recorded, but you appear to be outside the property geofence. Please ensure you are on-site.</p>
+            </div>
+            <button
+              onClick={() => setGeofenceWarning(null)}
+              className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-orange-100 transition-colors shrink-0"
+            >
+              <X className="w-3.5 h-3.5 text-orange-500" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">

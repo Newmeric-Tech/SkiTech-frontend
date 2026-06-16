@@ -461,16 +461,21 @@ export default function ManagerTasksPage() {
 
   const load = useCallback(async (propId: string) => {
     try {
-      const [sopRes, catRes, staffRes] = await Promise.all([
+      const [sopRes, catRes] = await Promise.all([
         sopAPI.listSOPs(propId),
         sopAPI.listCategories(propId),
-        usersAPI.list(propId, "Staff"),
       ]);
       setTasks(sopRes.data as SOPItem[]);
       setCategories(catRes.data as SOPCategory[]);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to load tasks");
+    }
+    // Load staff separately so a failure here doesn't block task creation
+    try {
+      const staffRes = await usersAPI.list(propId, "Staff");
       setStaffUsers(staffRes.data as StaffUser[]);
     } catch {
-      toast.error("Failed to load tasks");
+      // Non-critical — staff assignment still optional
     }
   }, []);
 
@@ -497,8 +502,8 @@ export default function ManagerTasksPage() {
       setTasks(prev => [res.data as SOPItem, ...prev]);
       toast.success("Task created");
       setShowNewTask(false);
-    } catch {
-      toast.error("Failed to create task");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to create task");
     }
   };
 

@@ -31,8 +31,8 @@ export interface DailyKRAFormData {
 
 export interface DailyKRAResponse {
   id: number;
-  tenant_id: number;
-  user_id: number;
+  tenant_id: string;
+  user_id: string;
   date: string;
   shift_changeover_status: boolean;
   guest_checkin_count: number;
@@ -50,8 +50,8 @@ export interface DailyKRAResponse {
 
 export interface DailyKRAListItem {
   id: number;
-  tenant_id: number;
-  user_id: number;
+  tenant_id: string;
+  user_id: string;
   date: string;
   is_submitted: boolean;
   guest_checkin_count: number;
@@ -79,8 +79,8 @@ export interface WeeklyKRAFormData {
 
 export interface WeeklyKRAResponse {
   id: number;
-  tenant_id: number;
-  user_id: number;
+  tenant_id: string;
+  user_id: string;
   week_starting_date: string;
   year: number;
   week_number: number;
@@ -108,8 +108,8 @@ export interface MonthlyKRAFormData {
 
 export interface MonthlyKRAResponse {
   id: number;
-  tenant_id: number;
-  user_id: number;
+  tenant_id: string;
+  user_id: string;
   month: number;
   year: number;
   revenue_amount: number | null;
@@ -136,8 +136,8 @@ export interface QuarterlyKRAFormData {
 
 export interface QuarterlyKRAResponse {
   id: number;
-  tenant_id: number;
-  user_id: number;
+  tenant_id: string;
+  user_id: string;
   quarter: number;
   year: number;
   revenue_amount: number | null;
@@ -151,7 +151,7 @@ export interface QuarterlyKRAResponse {
 }
 
 export interface KRAComplianceResponse {
-  tenant_id: number;
+  tenant_id: string;
   employee_id: number | null;
   property_id: number | null;
   start_date: string;
