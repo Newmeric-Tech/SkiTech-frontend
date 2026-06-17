@@ -388,7 +388,7 @@ export default function SettingsPage() {
                           </div>
                           <p className="text-white font-bold" style={{ fontSize: "1.8rem" }}>{myPlan.plan.name}</p>
                           <p className="text-white/60 text-sm mt-1">
-                            ₹{myPlan.plan.price.toLocaleString("en-IN")}<span className="text-white/40"> / month</span>
+                            ${myPlan.plan.price.toLocaleString("en-US")}<span className="text-white/40"> / month</span>
                           </p>
                         </div>
                         <span className="bg-emerald-500/20 text-emerald-300 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-500/30">
@@ -415,8 +415,8 @@ export default function SettingsPage() {
                     <div>
                       <p className="text-neutral-500 text-xs font-semibold uppercase tracking-wider mb-4">Included Features</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {FEATURE_LABELS.map(({ key, label, desc }) => {
-                          const enabled = myPlan.features[key] === true;
+                        {FEATURE_LABELS.map(({ key, label, desc, soon }) => {
+                          const enabled = soon || myPlan.features[key] === true;
                           return (
                             <div key={key} className={`flex items-start gap-3 p-3 rounded-xl border ${enabled ? "border-emerald-200/60 bg-emerald-50/50" : "border-black/5 bg-black/[0.02] opacity-40"}`}>
                               <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${enabled ? "bg-emerald-500" : "bg-neutral-300"}`}>
@@ -468,7 +468,7 @@ export default function SettingsPage() {
                                   {plan.name}
                                 </p>
                                 <p className={`font-bold leading-none ${isCurrent ? "text-white" : "text-black"}`} style={{ fontSize: "1.8rem" }}>
-                                  {isFree && plan.name !== "Free" ? "Custom" : `₹${plan.price.toLocaleString("en-IN")}`}
+                                  {isFree && plan.name !== "Free" ? "Custom" : `$${plan.price.toLocaleString("en-US")}`}
                                   {!(isFree && plan.name !== "Free") && (
                                     <span className={`text-sm font-normal ml-1 ${isCurrent ? "text-white/40" : "text-neutral-400"}`}>/mo</span>
                                   )}
@@ -480,8 +480,8 @@ export default function SettingsPage() {
                                 )}
                               </div>
                               <div className="space-y-2 mb-6 flex-1">
-                                {FEATURE_LABELS.map(({ key, label }) => {
-                                  const has = plan.features?.[key] === true;
+                                {FEATURE_LABELS.map(({ key, label, soon }) => {
+                                  const has = soon || plan.features?.[key] === true;
                                   return (
                                     <div key={key} className="flex items-center gap-2">
                                       {has

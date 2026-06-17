@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
-const roles = ["Owner", "Manager", "Staff", "Security", "Finance"];
+const roles = ["Owner", "Co-Owner", "Manager", "Staff", "Security", "Finance"];
 
 const modules = [
   { id: "properties", label: "Properties", icon: Building2, color: "#3B82F6" },
@@ -36,6 +36,16 @@ const initMatrix: PermMatrix = {
     reports: { view: true, create: true, edit: true, delete: true },
     staff: { view: true, create: true, edit: true, delete: true },
     kra: { view: true, create: true, edit: true, delete: true },
+  },
+  "Co-Owner": {
+    properties: { view: true, create: true, edit: true, delete: false },
+    vendors: { view: true, create: true, edit: true, delete: false },
+    owners: { view: false, create: false, edit: false, delete: false },
+    finance: { view: true, create: true, edit: true, delete: false },
+    sops: { view: true, create: true, edit: true, delete: false },
+    reports: { view: true, create: true, edit: true, delete: false },
+    staff: { view: true, create: true, edit: true, delete: false },
+    kra: { view: true, create: true, edit: true, delete: false },
   },
   Manager: {
     properties: { view: true, create: false, edit: true, delete: false },

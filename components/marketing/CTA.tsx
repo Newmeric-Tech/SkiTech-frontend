@@ -111,7 +111,7 @@ export function CTA() {
             whileTap={{ scale: 0.97 }}
           >
             <Link
-              href="/demo"
+              href="/auth/login"
               className="group inline-flex items-center gap-2.5 bg-black text-white px-8 py-4 rounded-2xl hover:bg-black/85 transition-colors duration-300"
               style={{ fontFamily: font, fontWeight: 700, fontSize: "0.9rem" }}
             >
@@ -125,7 +125,7 @@ export function CTA() {
             whileHover={{ y: -2, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } }}
           >
             <Link
-              href="/pricing"
+              href="/#pricing"
               className="group inline-flex items-center gap-1.5 text-black/70 hover:text-black px-5 py-4 rounded-2xl border border-transparent hover:border-black/10 transition-all duration-300"
               style={{ fontFamily: font, fontWeight: 700, fontSize: "0.88rem" }}
             >

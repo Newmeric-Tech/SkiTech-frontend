@@ -22,12 +22,14 @@ const plans = [
     price: { monthly: 49, annual: 39 },
     cta: "Get Started",
     ctaStyle: "border",
+    href: "/demo",
     features: [
       "Up to 3 properties",
-      "50 employee profiles",
-      "Basic SOP management",
-      "Stock tracking & alerts",
-      "Standard reporting",
+      "Up to 50 employees",
+      "SOP Management",
+      "Attendance Tracking",
+      "Inventory Management",
+      "Reports & Analytics",
       "Email support",
     ],
     popular: false,
@@ -38,14 +40,19 @@ const plans = [
     price: { monthly: 99, annual: 79 },
     cta: "Get Started",
     ctaStyle: "filled",
+    href: "/demo",
     features: [
       "Unlimited properties",
       "Unlimited employees",
-      "Advanced KRA dashboards",
-      "Revenue analytics & reports",
+      "KRA Monitoring",
+      "Reports & Analytics",
+      "SOP Management",
+      "Attendance Tracking",
+      "Vendor Management",
+      "Inventory Management",
+      "Governance & Compliance",
       "Role-based access control",
       "Priority support",
-      "AI-powered insights",
     ],
     popular: true,
   },
@@ -55,6 +62,7 @@ const plans = [
     price: { monthly: null, annual: null },
     cta: "Contact Sales",
     ctaStyle: "border",
+    href: "/contact",
     features: [
       "Everything in Professional",
       "Dedicated account manager",
@@ -263,7 +271,7 @@ export function Pricing() {
               {/* CTA Button */}
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
                 <Link
-                  href="/demo"
+                  href={plan.href}
                   className="w-full py-3 rounded-xl text-sm transition-all duration-200 mb-8 block text-center"
                   style={
                     plan.popular
