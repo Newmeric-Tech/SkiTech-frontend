@@ -30,7 +30,7 @@ export interface DailyKRAFormData {
 }
 
 export interface DailyKRAResponse {
-  id: number;
+  id: string;
   tenant_id: string;
   user_id: string;
   date: string;
@@ -49,7 +49,7 @@ export interface DailyKRAResponse {
 }
 
 export interface DailyKRAListItem {
-  id: number;
+  id: string;
   tenant_id: string;
   user_id: string;
   date: string;
@@ -78,7 +78,7 @@ export interface WeeklyKRAFormData {
 }
 
 export interface WeeklyKRAResponse {
-  id: number;
+  id: string;
   tenant_id: string;
   user_id: string;
   week_starting_date: string;
@@ -107,7 +107,7 @@ export interface MonthlyKRAFormData {
 }
 
 export interface MonthlyKRAResponse {
-  id: number;
+  id: string;
   tenant_id: string;
   user_id: string;
   month: number;
@@ -135,7 +135,7 @@ export interface QuarterlyKRAFormData {
 }
 
 export interface QuarterlyKRAResponse {
-  id: number;
+  id: string;
   tenant_id: string;
   user_id: string;
   quarter: number;
@@ -208,7 +208,7 @@ export const kraAPI = {
     return data;
   },
 
-  getDaily: async (id: number): Promise<DailyKRAResponse> => {
+  getDaily: async (id: string): Promise<DailyKRAResponse> => {
     const { data } = await api.get<DailyKRAResponse>(`/v1/kra/daily/${id}`);
     return data;
   },
