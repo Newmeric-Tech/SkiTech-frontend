@@ -285,3 +285,135 @@ html.dark input:-webkit-autofill:focus {
 /* Shadows on cards (soften them in dark mode) */
 html.dark .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
 html.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important; }
+
+/* ════════════════════════════════════════════════════════════
+   MARKETING TOKENS — scoped to .marketing-page only.
+   data-theme is set on the .marketing-page div itself, so
+   portal pages (html.dark) are completely unaffected.
+════════════════════════════════════════════════════════════ */
+
+.marketing-page[data-theme="dark"] {
+  --mk-bg:               #0a0a0a;
+  --mk-surface-1:        #111111;
+  --mk-surface-2:        #1a1a1a;
+  --mk-surface-3:        #222222;
+  --mk-border:           rgba(255,255,255,0.08);
+  --mk-border-strong:    rgba(255,255,255,0.15);
+  --mk-accent:           #6366f1;
+  --mk-accent-soft:      rgba(99,102,241,0.12);
+  --mk-accent-glow:      rgba(99,102,241,0.25);
+  --mk-text-1:           #ffffff;
+  --mk-text-2:           rgba(255,255,255,0.60);
+  --mk-text-3:           rgba(255,255,255,0.35);
+  --mk-success:          #22c55e;
+  --mk-warning:          #f59e0b;
+  --mk-glass-bg:         rgba(255,255,255,0.04);
+  --mk-glass-hover:      rgba(255,255,255,0.07);
+  --mk-glass-border:     rgba(255,255,255,0.10);
+  --mk-nav-bg:           rgba(10,10,10,0.75);
+  --mk-grid-line:        rgba(255,255,255,0.025);
+  --mk-hero-glow:        rgba(99,102,241,0.18);
+  --mk-particle-rgb:     99,102,241;
+  --mk-btn-primary-bg:   #ffffff;
+  --mk-btn-primary-text: #000000;
+  --mk-shadow-md:        0 4px 12px rgba(0,0,0,0.50);
+  --mk-shadow-lg:        0 8px 24px rgba(0,0,0,0.60);
+  --mk-noise-opacity:    1;
+}
+
+.marketing-page[data-theme="light"] {
+  --mk-bg:               #f4f3ef;
+  --mk-surface-1:        #ffffff;
+  --mk-surface-2:        #eeede8;
+  --mk-surface-3:        #e4e3dd;
+  --mk-border:           rgba(0,0,0,0.08);
+  --mk-border-strong:    rgba(0,0,0,0.18);
+  --mk-accent:           #4f46e5;
+  --mk-accent-soft:      rgba(79,70,229,0.10);
+  --mk-accent-glow:      rgba(79,70,229,0.20);
+  --mk-text-1:           #0d0d0d;
+  --mk-text-2:           rgba(13,13,13,0.58);
+  --mk-text-3:           rgba(13,13,13,0.36);
+  --mk-success:          #15803d;
+  --mk-warning:          #b45309;
+  --mk-glass-bg:         rgba(255,255,255,0.60);
+  --mk-glass-hover:      rgba(255,255,255,0.85);
+  --mk-glass-border:     rgba(0,0,0,0.09);
+  --mk-nav-bg:           rgba(244,243,239,0.82);
+  --mk-grid-line:        rgba(0,0,0,0.045);
+  --mk-hero-glow:        rgba(79,70,229,0.09);
+  --mk-particle-rgb:     79,70,229;
+  --mk-btn-primary-bg:   #0d0d0d;
+  --mk-btn-primary-text: #ffffff;
+  --mk-shadow-md:        0 4px 12px rgba(0,0,0,0.09);
+  --mk-shadow-lg:        0 8px 24px rgba(0,0,0,0.13);
+  --mk-noise-opacity:    0.4;
+}
+
+/* Shared radius tokens — never change between themes */
+.marketing-page {
+  --mk-radius-sm: 6px;
+  --mk-radius-md: 10px;
+  --mk-radius-lg: 14px;
+  --mk-radius-xl: 20px;
+}
+
+/* Menu overlay is always light regardless of page theme */
+.marketing-menu-overlay {
+  --menu-bg:         #f2f2ef;
+  --menu-text:       #0a0a0a;
+  --menu-text-muted: rgba(10,10,10,0.35);
+  --menu-border:     rgba(10,10,10,0.10);
+}
+
+/* Smooth colour transitions on theme switch — colour/opacity only */
+.marketing-page *,
+.marketing-page *::before,
+.marketing-page *::after {
+  transition:
+    background-color 0.35s ease,
+    border-color     0.35s ease,
+    color            0.35s ease,
+    box-shadow       0.35s ease,
+    opacity          0.35s ease;
+}
+
+/* ── Marketing keyframes ──────────────────────────────────────────────── */
+@keyframes mk-blink-cursor {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+@keyframes mk-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ── Custom cursor: hide system pointer on mouse-only devices ─────────── */
+@media (pointer: fine) {
+  .marketing-page,
+  .marketing-page * {
+    cursor: none !important;
+  }
+}
+
+/* ── Transition exclusions: never animate on theme switch ─────────────── */
+.marketing-page canvas,
+.marketing-page .orbit-ring,
+.marketing-page .orbit-ring-2,
+.marketing-page .orbit-dot,
+.marketing-page .orbit-dot-2,
+.marketing-page #cursor-glow,
+.marketing-page #cursor-dot,
+.marketing-page #cursor-ring,
+.marketing-page .hero-grid-bg,
+.marketing-page .hero-glow,
+.marketing-page .mini-bar,
+.marketing-page .steps-progress-fill,
+.marketing-page .module-card,
+.marketing-page .module-icon,
+.marketing-page .typed-cursor,
+.marketing-page .nav-logo-dot,
+.marketing-page .theme-toggle-thumb {
+  transition: none !important;
+}

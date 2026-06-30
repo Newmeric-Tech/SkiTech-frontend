@@ -80,7 +80,22 @@ function FeatureCard({ mod, index }: { mod: (typeof modules)[0]; index: number }
         delay: 0.04,
         opacity: { duration: 0.6 },
       }}
-      className="group flex flex-col md:flex-row border border-black/[0.07] rounded-3xl overflow-hidden bg-white transition-[border-color,box-shadow] duration-500 hover:border-black/20 hover:shadow-[0_24px_64px_-20px_rgba(0,0,0,0.13)] cursor-default"
+      className="group flex flex-col md:flex-row rounded-3xl overflow-hidden cursor-default transition-[border-color,box-shadow] duration-500"
+      style={{
+        background:  "var(--mk-surface-1)",
+        border:      "1px solid var(--mk-border)",
+        boxShadow:   "none",
+      }}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget as HTMLDivElement;
+        el.style.borderColor = "var(--mk-border-strong)";
+        el.style.boxShadow   = "var(--mk-shadow-lg)";
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget as HTMLDivElement;
+        el.style.borderColor = "var(--mk-border)";
+        el.style.boxShadow   = "none";
+      }}
     >
       {/* ── Image panel ── */}
       <div
@@ -98,23 +113,23 @@ function FeatureCard({ mod, index }: { mod: (typeof modules)[0]; index: number }
           }}
         />
 
-        {/* Main photo */}
         <img
           src={mod.img}
           alt={mod.title}
           className="w-full h-60 md:h-full object-cover transition-[transform,filter] duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04] group-hover:brightness-[1.04]"
         />
 
-        {/* Scrim — lifts smoothly on hover */}
+        {/* Scrim */}
         <div className="absolute inset-0 z-20 bg-black/[0.18] group-hover:bg-black/0 transition-colors duration-700 ease-out" />
 
-        {/* Directional fade */}
+        {/* Directional fade to section bg */}
         <div
-          className={`absolute inset-0 z-20 pointer-events-none transition-opacity duration-600 group-hover:opacity-0 ${
-            isEven
-              ? "bg-gradient-to-r from-transparent via-transparent to-white/[0.18]"
-              : "bg-gradient-to-l from-transparent via-transparent to-white/[0.18]"
-          }`}
+          className="absolute inset-0 z-20 pointer-events-none transition-opacity duration-600 group-hover:opacity-0"
+          style={{
+            background: isEven
+              ? "linear-gradient(to right, transparent, transparent, var(--mk-surface-1))"
+              : "linear-gradient(to left, transparent, transparent, var(--mk-surface-1))",
+          }}
         />
 
         {/* Tag badge */}
@@ -125,15 +140,24 @@ function FeatureCard({ mod, index }: { mod: (typeof modules)[0]; index: number }
           className="absolute top-4 left-4 z-30"
         >
           <span
-            className="inline-flex items-center px-3 py-1 bg-white/[0.93] backdrop-blur-md text-black rounded-full border border-black/[0.07] text-[10.5px] uppercase tracking-[0.15em]"
-            style={{ fontFamily: font, fontWeight: 700 }}
+            className="inline-flex items-center px-3 py-1 rounded-full text-[10.5px] uppercase tracking-[0.15em] backdrop-blur-md"
+            style={{
+              background:  "var(--mk-glass-bg)",
+              border:      "1px solid var(--mk-glass-border)",
+              color:       "var(--mk-text-1)",
+              fontFamily:  font,
+              fontWeight:  700,
+            }}
           >
             {mod.tag}
           </span>
         </motion.div>
 
         {/* Bottom sweep line */}
-        <div className="absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full bg-black transition-[width] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] z-30" />
+        <div
+          className="absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-[width] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] z-30"
+          style={{ background: "var(--mk-accent)" }}
+        />
       </div>
 
       {/* ── Content ── */}
@@ -144,13 +168,31 @@ function FeatureCard({ mod, index }: { mod: (typeof modules)[0]; index: number }
             <motion.div
               whileHover={{ rotate: 7, scale: 1.1 }}
               transition={{ type: "spring", stiffness: 280, damping: 16 }}
-              className="w-12 h-12 rounded-2xl border border-black/[0.09] flex items-center justify-center shrink-0 transition-[background,border-color] duration-500 group-hover:bg-black group-hover:border-transparent mt-0.5"
+              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-[background,border-color] duration-500 mt-0.5"
+              style={{ border: "1px solid var(--mk-border)", background: "transparent" }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget as HTMLDivElement;
+                el.style.background   = "var(--mk-btn-primary-bg)";
+                el.style.borderColor  = "transparent";
+                const svg = el.querySelector("svg");
+                if (svg) (svg as SVGElement).style.color = "var(--mk-btn-primary-text)";
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget as HTMLDivElement;
+                el.style.background  = "transparent";
+                el.style.borderColor = "var(--mk-border)";
+                const svg = el.querySelector("svg");
+                if (svg) (svg as SVGElement).style.color = "var(--mk-text-1)";
+              }}
             >
-              <mod.icon className="w-[18px] h-[18px] text-black transition-colors duration-500 group-hover:text-white" />
+              <mod.icon
+                className="w-[18px] h-[18px] transition-colors duration-500"
+                style={{ color: "var(--mk-text-1)" }}
+              />
             </motion.div>
             <h3
-              className="text-black leading-snug pt-2"
-              style={{ fontSize: "1.2rem", fontWeight: 800, fontFamily: font }}
+              className="leading-snug pt-2"
+              style={{ fontSize: "1.2rem", fontWeight: 800, fontFamily: font, color: "var(--mk-text-1)" }}
             >
               {mod.title}
             </h3>
@@ -158,8 +200,8 @@ function FeatureCard({ mod, index }: { mod: (typeof modules)[0]; index: number }
 
           {/* Description */}
           <p
-            className="text-black/50 leading-[1.9] mb-8"
-            style={{ fontSize: "0.88rem", fontFamily: font }}
+            className="leading-[1.9] mb-8"
+            style={{ fontSize: "0.88rem", fontFamily: font, color: "var(--mk-text-2)" }}
           >
             {mod.desc}
           </p>
@@ -170,16 +212,26 @@ function FeatureCard({ mod, index }: { mod: (typeof modules)[0]; index: number }
           initial={{ opacity: 0, y: 6 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.55, delay: 0.42, ease: "easeOut" }}
-          className="flex items-center justify-between pt-5 border-t border-black/[0.06]"
+          className="flex items-center justify-between pt-5"
+          style={{ borderTop: "1px solid var(--mk-border)" }}
         >
           <span
-            className="text-[10.5px] uppercase tracking-[0.15em] text-black/55"
-            style={{ fontFamily: font, fontWeight: 700 }}
+            className="text-[10.5px] uppercase tracking-[0.15em]"
+            style={{ fontFamily: font, fontWeight: 700, color: "var(--mk-text-3)" }}
           >
             {mod.stat}
           </span>
 
-          <div className="flex items-center gap-1.5 text-black/50 group-hover:text-black transition-colors duration-500">
+          <div
+            className="flex items-center gap-1.5 transition-colors duration-500"
+            style={{ color: "var(--mk-text-2)" }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLDivElement).style.color = "var(--mk-text-1)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLDivElement).style.color = "var(--mk-text-2)";
+            }}
+          >
             <span className="text-[11.5px]" style={{ fontFamily: font, fontWeight: 700 }}>
               Explore
             </span>
@@ -199,8 +251,8 @@ export function Features() {
     <section
       id="features"
       ref={ref}
-      className="py-28 bg-[#F7F8FA]"
-      style={{ fontFamily: font }}
+      className="py-28"
+      style={{ background: "var(--mk-surface-2)", fontFamily: font }}
     >
       <div className="max-w-6xl mx-auto px-6 lg:px-10">
 
@@ -210,8 +262,8 @@ export function Features() {
             initial={{ opacity: 0, y: 14 }}
             animate={headerInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, ease: "easeOut" }}
-            className="text-black/60 text-[10.5px] uppercase tracking-[0.22em] mb-4"
-            style={{ fontWeight: 700, fontFamily: font }}
+            className="text-[10.5px] uppercase tracking-[0.22em] mb-4"
+            style={{ fontWeight: 700, fontFamily: font, color: "var(--mk-text-2)" }}
           >
             Core Modules
           </motion.p>
@@ -221,12 +273,12 @@ export function Features() {
             animate={headerInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.09, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              fontSize: "clamp(2rem, 4vw, 2.8rem)",
-              fontWeight: 800,
-              color: "#000",
-              lineHeight: 1.12,
+              fontSize:      "clamp(2rem, 4vw, 2.8rem)",
+              fontWeight:    800,
+              color:         "var(--mk-text-1)",
+              lineHeight:    1.12,
               letterSpacing: "-0.02em",
-              fontFamily: font,
+              fontFamily:    font,
             }}
           >
             Everything to Run Your{" "}
@@ -237,8 +289,8 @@ export function Features() {
             initial={{ opacity: 0, y: 14 }}
             animate={headerInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, delay: 0.2, ease: "easeOut" }}
-            className="text-black/40 mt-5 max-w-md mx-auto leading-relaxed"
-            style={{ fontSize: "0.88rem", fontFamily: font }}
+            className="mt-5 max-w-md mx-auto leading-relaxed"
+            style={{ fontSize: "0.88rem", fontFamily: font, color: "var(--mk-text-3)" }}
           >
             Six powerful modules working together to eliminate spreadsheets and disconnected tools.
           </motion.p>
@@ -247,7 +299,8 @@ export function Features() {
             initial={{ scaleX: 0, opacity: 0 }}
             animate={headerInView ? { scaleX: 1, opacity: 1 } : {}}
             transition={{ duration: 0.9, delay: 0.32, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-7 mx-auto h-px w-14 bg-black origin-center"
+            className="mt-7 mx-auto h-px w-14 origin-center"
+            style={{ background: "var(--mk-text-1)" }}
           />
         </div>
 

@@ -65,15 +65,20 @@ const steps = [
 ];
 
 export function WhySkiTech() {
-  const ref = useRef(null);
+  const ref      = useRef(null);
   const stepsRef = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-60px" });
-  const stepsInView = useInView(stepsRef, { once: true, margin: "-60px" });
+  const isInView      = useInView(ref,      { once: true, margin: "-60px" });
+  const stepsInView   = useInView(stepsRef, { once: true, margin: "-60px" });
 
   return (
     <>
       {/* ═══ Why Section ═══ */}
-      <section id="why-skitech" ref={ref} className="py-28 bg-white" style={{ fontFamily: font }}>
+      <section
+        id="why-skitech"
+        ref={ref}
+        className="py-28"
+        style={{ background: "var(--mk-surface-1)", fontFamily: font }}
+      >
         <div className="max-w-6xl mx-auto px-6 lg:px-10">
 
           {/* Header */}
@@ -82,8 +87,8 @@ export function WhySkiTech() {
               initial={{ opacity: 0, y: 16 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5 }}
-              className="text-black/60 text-[11px] uppercase tracking-[0.2em] mb-4"
-              style={{ fontWeight: 700, fontFamily: font }}
+              className="text-[11px] uppercase tracking-[0.2em] mb-4"
+              style={{ fontWeight: 700, fontFamily: font, color: "var(--mk-text-2)" }}
             >
               Why SkiTech
             </motion.p>
@@ -93,12 +98,12 @@ export function WhySkiTech() {
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: 0.08 }}
               style={{
-                fontSize: "clamp(2rem, 4vw, 2.8rem)",
-                fontWeight: 800,
-                color: "#000",
-                lineHeight: 1.12,
+                fontSize:      "clamp(2rem, 4vw, 2.8rem)",
+                fontWeight:    800,
+                color:         "var(--mk-text-1)",
+                lineHeight:    1.12,
                 letterSpacing: "-0.02em",
-                fontFamily: font,
+                fontFamily:    font,
               }}
             >
               Designed for Modern{" "}
@@ -109,8 +114,8 @@ export function WhySkiTech() {
               initial={{ opacity: 0, y: 16 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.55, delay: 0.16 }}
-              className="text-black/65 mt-5 max-w-md mx-auto leading-relaxed"
-              style={{ fontSize: "0.9rem", fontFamily: font }}
+              className="mt-5 max-w-md mx-auto leading-relaxed"
+              style={{ fontSize: "0.9rem", fontFamily: font, color: "var(--mk-text-2)" }}
             >
               Everything your property team needs — from SOPs to stock — under one roof.
             </motion.p>
@@ -119,7 +124,8 @@ export function WhySkiTech() {
               initial={{ scaleX: 0, opacity: 0 }}
               animate={isInView ? { scaleX: 1, opacity: 1 } : {}}
               transition={{ duration: 0.7, delay: 0.28, ease: "easeOut" }}
-              className="mt-7 mx-auto h-px w-12 bg-black origin-center"
+              className="mt-7 mx-auto h-px w-12 origin-center"
+              style={{ background: "var(--mk-text-1)" }}
             />
           </div>
 
@@ -133,13 +139,28 @@ export function WhySkiTech() {
                   initial={{ opacity: 0, y: 56 }}
                   animate={isInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ duration: 0.75, ease: [0.25, 0.1, 0.25, 1], delay: i * 0.1 + 0.05 }}
-                  className="group flex flex-col md:flex-row border border-black/[0.08] rounded-3xl overflow-hidden bg-white transition-all duration-500 hover:border-black/20 hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.14)] cursor-default"
+                  className="group flex flex-col md:flex-row rounded-3xl overflow-hidden cursor-default transition-[border-color,box-shadow] duration-500"
+                  style={{
+                    background:  "var(--mk-surface-1)",
+                    border:      "1px solid var(--mk-border)",
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget as HTMLDivElement;
+                    el.style.borderColor = "var(--mk-border-strong)";
+                    el.style.boxShadow   = "var(--mk-shadow-lg)";
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget as HTMLDivElement;
+                    el.style.borderColor = "var(--mk-border)";
+                    el.style.boxShadow   = "none";
+                  }}
                 >
                   {/* Image */}
                   <div
-                    className={`relative w-full md:w-[320px] lg:w-[380px] shrink-0 overflow-hidden bg-black/[0.04] ${
+                    className={`relative w-full md:w-[320px] lg:w-[380px] shrink-0 overflow-hidden ${
                       !isEven ? "md:order-2" : ""
                     }`}
+                    style={{ background: "var(--mk-surface-2)" }}
                   >
                     <img
                       src={b.img}
@@ -148,54 +169,96 @@ export function WhySkiTech() {
                     />
                     {/* Side fade */}
                     <div
-                      className={`absolute inset-0 ${
-                        isEven
-                          ? "bg-gradient-to-r from-transparent to-white/25"
-                          : "bg-gradient-to-l from-transparent to-white/25"
-                      } group-hover:opacity-0 transition-opacity duration-500`}
+                      className="absolute inset-0 group-hover:opacity-0 transition-opacity duration-500"
+                      style={{
+                        background: isEven
+                          ? "linear-gradient(to right, transparent, color-mix(in srgb, var(--mk-surface-1) 25%, transparent))"
+                          : "linear-gradient(to left, transparent, color-mix(in srgb, var(--mk-surface-1) 25%, transparent))",
+                      }}
                     />
                     {/* Tag */}
                     <div className="absolute top-4 left-4 z-20">
                       <span
-                        className="inline-block px-3 py-1 bg-white/90 backdrop-blur-sm text-black rounded-full border border-black/10 text-[11px] uppercase tracking-widest"
-                        style={{ fontFamily: font, fontWeight: 700 }}
+                        className="inline-block px-3 py-1 rounded-full text-[11px] uppercase tracking-widest backdrop-blur-sm"
+                        style={{
+                          background:  "var(--mk-glass-bg)",
+                          border:      "1px solid var(--mk-glass-border)",
+                          color:       "var(--mk-text-1)",
+                          fontFamily:  font,
+                          fontWeight:  700,
+                        }}
                       >
                         {b.tag}
                       </span>
                     </div>
                     {/* Bottom sweep */}
-                    <div className="absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full bg-black transition-all duration-700 ease-out z-20" />
+                    <div
+                      className="absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-700 ease-out z-20"
+                      style={{ background: "var(--mk-accent)" }}
+                    />
                   </div>
 
                   {/* Content */}
                   <div className="flex flex-col justify-between p-8 lg:p-10 xl:p-12 flex-1 min-w-0">
                     <div>
                       <div className="flex items-start gap-5 mb-5">
-                        <div className="w-12 h-12 rounded-2xl border border-black/10 flex items-center justify-center shrink-0 transition-all duration-400 group-hover:bg-black group-hover:border-transparent mt-0.5">
-                          <b.icon className="w-5 h-5 text-black transition-colors duration-400 group-hover:text-white" />
+                        <div
+                          className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-400 mt-0.5"
+                          style={{ border: "1px solid var(--mk-border)", background: "transparent" }}
+                          onMouseEnter={(e) => {
+                            const el = e.currentTarget as HTMLDivElement;
+                            el.style.background  = "var(--mk-btn-primary-bg)";
+                            el.style.borderColor = "transparent";
+                            const svg = el.querySelector("svg");
+                            if (svg) (svg as SVGElement).style.color = "var(--mk-btn-primary-text)";
+                          }}
+                          onMouseLeave={(e) => {
+                            const el = e.currentTarget as HTMLDivElement;
+                            el.style.background  = "transparent";
+                            el.style.borderColor = "var(--mk-border)";
+                            const svg = el.querySelector("svg");
+                            if (svg) (svg as SVGElement).style.color = "var(--mk-text-1)";
+                          }}
+                        >
+                          <b.icon
+                            className="w-5 h-5 transition-colors duration-400"
+                            style={{ color: "var(--mk-text-1)" }}
+                          />
                         </div>
                         <h3
-                          className="text-black leading-snug"
-                          style={{ fontSize: "1.2rem", fontWeight: 800, fontFamily: font }}
+                          className="leading-snug"
+                          style={{ fontSize: "1.2rem", fontWeight: 800, fontFamily: font, color: "var(--mk-text-1)" }}
                         >
                           {b.title}
                         </h3>
                       </div>
                       <p
-                        className="text-black/75 leading-[1.85] mb-8"
-                        style={{ fontSize: "0.9rem", fontFamily: font }}
+                        className="leading-[1.85] mb-8"
+                        style={{ fontSize: "0.9rem", fontFamily: font, color: "var(--mk-text-2)" }}
                       >
                         {b.desc}
                       </p>
                     </div>
-                    <div className="flex items-center justify-between pt-5 border-t border-black/[0.07]">
+                    <div
+                      className="flex items-center justify-between pt-5"
+                      style={{ borderTop: "1px solid var(--mk-border)" }}
+                    >
                       <span
-                        className="text-[11px] uppercase tracking-widest text-black/85"
-                        style={{ fontFamily: font, fontWeight: 700 }}
+                        className="text-[11px] uppercase tracking-widest"
+                        style={{ fontFamily: font, fontWeight: 700, color: "var(--mk-text-2)" }}
                       >
                         {b.stat}
                       </span>
-                      <div className="flex items-center gap-1.5 text-black/50 group-hover:text-black transition-colors duration-300">
+                      <div
+                        className="flex items-center gap-1.5 transition-colors duration-300"
+                        style={{ color: "var(--mk-text-2)" }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLDivElement).style.color = "var(--mk-text-1)";
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLDivElement).style.color = "var(--mk-text-2)";
+                        }}
+                      >
                         <span className="text-[12px]" style={{ fontFamily: font, fontWeight: 700 }}>
                           Learn more
                         </span>
@@ -213,14 +276,14 @@ export function WhySkiTech() {
       {/* ═══ How It Works ═══ */}
       <section
         ref={stepsRef}
-        className="py-28 bg-black relative overflow-hidden"
-        style={{ fontFamily: font }}
+        className="py-28 relative overflow-hidden"
+        style={{ background: "var(--mk-bg)", fontFamily: font }}
       >
-        {/* Subtle dot pattern */}
+        {/* Dot pattern */}
         <div
           className="absolute inset-0 opacity-[0.045]"
           style={{
-            backgroundImage: `radial-gradient(circle at 1.5px 1.5px, white 1px, transparent 0)`,
+            backgroundImage: `radial-gradient(circle at 1.5px 1.5px, var(--mk-text-1) 1px, transparent 0)`,
             backgroundSize: "36px 36px",
           }}
         />
@@ -233,8 +296,8 @@ export function WhySkiTech() {
               initial={{ opacity: 0, y: 16 }}
               animate={stepsInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5 }}
-              className="text-white/55 text-[11px] uppercase tracking-[0.2em] mb-4"
-              style={{ fontWeight: 700, fontFamily: font }}
+              className="text-[11px] uppercase tracking-[0.2em] mb-4"
+              style={{ fontWeight: 700, fontFamily: font, color: "var(--mk-text-2)" }}
             >
               How It Works
             </motion.p>
@@ -244,12 +307,12 @@ export function WhySkiTech() {
               animate={stepsInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: 0.08 }}
               style={{
-                fontSize: "clamp(2rem, 4vw, 2.8rem)",
-                fontWeight: 800,
-                color: "#fff",
-                lineHeight: 1.12,
+                fontSize:      "clamp(2rem, 4vw, 2.8rem)",
+                fontWeight:    800,
+                color:         "var(--mk-text-1)",
+                lineHeight:    1.12,
                 letterSpacing: "-0.02em",
-                fontFamily: font,
+                fontFamily:    font,
               }}
             >
               Up and Running in{" "}
@@ -260,8 +323,8 @@ export function WhySkiTech() {
               initial={{ opacity: 0, y: 16 }}
               animate={stepsInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.55, delay: 0.16 }}
-              className="text-white/55 mt-5 max-w-md mx-auto leading-relaxed"
-              style={{ fontSize: "0.9rem", fontFamily: font }}
+              className="mt-5 max-w-md mx-auto leading-relaxed"
+              style={{ fontSize: "0.9rem", fontFamily: font, color: "var(--mk-text-2)" }}
             >
               No long onboarding. No IT team required. Set up, invite your team, and go.
             </motion.p>
@@ -270,7 +333,8 @@ export function WhySkiTech() {
               initial={{ scaleX: 0, opacity: 0 }}
               animate={stepsInView ? { scaleX: 1, opacity: 1 } : {}}
               transition={{ duration: 0.7, delay: 0.28, ease: "easeOut" }}
-              className="mt-7 mx-auto h-px w-12 bg-white/40 origin-center"
+              className="mt-7 mx-auto h-px w-12 origin-center"
+              style={{ background: "var(--mk-border-strong)" }}
             />
           </div>
 
@@ -281,7 +345,8 @@ export function WhySkiTech() {
               initial={{ scaleX: 0 }}
               animate={stepsInView ? { scaleX: 1 } : {}}
               transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
-              className="hidden lg:block absolute top-[34px] left-[calc(12.5%+8px)] right-[calc(12.5%+8px)] h-px bg-white/10 origin-left"
+              className="hidden lg:block absolute top-[34px] left-[calc(12.5%+8px)] right-[calc(12.5%+8px)] h-px origin-left"
+              style={{ background: "var(--mk-border)" }}
             />
 
             {steps.map((step, i) => (
@@ -293,24 +358,48 @@ export function WhySkiTech() {
                 className="group text-center"
               >
                 {/* Number badge */}
-                <div className="w-[68px] h-[68px] mx-auto rounded-2xl border border-white/10 bg-white/[0.04] flex items-center justify-center mb-6 transition-all duration-400 group-hover:bg-white group-hover:border-white group-hover:scale-105">
+                <div
+                  className="w-[68px] h-[68px] mx-auto rounded-2xl flex items-center justify-center mb-6 transition-all duration-400"
+                  style={{
+                    border:      "1px solid var(--mk-border)",
+                    background:  "var(--mk-glass-bg)",
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget as HTMLDivElement;
+                    el.style.background  = "var(--mk-btn-primary-bg)";
+                    el.style.borderColor = "var(--mk-btn-primary-bg)";
+                    const span = el.querySelector("span");
+                    if (span) span.style.color = "var(--mk-btn-primary-text)";
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget as HTMLDivElement;
+                    el.style.background  = "var(--mk-glass-bg)";
+                    el.style.borderColor = "var(--mk-border)";
+                    const span = el.querySelector("span");
+                    if (span) span.style.color = "var(--mk-text-2)";
+                  }}
+                >
                   <span
-                    className="text-white/75 transition-all duration-400 group-hover:text-black"
-                    style={{ fontWeight: 800, fontSize: "1.05rem", fontFamily: font }}
+                    style={{
+                      fontWeight: 800,
+                      fontSize:   "1.05rem",
+                      fontFamily: font,
+                      color:      "var(--mk-text-2)",
+                    }}
                   >
                     {step.num}
                   </span>
                 </div>
 
                 <h3
-                  className="text-white mb-3"
-                  style={{ fontWeight: 800, fontSize: "0.98rem", fontFamily: font }}
+                  className="mb-3"
+                  style={{ fontWeight: 800, fontSize: "0.98rem", fontFamily: font, color: "var(--mk-text-1)" }}
                 >
                   {step.title}
                 </h3>
                 <p
-                  className="text-white/55 leading-relaxed"
-                  style={{ fontSize: "0.855rem", fontFamily: font }}
+                  className="leading-relaxed"
+                  style={{ fontSize: "0.855rem", fontFamily: font, color: "var(--mk-text-2)" }}
                 >
                   {step.desc}
                 </p>

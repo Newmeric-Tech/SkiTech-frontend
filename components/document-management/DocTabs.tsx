@@ -9,7 +9,7 @@ export function DocTabs() {
   const [role, setRole] = useState<string>("Owner");
 
   useEffect(() => {
-    const stored = localStorage.getItem("skitech_role");
+    const stored = sessionStorage.getItem("skitech_role");
     if (stored) setRole(stored);
   }, []);
 

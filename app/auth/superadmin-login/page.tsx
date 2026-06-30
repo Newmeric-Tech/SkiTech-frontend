@@ -42,9 +42,9 @@ export default function SuperAdminLoginPage() {
       };
 
       // Store tokens
-      localStorage.setItem("skitech_access_token", access_token);
-      localStorage.setItem("skitech_refresh_token", refresh_token);
-      localStorage.setItem("skitech_role", "superadmin");
+      sessionStorage.setItem("skitech_access_token", access_token);
+      sessionStorage.setItem("skitech_refresh_token", refresh_token);
+      sessionStorage.setItem("skitech_role", "superadmin");
 
       // Set cookie for middleware
       const cookieValue = JSON.stringify({

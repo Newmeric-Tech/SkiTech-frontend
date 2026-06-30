@@ -258,7 +258,7 @@ export default function ChatWidget() {
       if (wsRef.current) { wsRef.current.onclose = null; wsRef.current.close(); wsRef.current = null; }
       if (wsReconnectRef.current) { clearTimeout(wsReconnectRef.current); wsReconnectRef.current = null; }
 
-      const token = localStorage.getItem("skitech_access_token");
+      const token = sessionStorage.getItem("skitech_access_token");
       if (!token) { startPolling(); return; }
 
       const wsBase = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api")

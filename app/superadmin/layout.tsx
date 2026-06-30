@@ -53,7 +53,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
   };
 
   useEffect(() => {
-    const role = localStorage.getItem("skitech_role");
+    const role = sessionStorage.getItem("skitech_role");
     if (role !== "superadmin") {
       router.push("/auth/login");
     } else {

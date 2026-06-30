@@ -15,7 +15,7 @@ const api: AxiosInstance = axios.create({
 // ── Request Interceptor — attach JWT token ────────────────
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem("skitech_access_token");
+    const token = sessionStorage.getItem("skitech_access_token");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -39,13 +39,13 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      const refreshToken = localStorage.getItem("skitech_refresh_token");
+      const refreshToken = sessionStorage.getItem("skitech_refresh_token");
       if (!refreshToken) {
         // No refresh token → clear only auth keys, don't wipe entire storage
-        localStorage.removeItem("skitech_access_token");
-        localStorage.removeItem("skitech_refresh_token");
-        localStorage.removeItem("skitech_role");
-        localStorage.removeItem("skitech_auth");
+        sessionStorage.removeItem("skitech_access_token");
+        sessionStorage.removeItem("skitech_refresh_token");
+        sessionStorage.removeItem("skitech_role");
+        sessionStorage.removeItem("skitech_auth");
         window.location.href = "/auth/login";
         return Promise.reject(error);
       }
@@ -56,18 +56,18 @@ api.interceptors.response.use(
         });
 
         const { access_token, refresh_token } = res.data;
-        localStorage.setItem("skitech_access_token", access_token);
-        localStorage.setItem("skitech_refresh_token", refresh_token);
+        sessionStorage.setItem("skitech_access_token", access_token);
+        sessionStorage.setItem("skitech_refresh_token", refresh_token);
 
         // Retry original request with new token
         originalRequest.headers.Authorization = `Bearer ${access_token}`;
         return api(originalRequest);
       } catch {
         // Refresh failed → clear only auth keys, don't wipe entire storage
-        localStorage.removeItem("skitech_access_token");
-        localStorage.removeItem("skitech_refresh_token");
-        localStorage.removeItem("skitech_role");
-        localStorage.removeItem("skitech_auth");
+        sessionStorage.removeItem("skitech_access_token");
+        sessionStorage.removeItem("skitech_refresh_token");
+        sessionStorage.removeItem("skitech_role");
+        sessionStorage.removeItem("skitech_auth");
         window.location.href = "/auth/login";
         return Promise.reject(error);
       }

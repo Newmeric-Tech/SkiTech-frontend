@@ -41,21 +41,27 @@ export function Testimonials() {
     <section
       id="testimonials"
       ref={ref}
-      className="py-28 bg-black relative overflow-hidden"
-      style={{ fontFamily: font }}
+      className="py-28 relative overflow-hidden"
+      style={{ background: "var(--mk-bg)", fontFamily: font }}
     >
       {/* Subtle dot grid */}
       <div
         className="absolute inset-0 opacity-[0.045]"
         style={{
-          backgroundImage: `radial-gradient(circle at 1.5px 1.5px, white 1px, transparent 0)`,
+          backgroundImage: `radial-gradient(circle at 1.5px 1.5px, var(--mk-text-1) 1px, transparent 0)`,
           backgroundSize: "36px 36px",
         }}
       />
 
-      {/* Large soft glow blobs */}
-      <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full bg-white/[0.025] blur-[120px] pointer-events-none" />
-      <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-white/[0.025] blur-[120px] pointer-events-none" />
+      {/* Ambient glows */}
+      <div
+        className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full blur-[120px] pointer-events-none"
+        style={{ background: "var(--mk-accent-soft)" }}
+      />
+      <div
+        className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full blur-[120px] pointer-events-none"
+        style={{ background: "var(--mk-accent-soft)" }}
+      />
 
       <div className="relative max-w-6xl mx-auto px-6 lg:px-10">
 
@@ -65,8 +71,8 @@ export function Testimonials() {
             initial={{ opacity: 0, y: 14 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, ease: "easeOut" }}
-            className="text-white/55 text-[10.5px] uppercase tracking-[0.22em] mb-4"
-            style={{ fontWeight: 700, fontFamily: font }}
+            className="text-[10.5px] uppercase tracking-[0.22em] mb-4"
+            style={{ fontWeight: 700, fontFamily: font, color: "var(--mk-text-2)" }}
           >
             Testimonials
           </motion.p>
@@ -76,12 +82,12 @@ export function Testimonials() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.09, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              fontSize: "clamp(2rem, 4vw, 2.8rem)",
-              fontWeight: 800,
-              color: "#fff",
-              lineHeight: 1.12,
+              fontSize:      "clamp(2rem, 4vw, 2.8rem)",
+              fontWeight:    800,
+              color:         "var(--mk-text-1)",
+              lineHeight:    1.12,
               letterSpacing: "-0.02em",
-              fontFamily: font,
+              fontFamily:    font,
             }}
           >
             Trusted by{" "}
@@ -92,8 +98,8 @@ export function Testimonials() {
             initial={{ opacity: 0, y: 14 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, delay: 0.2, ease: "easeOut" }}
-            className="text-white/55 mt-5 max-w-sm mx-auto leading-relaxed"
-            style={{ fontSize: "0.88rem", fontFamily: font }}
+            className="mt-5 max-w-sm mx-auto leading-relaxed"
+            style={{ fontSize: "0.88rem", fontFamily: font, color: "var(--mk-text-2)" }}
           >
             Hear from the operations teams already running on SkiTech.
           </motion.p>
@@ -102,7 +108,8 @@ export function Testimonials() {
             initial={{ scaleX: 0, opacity: 0 }}
             animate={isInView ? { scaleX: 1, opacity: 1 } : {}}
             transition={{ duration: 0.9, delay: 0.32, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-7 mx-auto h-px w-14 bg-white/50 origin-center"
+            className="mt-7 mx-auto h-px w-14 origin-center"
+            style={{ background: "var(--mk-border-strong)" }}
           />
         </div>
 
@@ -120,10 +127,25 @@ export function Testimonials() {
                 opacity: { duration: 0.55 },
               }}
               whileHover={{ y: -6, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }}
-              className="group relative flex flex-col border border-white/[0.08] rounded-3xl p-8 bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.16] transition-[background,border-color] duration-500 cursor-default overflow-hidden"
+              className="group relative flex flex-col rounded-3xl p-8 cursor-default overflow-hidden transition-[background,border-color] duration-500"
+              style={{
+                background:   "var(--mk-glass-bg)",
+                border:       "1px solid var(--mk-glass-border)",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLDivElement).style.background    = "var(--mk-glass-hover)";
+                (e.currentTarget as HTMLDivElement).style.borderColor   = "var(--mk-border-strong)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLDivElement).style.background    = "var(--mk-glass-bg)";
+                (e.currentTarget as HTMLDivElement).style.borderColor   = "var(--mk-glass-border)";
+              }}
             >
               {/* Corner glow on hover */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/[0.04] rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none -translate-y-1/2 translate-x-1/2" />
+              <div
+                className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none -translate-y-1/2 translate-x-1/2"
+                style={{ background: "var(--mk-accent-soft)" }}
+              />
 
               {/* Stars */}
               <motion.div
@@ -135,15 +157,21 @@ export function Testimonials() {
                 {Array.from({ length: t.stars }).map((_, j) => (
                   <Star
                     key={j}
-                    className="w-3.5 h-3.5 fill-white text-white opacity-90"
+                    className="w-3.5 h-3.5"
+                    style={{ fill: "var(--mk-accent)", color: "var(--mk-accent)" }}
                   />
                 ))}
               </motion.div>
 
               {/* Quote mark */}
               <div
-                className="text-white/10 mb-3 leading-none select-none"
-                style={{ fontSize: "4rem", fontFamily: "Georgia, serif", lineHeight: 1 }}
+                className="mb-3 leading-none select-none"
+                style={{
+                  fontSize:   "4rem",
+                  fontFamily: "Georgia, serif",
+                  lineHeight: 1,
+                  color:      "var(--mk-text-3)",
+                }}
                 aria-hidden
               >
                 "
@@ -151,35 +179,56 @@ export function Testimonials() {
 
               {/* Quote text */}
               <p
-                className="text-white/60 leading-[1.85] flex-1 mb-8"
-                style={{ fontSize: "0.875rem", fontFamily: font }}
+                className="leading-[1.85] flex-1 mb-8"
+                style={{ fontSize: "0.875rem", fontFamily: font, color: "var(--mk-text-2)" }}
               >
                 {t.quote}
               </p>
 
               {/* Author */}
-              <div className="flex items-center gap-3.5 pt-5 border-t border-white/[0.07]">
+              <div
+                className="flex items-center gap-3.5 pt-5"
+                style={{ borderTop: "1px solid var(--mk-border)" }}
+              >
                 {/* Avatar */}
                 <div
-                  className="w-10 h-10 rounded-full border border-white/10 bg-white/[0.06] flex items-center justify-center shrink-0 transition-all duration-400 group-hover:bg-white group-hover:border-white"
+                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-400"
+                  style={{
+                    background:  "var(--mk-glass-bg)",
+                    border:      "1px solid var(--mk-border)",
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget as HTMLDivElement;
+                    el.style.background = "var(--mk-btn-primary-bg)";
+                    el.style.borderColor = "var(--mk-btn-primary-bg)";
+                    const span = el.querySelector("span");
+                    if (span) span.style.color = "var(--mk-btn-primary-text)";
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget as HTMLDivElement;
+                    el.style.background = "var(--mk-glass-bg)";
+                    el.style.borderColor = "var(--mk-border)";
+                    const span = el.querySelector("span");
+                    if (span) span.style.color = "var(--mk-text-2)";
+                  }}
                 >
                   <span
-                    className="text-white/70 text-[11px] transition-colors duration-400 group-hover:text-black"
-                    style={{ fontFamily: font, fontWeight: 800, letterSpacing: "0.04em" }}
+                    className="text-[11px]"
+                    style={{ fontFamily: font, fontWeight: 800, letterSpacing: "0.04em", color: "var(--mk-text-2)" }}
                   >
                     {t.initials}
                   </span>
                 </div>
                 <div>
                   <p
-                    className="text-white text-[13px] leading-tight mb-0.5"
-                    style={{ fontFamily: font, fontWeight: 700 }}
+                    className="text-[13px] leading-tight mb-0.5"
+                    style={{ fontFamily: font, fontWeight: 700, color: "var(--mk-text-1)" }}
                   >
                     {t.name}
                   </p>
                   <p
-                    className="text-white/55 text-[11px] leading-tight"
-                    style={{ fontFamily: font, fontWeight: 400 }}
+                    className="text-[11px] leading-tight"
+                    style={{ fontFamily: font, fontWeight: 400, color: "var(--mk-text-2)" }}
                   >
                     {t.role}
                   </p>

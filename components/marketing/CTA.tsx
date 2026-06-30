@@ -14,33 +14,34 @@ export function CTA() {
   return (
     <section
       ref={ref}
-      className="py-32 bg-white relative overflow-hidden"
-      style={{ fontFamily: font }}
+      className="py-32 relative overflow-hidden"
+      style={{ background: "var(--mk-surface-1)", fontFamily: font }}
     >
-      {/* Soft radial vignette — white center, very faint gray edges */}
+      {/* Soft radial vignette */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 50% 50%, #ffffff 0%, #f4f4f4 100%)",
+            "radial-gradient(ellipse 80% 60% at 50% 50%, var(--mk-surface-1) 0%, var(--mk-surface-2) 100%)",
         }}
       />
 
-      {/* Large ghost "SkiTech" text in background */}
+      {/* Large ghost "SkiTech" text */}
       <div
         className="absolute inset-0 flex items-center justify-center select-none pointer-events-none overflow-hidden"
         aria-hidden
       >
         <span
           style={{
-            fontSize: "clamp(6rem, 20vw, 16rem)",
-            fontWeight: 900,
-            fontFamily: font,
-            fontStyle: "italic",
-            color: "rgba(0,0,0,0.028)",
+            fontSize:      "clamp(6rem, 20vw, 16rem)",
+            fontWeight:    900,
+            fontFamily:    font,
+            fontStyle:     "italic",
+            color:         "var(--mk-text-1)",
+            opacity:       0.028,
             letterSpacing: "-0.03em",
-            lineHeight: 1,
-            whiteSpace: "nowrap",
+            lineHeight:    1,
+            whiteSpace:    "nowrap",
           }}
         >
           SkiTech
@@ -54,8 +55,8 @@ export function CTA() {
           initial={{ opacity: 0, y: 14 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.55, ease: "easeOut" }}
-          className="text-black/60 text-[10.5px] uppercase tracking-[0.22em] mb-6"
-          style={{ fontWeight: 700, fontFamily: font }}
+          className="text-[10.5px] uppercase tracking-[0.22em] mb-6"
+          style={{ fontWeight: 700, fontFamily: font, color: "var(--mk-text-2)" }}
         >
           Get Started
         </motion.p>
@@ -66,12 +67,12 @@ export function CTA() {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.75, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
           style={{
-            fontSize: "clamp(2.2rem, 5vw, 3.4rem)",
-            fontWeight: 800,
-            color: "#000",
-            lineHeight: 1.1,
+            fontSize:      "clamp(2.2rem, 5vw, 3.4rem)",
+            fontWeight:    800,
+            color:         "var(--mk-text-1)",
+            lineHeight:    1.1,
             letterSpacing: "-0.025em",
-            fontFamily: font,
+            fontFamily:    font,
           }}
         >
           Ready to Streamline Your{" "}
@@ -83,8 +84,8 @@ export function CTA() {
           initial={{ opacity: 0, y: 16 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, delay: 0.18, ease: "easeOut" }}
-          className="text-black/45 mt-6 max-w-lg mx-auto leading-[1.85]"
-          style={{ fontSize: "0.9rem", fontFamily: font }}
+          className="mt-6 max-w-lg mx-auto leading-[1.85]"
+          style={{ fontSize: "0.9rem", fontFamily: font, color: "var(--mk-text-2)" }}
         >
           Join property teams who have simplified their daily operations with SkiTech's
           centralized management platform. Start your free 14-day trial today.
@@ -95,7 +96,8 @@ export function CTA() {
           initial={{ scaleX: 0, opacity: 0 }}
           animate={isInView ? { scaleX: 1, opacity: 1 } : {}}
           transition={{ duration: 0.9, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-8 mx-auto h-px w-14 bg-black/20 origin-center"
+          className="mt-8 mx-auto h-px w-14 origin-center"
+          style={{ background: "var(--mk-border)" }}
         />
 
         {/* CTAs */}
@@ -112,8 +114,14 @@ export function CTA() {
           >
             <Link
               href="/auth/login"
-              className="group inline-flex items-center gap-2.5 bg-black text-white px-8 py-4 rounded-2xl hover:bg-black/85 transition-colors duration-300"
-              style={{ fontFamily: font, fontWeight: 700, fontSize: "0.9rem" }}
+              className="group inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl transition-opacity duration-300 hover:opacity-85"
+              style={{
+                background: "var(--mk-btn-primary-bg)",
+                color:      "var(--mk-btn-primary-text)",
+                fontFamily: font,
+                fontWeight: 700,
+                fontSize:   "0.9rem",
+              }}
             >
               Request a Demo
               <ArrowUpRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -126,8 +134,21 @@ export function CTA() {
           >
             <Link
               href="/#pricing"
-              className="group inline-flex items-center gap-1.5 text-black/70 hover:text-black px-5 py-4 rounded-2xl border border-transparent hover:border-black/10 transition-all duration-300"
-              style={{ fontFamily: font, fontWeight: 700, fontSize: "0.88rem" }}
+              className="group inline-flex items-center gap-1.5 px-5 py-4 rounded-2xl border border-transparent transition-all duration-300"
+              style={{
+                color:      "var(--mk-text-2)",
+                fontFamily: font,
+                fontWeight: 700,
+                fontSize:   "0.88rem",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--mk-border)";
+                (e.currentTarget as HTMLAnchorElement).style.color       = "var(--mk-text-1)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLAnchorElement).style.borderColor = "transparent";
+                (e.currentTarget as HTMLAnchorElement).style.color       = "var(--mk-text-2)";
+              }}
             >
               View Pricing
               <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -140,8 +161,8 @@ export function CTA() {
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ duration: 0.5, delay: 0.5 }}
-          className="mt-8 text-black/50 text-[11px] uppercase tracking-[0.16em]"
-          style={{ fontFamily: font, fontWeight: 700 }}
+          className="mt-8 text-[11px] uppercase tracking-[0.16em]"
+          style={{ fontFamily: font, fontWeight: 700, color: "var(--mk-text-2)" }}
         >
           No credit card required · 14-day free trial · Cancel anytime
         </motion.p>

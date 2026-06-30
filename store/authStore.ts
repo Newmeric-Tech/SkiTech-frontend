@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import api from "@/lib/config/app";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -148,8 +148,8 @@ export const useAuthStore = create<AuthState>()(
           const { access_token, refresh_token } = res.data;
 
           // Store tokens FIRST so subsequent API calls are authenticated
-          localStorage.setItem("skitech_access_token", res.data.access_token);
-          localStorage.setItem("skitech_refresh_token", res.data.refresh_token);
+          sessionStorage.setItem("skitech_access_token", res.data.access_token);
+          sessionStorage.setItem("skitech_refresh_token", res.data.refresh_token);
 
           const user = decodeJWT(access_token);
           if (!user) {
@@ -157,7 +157,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // Store role for layout checks
-          localStorage.setItem("skitech_role", getRoleStorageKey(user.role));
+          sessionStorage.setItem("skitech_role", getRoleStorageKey(user.role));
 
           // Set cookie for middleware
           setAuthCookie(user);
@@ -220,13 +220,13 @@ export const useAuthStore = create<AuthState>()(
 
           const { access_token, refresh_token } = res.data;
 
-          localStorage.setItem("skitech_access_token", access_token);
-          localStorage.setItem("skitech_refresh_token", refresh_token);
+          sessionStorage.setItem("skitech_access_token", access_token);
+          sessionStorage.setItem("skitech_refresh_token", refresh_token);
 
           const user = decodeJWT(access_token);
           if (!user) throw new Error("Invalid token received");
 
-          localStorage.setItem("skitech_role", getRoleStorageKey(user.role));
+          sessionStorage.setItem("skitech_role", getRoleStorageKey(user.role));
           setAuthCookie(user);
 
           set({ user, access_token, refresh_token, isAuthenticated: true, isLoading: false, error: null });
@@ -279,9 +279,9 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        localStorage.removeItem("skitech_access_token");
-        localStorage.removeItem("skitech_refresh_token");
-        localStorage.removeItem("skitech_role");
+        sessionStorage.removeItem("skitech_access_token");
+        sessionStorage.removeItem("skitech_refresh_token");
+        sessionStorage.removeItem("skitech_role");
 
         document.cookie = "skitech_auth=; path=/; max-age=0";
 
@@ -301,6 +301,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "skitech_auth",
+      storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
         user: state.user,
         access_token: state.access_token,

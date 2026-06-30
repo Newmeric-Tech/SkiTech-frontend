@@ -11,7 +11,7 @@ export default function OperationalLayout({
   const [role, setRole] = useState<string | null>(null);
   
   useEffect(() => {
-    setRole(localStorage.getItem("skitech_role")?.toLowerCase() || "owner");
+    setRole(sessionStorage.getItem("skitech_role")?.toLowerCase() || "owner");
   }, []);
 
   if (!role) {

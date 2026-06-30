@@ -16,7 +16,7 @@ export default function UpdatesPage() {
   const [undoToast, setUndoToast] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("skitech_role");
+    const stored = sessionStorage.getItem("skitech_role");
     if (stored) setRole(stored);
   }, []);
 

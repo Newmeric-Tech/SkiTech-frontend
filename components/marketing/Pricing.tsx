@@ -5,15 +5,9 @@ import { motion, useInView } from "motion/react";
 import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
 
-// Import Merriweather from Google Fonts
-import { Merriweather } from "next/font/google";
+/* Merriweather is loaded globally in root layout — no re-import needed */
 
-const merriweather = Merriweather({
-  subsets: ["latin"],
-  weight: ["300", "400", "700", "900"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
+const font = "Merriweather, serif";
 
 const plans = [
   {
@@ -81,7 +75,12 @@ export function Pricing() {
   const [annual, setAnnual] = useState(false);
 
   return (
-    <section id="pricing" ref={ref} className={`py-24 bg-white ${merriweather.className}`}>
+    <section
+      id="pricing"
+      ref={ref}
+      className="py-24"
+      style={{ background: "var(--mk-surface-1)", fontFamily: font }}
+    >
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
         <motion.div
           initial={{ opacity: 0, y: 28 }}
@@ -92,7 +91,7 @@ export function Pricing() {
           {/* Section label */}
           <p
             className="text-xs uppercase tracking-widest mb-3"
-            style={{ fontWeight: 700, color: "#000000" }}
+            style={{ fontWeight: 700, color: "var(--mk-text-2)" }}
           >
             Pricing
           </p>
@@ -100,25 +99,20 @@ export function Pricing() {
           {/* Heading */}
           <h2
             style={{
-              fontSize: "clamp(1.8rem, 3.5vw, 2.5rem)",
-              fontWeight: 900,
-              color: "#000000",
-              lineHeight: 1.15,
+              fontSize:      "clamp(1.8rem, 3.5vw, 2.5rem)",
+              fontWeight:    900,
+              color:         "var(--mk-text-1)",
+              lineHeight:    1.15,
               letterSpacing: "-0.01em",
             }}
           >
             Simple,{" "}
-            <span
-              style={{
-                borderBottom: "3px solid #000000",
-                paddingBottom: "2px",
-              }}
-            >
+            <span style={{ borderBottom: "3px solid var(--mk-text-1)", paddingBottom: "2px" }}>
               Transparent Pricing
             </span>
           </h2>
 
-          <p className="mt-3 text-sm" style={{ fontWeight: 300, color: "#555555" }}>
+          <p className="mt-3 text-sm" style={{ fontWeight: 300, color: "var(--mk-text-2)" }}>
             Start with a 14-day free trial. No credit card required.
           </p>
         </motion.div>
@@ -132,7 +126,10 @@ export function Pricing() {
         >
           <span
             className="text-sm"
-            style={{ fontWeight: annual ? 400 : 700, color: annual ? "#999999" : "#000000" }}
+            style={{
+              fontWeight: annual ? 400 : 700,
+              color:      annual ? "var(--mk-text-3)" : "var(--mk-text-1)",
+            }}
           >
             Monthly
           </span>
@@ -140,26 +137,30 @@ export function Pricing() {
           <button
             onClick={() => setAnnual(!annual)}
             className="relative w-12 h-6 rounded-full transition-colors duration-300"
-            style={{ backgroundColor: annual ? "#000000" : "#CCCCCC" }}
+            style={{ background: annual ? "var(--mk-accent)" : "var(--mk-border-strong)" }}
           >
             <motion.div
               animate={{ x: annual ? 24 : 2 }}
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              className="absolute top-1 w-4 h-4 bg-white rounded-full shadow"
+              className="absolute top-1 w-4 h-4 rounded-full shadow"
+              style={{ background: "var(--mk-surface-1)" }}
             />
           </button>
 
           <span
             className="text-sm"
-            style={{ fontWeight: annual ? 700 : 400, color: annual ? "#000000" : "#999999" }}
+            style={{
+              fontWeight: annual ? 700 : 400,
+              color:      annual ? "var(--mk-text-1)" : "var(--mk-text-3)",
+            }}
           >
             Annual
             <span
               className="ml-2 text-xs px-2 py-0.5 rounded-full"
               style={{
-                backgroundColor: "#F0F0F0",
-                color: "#000000",
-                border: "1px solid #DDDDDD",
+                background:  "var(--mk-glass-bg)",
+                color:       "var(--mk-text-1)",
+                border:      "1px solid var(--mk-border)",
               }}
             >
               Save 20%
@@ -180,14 +181,14 @@ export function Pricing() {
               style={
                 plan.popular
                   ? {
-                      backgroundColor: "#000000",
-                      border: "1px solid #000000",
-                      boxShadow: "0 20px 40px rgba(0,0,0,0.18)",
+                      background: "var(--mk-btn-primary-bg)",
+                      border:     "1px solid var(--mk-btn-primary-bg)",
+                      boxShadow:  "var(--mk-shadow-lg)",
                     }
                   : {
-                      backgroundColor: "#FFFFFF",
-                      border: "1px solid #E0E0E0",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                      background: "var(--mk-surface-1)",
+                      border:     "1px solid var(--mk-border)",
+                      boxShadow:  "var(--mk-shadow-md)",
                     }
               }
             >
@@ -197,11 +198,11 @@ export function Pricing() {
                   <div
                     className="text-xs px-4 py-1 rounded-full flex items-center gap-1"
                     style={{
-                      backgroundColor: "#FFFFFF",
-                      color: "#000000",
+                      background: "var(--mk-surface-1)",
+                      color:      "var(--mk-text-1)",
                       fontWeight: 700,
-                      border: "1.5px solid #000000",
-                      boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
+                      border:     "1.5px solid var(--mk-border-strong)",
+                      boxShadow:  "var(--mk-shadow-md)",
                     }}
                   >
                     <Sparkles className="w-3 h-3" /> Most Popular
@@ -213,9 +214,9 @@ export function Pricing() {
               <div className="mb-6">
                 <h3
                   style={{
-                    fontSize: "1.15rem",
+                    fontSize:   "1.15rem",
                     fontWeight: 700,
-                    color: plan.popular ? "#FFFFFF" : "#000000",
+                    color:      plan.popular ? "var(--mk-btn-primary-text)" : "var(--mk-text-1)",
                   }}
                 >
                   {plan.name}
@@ -224,7 +225,9 @@ export function Pricing() {
                   className="text-sm mt-1"
                   style={{
                     fontWeight: 300,
-                    color: plan.popular ? "#AAAAAA" : "#666666",
+                    color:      plan.popular
+                      ? `color-mix(in srgb, var(--mk-btn-primary-text) 65%, transparent)`
+                      : "var(--mk-text-2)",
                   }}
                 >
                   {plan.desc}
@@ -237,10 +240,10 @@ export function Pricing() {
                   <div className="flex items-end gap-1">
                     <span
                       style={{
-                        fontSize: "2.75rem",
+                        fontSize:   "2.75rem",
                         fontWeight: 900,
                         lineHeight: 1,
-                        color: plan.popular ? "#FFFFFF" : "#000000",
+                        color:      plan.popular ? "var(--mk-btn-primary-text)" : "var(--mk-text-1)",
                       }}
                     >
                       ${annual ? plan.price.annual : plan.price.monthly}
@@ -249,7 +252,9 @@ export function Pricing() {
                       className="text-sm mb-1.5"
                       style={{
                         fontWeight: 300,
-                        color: plan.popular ? "#AAAAAA" : "#888888",
+                        color:      plan.popular
+                          ? `color-mix(in srgb, var(--mk-btn-primary-text) 55%, transparent)`
+                          : "var(--mk-text-2)",
                       }}
                     >
                       /month
@@ -258,9 +263,9 @@ export function Pricing() {
                 ) : (
                   <div
                     style={{
-                      fontSize: "2rem",
+                      fontSize:   "2rem",
                       fontWeight: 900,
-                      color: plan.popular ? "#FFFFFF" : "#000000",
+                      color:      plan.popular ? "var(--mk-btn-primary-text)" : "var(--mk-text-1)",
                     }}
                   >
                     Custom
@@ -276,15 +281,15 @@ export function Pricing() {
                   style={
                     plan.popular
                       ? {
-                          backgroundColor: "#FFFFFF",
-                          color: "#000000",
+                          background: "var(--mk-surface-1)",
+                          color:      "var(--mk-text-1)",
                           fontWeight: 700,
                         }
                       : {
-                          backgroundColor: "#000000",
-                          color: "#FFFFFF",
+                          background: "var(--mk-btn-primary-bg)",
+                          color:      "var(--mk-btn-primary-text)",
                           fontWeight: 700,
-                          border: "1.5px solid #000000",
+                          border:     "1.5px solid var(--mk-btn-primary-bg)",
                         }
                   }
                 >
@@ -300,12 +305,16 @@ export function Pricing() {
                     className="flex items-center gap-2.5 text-sm"
                     style={{
                       fontWeight: 400,
-                      color: plan.popular ? "#CCCCCC" : "#444444",
+                      color:      plan.popular
+                        ? `color-mix(in srgb, var(--mk-btn-primary-text) 75%, transparent)`
+                        : "var(--mk-text-2)",
                     }}
                   >
                     <Check
                       className="w-4 h-4 flex-shrink-0"
-                      style={{ color: plan.popular ? "#FFFFFF" : "#000000" }}
+                      style={{
+                        color: plan.popular ? "var(--mk-btn-primary-text)" : "var(--mk-accent)",
+                      }}
                     />
                     {f}
                   </li>

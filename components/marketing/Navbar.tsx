@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Sun, Moon } from "lucide-react";
 import Link from "next/link";
+import { useMarketingTheme } from "./ThemeProvider";
+import { ThemeToggle } from "./ThemeToggle";
 
+/* ─── menu overlay items — hash anchors preserved exactly ─────────────── */
 const menuLinks = [
   {
     label: "Home",
@@ -74,6 +76,7 @@ const menuLinks = [
 const DEFAULT_IMG =
   "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=900&q=80";
 
+/* Preload overlay images on client */
 if (typeof window !== "undefined") {
   [DEFAULT_IMG, ...menuLinks.map((l) => l.img)].forEach((src) => {
     const img = new Image();
@@ -81,6 +84,16 @@ if (typeof window !== "undefined") {
   });
 }
 
+/* ─── Desktop center nav links ────────────────────────────────────────── */
+const centerLinks = [
+  { label: "Modules",    href: "/#features"   },
+  { label: "Solutions",  href: "/#solutions"  },
+  { label: "Pricing",    href: "/#pricing"    },
+  { label: "About",      href: "/about"       },
+  { label: "Contact",    href: "/contact"     },
+];
+
+/* ─── Image crossfade panel (overlay right column) ────────────────────── */
 function ImageSlide({
   src,
   alt,
@@ -120,15 +133,20 @@ function ImageSlide({
         >
           <div className="px-7 pb-7">
             <motion.p
-              className="text-[10px] tracking-[0.25em] uppercase text-white/60 mb-[5px]"
+              className="text-[10px] tracking-[0.25em] uppercase mb-[5px]"
+              style={{ color: "rgba(255,255,255,0.6)" }}
               animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : 7 }}
               transition={{ duration: 0.35, delay: visible ? 0.18 : 0 }}
             >
               {caption}
             </motion.p>
             <motion.p
-              className="text-white font-light leading-snug"
-              style={{ fontSize: "clamp(1.1rem, 1.6vw, 1.5rem)", letterSpacing: "-0.01em" }}
+              className="font-light leading-snug"
+              style={{
+                fontSize: "clamp(1.1rem, 1.6vw, 1.5rem)",
+                letterSpacing: "-0.01em",
+                color: "#ffffff",
+              }}
               animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : 9 }}
               transition={{ duration: 0.4, delay: visible ? 0.22 : 0 }}
             >
@@ -141,30 +159,15 @@ function ImageSlide({
   );
 }
 
+/* ─── Navbar ──────────────────────────────────────────────────────────── */
 export function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const { theme, toggleTheme } = useMarketingTheme();
+  const isDark = theme === "dark";
+
+  const [isOpen, setIsOpen]   = useState(false);
   const [hovered, setHovered] = useState<number | null>(null);
-  const [dark, setDark] = useState(false);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    setDark(saved ? saved === "dark" : prefersDark);
-
-    const observer = new MutationObserver(() => {
-      setDark(document.documentElement.classList.contains("dark"));
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
+  /* scroll + escape + body-overflow */
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -176,62 +179,100 @@ export function Navbar() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const menuTextColor = (i: number) => {
-    if (dark) {
-      return hovered === null ? "#f0f0f0" : hovered === i ? "#ffffff" : "rgba(255,255,255,0.12)";
-    }
-    return hovered === null ? "#0a0a0a" : hovered === i ? "#000" : "rgba(0,0,0,0.15)";
-  };
-
   return (
     <>
-      {/* NAVBAR */}
+      {/* ═══ NAV BAR ══════════════════════════════════════════════════════ */}
       <motion.nav
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled
-            ? "bg-white/95 dark:bg-[#1c1c1c]/95 backdrop-blur-xl shadow-[0_1px_0_0_rgba(0,0,0,0.07)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.05)]"
-            : "bg-transparent"
-        }`}
+        className="fixed top-0 left-0 right-0 z-50"
+        style={{
+          background: "var(--mk-nav-bg)",
+          backdropFilter: "blur(20px) saturate(180%)",
+          WebkitBackdropFilter: "blur(20px) saturate(180%)",
+          borderBottom: "1px solid var(--mk-glass-border)",
+        }}
       >
         <div className="max-w-[1440px] mx-auto px-6 lg:px-16">
-          <div className="flex items-center justify-between h-[68px] lg:h-[76px]">
+          <div className="flex items-center justify-between h-[60px]">
 
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-8 h-8 bg-black dark:bg-white rounded-[10px] flex items-center justify-center transition-all duration-300 group-hover:rounded-full group-hover:scale-105">
-                <Zap className="w-[15px] h-[15px] text-white dark:text-black" fill="currentColor" strokeWidth={0} />
-              </div>
-              <span className="text-black dark:text-white font-semibold text-[17px] tracking-[-0.01em]">
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <span
+                className="nav-logo-dot w-2 h-2 rounded-full flex-shrink-0"
+                style={{
+                  background: "var(--mk-accent)",
+                  boxShadow: "0 0 8px var(--mk-accent-glow)",
+                }}
+              />
+              <span
+                className="tracking-tight"
+                style={{
+                  color: "var(--mk-text-1)",
+                  fontSize: 18,
+                  fontWeight: 700,
+                  letterSpacing: "-0.01em",
+                }}
+              >
                 SkiTech
               </span>
             </Link>
 
+            {/* Center links — desktop only */}
+            <div className="hidden lg:flex items-center gap-7">
+              {centerLinks.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  style={{ color: "var(--mk-text-2)", fontSize: 13, fontWeight: 400 }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.color = "var(--mk-text-1)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = "var(--mk-text-2)")
+                  }
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+
             {/* Right controls */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2.5">
+              <ThemeToggle />
+
               <Link
                 href="/auth/login"
-                className="hidden md:inline-flex items-center text-black/40 dark:text-white/60 hover:text-black dark:hover:text-white text-[13px] font-medium transition-colors duration-200"
-              >
-                Sign Up
-              </Link>
-              <span className="hidden md:block w-px h-3.5 bg-black/12 dark:bg-white/12" />
-
-              {/* Theme toggle */}
-              <button
-                onClick={() => {
-                  const next = !dark;
-                  setDark(next);
-                  document.documentElement.classList.toggle("dark", next);
-                  localStorage.setItem("theme", next ? "dark" : "light");
+                className="hidden md:inline-flex items-center px-4 py-1.5 rounded-full text-[13px]"
+                style={{
+                  color: "var(--mk-text-2)",
+                  border: "1px solid var(--mk-border)",
+                  fontWeight: 400,
                 }}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-black/10 dark:border-white/15 bg-white/60 dark:bg-white/5 text-neutral-500 dark:text-[#c0c0c0] hover:bg-black/5 dark:hover:bg-white/10 transition-all backdrop-blur"
-                title={dark ? "Switch to light mode" : "Switch to dark mode"}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "var(--mk-text-1)";
+                  e.currentTarget.style.borderColor = "var(--mk-border-strong)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "var(--mk-text-2)";
+                  e.currentTarget.style.borderColor = "var(--mk-border)";
+                }}
               >
-                {dark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-              </button>
+                Sign in
+              </Link>
+
+              <Link
+                href="/auth/login"
+                className="hidden md:inline-flex items-center gap-1 px-4 py-1.5 rounded-full text-[13px]"
+                style={{
+                  background: "var(--mk-btn-primary-bg)",
+                  color: "var(--mk-btn-primary-text)",
+                  fontWeight: 700,
+                }}
+              >
+                Get started <span className="ml-0.5">→</span>
+              </Link>
 
               {/* Menu button */}
               <motion.button
@@ -239,14 +280,23 @@ export function Navbar() {
                 whileTap={{ scale: 0.96 }}
                 onClick={() => setIsOpen(true)}
                 aria-label="Open menu"
-                className="group relative flex items-center gap-3 px-[18px] py-[9px] rounded-full bg-black dark:bg-white text-white dark:text-black overflow-hidden"
+                className="relative flex items-center gap-2.5 px-[18px] py-[9px] rounded-full overflow-hidden"
+                style={{
+                  background: "var(--mk-btn-primary-bg)",
+                  color: "var(--mk-btn-primary-text)",
+                }}
               >
-                <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out bg-gradient-to-r from-transparent via-white/10 dark:via-black/10 to-transparent" />
-                <span className="flex flex-col justify-center gap-[4.5px] w-[16px] relative z-10">
-                  <span className="block h-[1.5px] w-full bg-white dark:bg-black rounded-full" />
-                  <span className="block h-[1.5px] w-[10px] bg-white/60 dark:bg-black/60 rounded-full" />
+                <span className="flex flex-col justify-center gap-[4.5px] w-[16px]">
+                  <span
+                    className="block h-[1.5px] w-full rounded-full"
+                    style={{ background: "var(--mk-btn-primary-text)" }}
+                  />
+                  <span
+                    className="block h-[1.5px] w-[10px] rounded-full"
+                    style={{ background: "var(--mk-btn-primary-text)", opacity: 0.6 }}
+                  />
                 </span>
-                <span className="text-[10.5px] font-semibold tracking-[0.2em] uppercase relative z-10">
+                <span className="text-[10.5px] font-semibold tracking-[0.2em] uppercase">
                   Menu
                 </span>
               </motion.button>
@@ -255,7 +305,7 @@ export function Navbar() {
         </div>
       </motion.nav>
 
-      {/* FULLSCREEN MENU */}
+      {/* ═══ FULLSCREEN OVERLAY — always light ════════════════════════════ */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -264,83 +314,146 @@ export function Navbar() {
             animate={{ clipPath: "inset(0 0 0% 0)" }}
             exit={{ clipPath: "inset(0 0 100% 0)" }}
             transition={{ duration: 0.6, ease: [0.76, 0, 0.24, 1] }}
-            className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
-            style={{ backgroundColor: dark ? "#111111" : "#ffffff" }}
+            className="fixed inset-0 z-[100] marketing-menu-overlay flex flex-col overflow-hidden"
+            style={{ backgroundColor: "var(--menu-bg)" }}
           >
-            {/* TOP BAR */}
+            {/* ── Top bar ── */}
             <div className="flex items-center justify-between px-8 md:px-16 pt-6 pb-4 shrink-0">
+              {/* Logo — always dark on light overlay */}
               <Link
                 href="/"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 group"
+                className="flex items-center gap-2.5"
               >
-                <div className={`w-7 h-7 rounded-[8px] flex items-center justify-center transition-all duration-300 group-hover:rounded-full ${dark ? "bg-white" : "bg-black"}`}>
-                  <Zap className={`w-[13px] h-[13px] ${dark ? "text-black" : "text-white"}`} fill="currentColor" strokeWidth={0} />
-                </div>
-                <span className={`font-semibold text-[15px] ${dark ? "text-white" : "text-black"}`}>
+                <span
+                  className="nav-logo-dot w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ background: "var(--menu-text)" }}
+                />
+                <span
+                  style={{ fontWeight: 700, fontSize: 15, color: "var(--menu-text)" }}
+                >
                   SkiTech
                 </span>
               </Link>
 
               <div className="flex items-center gap-3">
-                {/* Theme toggle inside menu */}
+                {/* Theme toggle — light-adapted for always-light overlay */}
                 <button
-                  onClick={() => {
-                    const next = !dark;
-                    setDark(next);
-                    document.documentElement.classList.toggle("dark", next);
-                    localStorage.setItem("theme", next ? "dark" : "light");
+                  onClick={toggleTheme}
+                  aria-label={
+                    isDark ? "Switch to light mode" : "Switch to dark mode"
+                  }
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+                  style={{
+                    background: "rgba(0,0,0,0.05)",
+                    border: "1px solid var(--menu-border)",
+                    color: "var(--menu-text-muted)",
                   }}
-                  className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all ${
-                    dark ? "border-white/15 bg-white/5 text-[#c0c0c0] hover:bg-white/10" : "border-black/10 bg-black/5 text-neutral-500 hover:bg-black/10"
-                  }`}
-                  title={dark ? "Switch to light mode" : "Switch to dark mode"}
                 >
-                  {dark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                  <span className="text-[13px] leading-none">
+                    {isDark ? "☀" : "🌙"}
+                  </span>
+                  <div
+                    className="relative flex-shrink-0"
+                    style={{
+                      width: 32,
+                      height: 18,
+                      borderRadius: 9,
+                      background: "rgba(0,0,0,0.08)",
+                      border: "1px solid var(--menu-border)",
+                    }}
+                  >
+                    <div
+                      className="theme-toggle-thumb absolute top-[3px]"
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        background: "#4f46e5",
+                        boxShadow: "0 0 6px rgba(79,70,229,0.2)",
+                        transform: isDark
+                          ? "translateX(3px)"
+                          : "translateX(17px)",
+                        transition:
+                          "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                      }}
+                    />
+                  </div>
+                  <span
+                    className="hidden sm:block"
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    {isDark ? "Dark" : "Light"}
+                  </span>
                 </button>
 
-              <motion.button
-                onClick={() => setIsOpen(false)}
-                whileTap={{ scale: 0.95 }}
-                className={`group flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200 ${
-                  dark ? "border-white/12 hover:border-white/30" : "border-black/12 hover:border-black/30"
-                }`}
-              >
-                <span className="relative w-3 h-3 flex items-center justify-center">
-                  <span className={`block w-3 h-[1.5px] rotate-45 absolute transition-colors duration-200 ${dark ? "bg-white/40 group-hover:bg-white" : "bg-black/40 group-hover:bg-black"}`} />
-                  <span className={`block w-3 h-[1.5px] -rotate-45 absolute transition-colors duration-200 ${dark ? "bg-white/40 group-hover:bg-white" : "bg-black/40 group-hover:bg-black"}`} />
-                </span>
-                <span className={`text-[10px] font-semibold tracking-[0.2em] uppercase transition-colors duration-200 ${dark ? "text-white/40 group-hover:text-white" : "text-black/40 group-hover:text-black"}`}>
-                  Close
-                </span>
-              </motion.button>
+                {/* Close button */}
+                <motion.button
+                  onClick={() => setIsOpen(false)}
+                  whileTap={{ scale: 0.95 }}
+                  className="group flex items-center gap-2 px-4 py-2 rounded-full"
+                  style={{
+                    border: "1px solid var(--menu-border)",
+                    color: "var(--menu-text-muted)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(10,10,10,0.25)";
+                    e.currentTarget.style.color = "var(--menu-text)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "var(--menu-border)";
+                    e.currentTarget.style.color = "var(--menu-text-muted)";
+                  }}
+                >
+                  <span className="relative w-3 h-3 flex items-center justify-center">
+                    <span
+                      className="block w-3 h-[1.5px] rotate-45 absolute"
+                      style={{ background: "currentColor" }}
+                    />
+                    <span
+                      className="block w-3 h-[1.5px] -rotate-45 absolute"
+                      style={{ background: "currentColor" }}
+                    />
+                  </span>
+                  <span className="text-[10px] font-semibold tracking-[0.2em] uppercase">
+                    Close
+                  </span>
+                </motion.button>
               </div>
             </div>
 
-            {/* top rule */}
+            {/* Top rule */}
             <motion.div
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
-              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
-              className={`h-px mx-8 md:mx-16 origin-left shrink-0 ${dark ? "bg-white/8" : "bg-black/8"}`}
+              transition={{
+                duration: 0.55,
+                ease: [0.22, 1, 0.36, 1],
+                delay: 0.08,
+              }}
+              className="h-px mx-8 md:mx-16 origin-left shrink-0"
+              style={{ background: "var(--menu-border)" }}
             />
 
-            {/* BODY */}
+            {/* ── Body ── */}
             <div className="flex-1 flex min-h-0 overflow-hidden">
-
-              {/* LEFT — links */}
+              {/* LEFT — nav list */}
               <div className="flex-1 flex items-center min-h-0 overflow-hidden">
                 <div className="w-full px-8 md:px-16">
                   {menuLinks.map((link, i) => (
                     <div key={link.label} className="relative">
+                      {/* Hover row highlight */}
                       <motion.div
                         className="absolute inset-y-0 -inset-x-8 md:-inset-x-16 pointer-events-none"
                         animate={{ opacity: hovered === i ? 1 : 0 }}
                         transition={{ duration: 0.18 }}
                         style={{
-                          background: dark
-                            ? "linear-gradient(90deg, rgba(255,255,255,0.04) 0%, transparent 80%)"
-                            : "linear-gradient(90deg, rgba(0,0,0,0.025) 0%, transparent 80%)",
+                          background:
+                            "linear-gradient(90deg, rgba(0,0,0,0.035) 0%, transparent 80%)",
                         }}
                       />
 
@@ -351,36 +464,39 @@ export function Navbar() {
                         onMouseLeave={() => setHovered(null)}
                         className="group flex items-center gap-5 md:gap-8 py-[10px] md:py-[12px] relative"
                       >
-                        {/* ordinal + tag */}
+                        {/* Number + tag */}
                         <div className="flex flex-col items-end w-10 md:w-20 shrink-0">
                           <motion.span
                             animate={{ opacity: hovered === i ? 0.7 : 0.2 }}
                             transition={{ duration: 0.2 }}
-                            className={`text-[10px] tracking-[0.25em] tabular-nums ${dark ? "text-white" : "text-black"}`}
+                            className="text-[10px] tracking-[0.25em] tabular-nums"
+                            style={{ color: "var(--menu-text)" }}
                           >
                             {link.number}
                           </motion.span>
                           <motion.span
                             animate={{ opacity: hovered === i ? 0.4 : 0 }}
                             transition={{ duration: 0.2 }}
-                            className={`hidden md:block text-[9px] tracking-widest uppercase mt-0.5 whitespace-nowrap ${dark ? "text-white/50" : "text-black/50"}`}
+                            className="hidden md:block text-[9px] tracking-widest uppercase mt-0.5 whitespace-nowrap"
+                            style={{ color: "var(--menu-text-muted)" }}
                           >
                             {link.tag}
                           </motion.span>
                         </div>
 
-                        {/* vertical divider */}
+                        {/* Vertical divider */}
                         <motion.div
                           className="hidden md:block w-px self-stretch"
                           animate={{
-                            background: dark
-                              ? hovered === i ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.07)"
-                              : hovered === i ? "rgba(0,0,0,0.18)" : "rgba(0,0,0,0.07)",
+                            background:
+                              hovered === i
+                                ? "rgba(10,10,10,0.18)"
+                                : "rgba(10,10,10,0.07)",
                           }}
                           transition={{ duration: 0.2 }}
                         />
 
-                        {/* label */}
+                        {/* Label */}
                         <motion.span
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
@@ -389,30 +505,41 @@ export function Navbar() {
                             duration: 0.55,
                             ease: [0.22, 1, 0.36, 1],
                           }}
-                          className="flex-1 leading-none font-light transition-all duration-300"
+                          className="flex-1 leading-none font-light"
                           style={{
                             fontSize: "clamp(1.65rem, 3.8vw, 3.4rem)",
                             letterSpacing: "-0.02em",
-                            color: menuTextColor(i),
+                            color:
+                              hovered === null
+                                ? "var(--menu-text)"
+                                : hovered === i
+                                ? "#000000"
+                                : "rgba(10,10,10,0.15)",
                           }}
                         >
                           {link.label}
                         </motion.span>
 
-                        {/* arrow circle */}
+                        {/* Arrow circle */}
                         <motion.div
-                          className={`shrink-0 w-9 h-9 rounded-full border flex items-center justify-center ${dark ? "border-white/20" : "border-black/20"}`}
+                          className="shrink-0 w-9 h-9 rounded-full border flex items-center justify-center"
+                          style={{ borderColor: "rgba(10,10,10,0.2)" }}
                           animate={{
                             opacity: hovered === i ? 1 : 0,
                             scale: hovered === i ? 1 : 0.6,
                           }}
                           transition={{ duration: 0.2 }}
                         >
-                          <span className={`text-base leading-none ${dark ? "text-white/50" : "text-black/50"}`}>→</span>
+                          <span
+                            className="text-base leading-none"
+                            style={{ color: "rgba(10,10,10,0.5)" }}
+                          >
+                            →
+                          </span>
                         </motion.div>
                       </Link>
 
-                      {/* item rule */}
+                      {/* Item rule */}
                       <motion.div
                         initial={{ scaleX: 0 }}
                         animate={{ scaleX: 1 }}
@@ -421,7 +548,8 @@ export function Navbar() {
                           duration: 0.45,
                           ease: [0.22, 1, 0.36, 1],
                         }}
-                        className={`h-px origin-left ${dark ? "bg-white/7" : "bg-black/7"}`}
+                        className="h-px origin-left"
+                        style={{ background: "var(--menu-border)" }}
                       />
                     </div>
                   ))}
@@ -433,11 +561,26 @@ export function Navbar() {
                 initial={{ opacity: 0, x: 40 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 40 }}
-                transition={{ duration: 0.6, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                transition={{
+                  duration: 0.6,
+                  delay: 0.18,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
                 className="hidden lg:flex w-[38%] shrink-0 items-center justify-center py-8 pr-12"
               >
-                <div className="relative w-full h-full rounded-2xl overflow-hidden bg-neutral-100 shadow-[0_24px_64px_rgba(0,0,0,0.10),0_4px_16px_rgba(0,0,0,0.06)]">
-                  <ImageSlide src={DEFAULT_IMG} alt="SkiTech" visible={hovered === null} />
+                <div
+                  className="relative w-full h-full rounded-2xl overflow-hidden"
+                  style={{
+                    background: "#e0dfd9",
+                    boxShadow:
+                      "0 24px 64px rgba(0,0,0,0.10), 0 4px 16px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  <ImageSlide
+                    src={DEFAULT_IMG}
+                    alt="SkiTech"
+                    visible={hovered === null}
+                  />
                   {menuLinks.map((link, i) => (
                     <ImageSlide
                       key={link.label}
@@ -448,13 +591,27 @@ export function Navbar() {
                       sub={link.sub}
                     />
                   ))}
+
+                  {/* SkiTech badge */}
                   <motion.div
-                    className="absolute top-5 right-5 z-10 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25"
+                    className="absolute top-5 right-5 z-10 px-3 py-1.5 rounded-full"
+                    style={{
+                      background: "rgba(255,255,255,0.85)",
+                      backdropFilter: "blur(8px)",
+                      border: "1px solid rgba(255,255,255,0.4)",
+                    }}
                     initial={{ opacity: 0, scale: 0.85 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.45, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    transition={{
+                      delay: 0.45,
+                      duration: 0.4,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
                   >
-                    <span className="text-white/80 text-[9px] tracking-[0.2em] uppercase font-semibold">
+                    <span
+                      className="text-[9px] tracking-[0.2em] uppercase font-bold"
+                      style={{ color: "#0a0a0a" }}
+                    >
                       SkiTech
                     </span>
                   </motion.div>
@@ -462,16 +619,22 @@ export function Navbar() {
               </motion.div>
             </div>
 
-            {/* BOTTOM BAR */}
+            {/* ── Bottom bar ── */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.55, duration: 0.35 }}
               className="shrink-0"
             >
-              <div className={`h-px mx-8 md:mx-16 ${dark ? "bg-white/7" : "bg-black/7"}`} />
+              <div
+                className="h-px mx-8 md:mx-16"
+                style={{ background: "var(--menu-border)" }}
+              />
               <div className="flex items-center justify-between px-8 md:px-16 py-4">
-                <span className={`text-[10px] tracking-[0.2em] uppercase ${dark ? "text-white/25" : "text-black/25"}`}>
+                <span
+                  className="text-[10px] tracking-[0.2em] uppercase"
+                  style={{ color: "var(--menu-text-muted)" }}
+                >
                   © 2026 SkiTech
                 </span>
                 <div className="flex items-center gap-5">
@@ -481,7 +644,14 @@ export function Navbar() {
                       href="#"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`text-[10px] tracking-[0.18em] uppercase transition-colors duration-200 ${dark ? "text-white/25 hover:text-white/60" : "text-black/25 hover:text-black/60"}`}
+                      className="text-[10px] tracking-[0.18em] uppercase"
+                      style={{ color: "var(--menu-text-muted)" }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.color = "var(--menu-text)")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.color = "var(--menu-text-muted)")
+                      }
                     >
                       {s}
                     </a>

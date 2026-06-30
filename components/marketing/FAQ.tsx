@@ -33,7 +33,15 @@ const faqs = [
   },
 ];
 
-function FAQItem({ faq, index, isPageInView }: { faq: (typeof faqs)[0]; index: number; isPageInView: boolean }) {
+function FAQItem({
+  faq,
+  index,
+  isPageInView,
+}: {
+  faq: (typeof faqs)[0];
+  index: number;
+  isPageInView: boolean;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -48,11 +56,12 @@ function FAQItem({ faq, index, isPageInView }: { faq: (typeof faqs)[0]; index: n
       }}
     >
       <div
-        className={`border rounded-2xl overflow-hidden transition-[border-color,box-shadow] duration-400 ${
-          open
-            ? "border-black/20 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.10)]"
-            : "border-black/[0.07] hover:border-black/[0.14]"
-        } bg-white`}
+        className="rounded-2xl overflow-hidden transition-[border-color,box-shadow] duration-400"
+        style={{
+          background:   "var(--mk-surface-1)",
+          border:       `1px solid ${open ? "var(--mk-border-strong)" : "var(--mk-border)"}`,
+          boxShadow:    open ? "var(--mk-shadow-md)" : "none",
+        }}
       >
         <button
           onClick={() => setOpen(!open)}
@@ -60,44 +69,46 @@ function FAQItem({ faq, index, isPageInView }: { faq: (typeof faqs)[0]; index: n
           aria-expanded={open}
         >
           <span
-            className="text-black pr-5 leading-snug transition-opacity duration-300"
+            className="pr-5 leading-snug transition-opacity duration-300"
             style={{
-              fontSize: "0.93rem",
+              fontSize:   "0.93rem",
               fontWeight: open ? 800 : 700,
               fontFamily: font,
+              color:      "var(--mk-text-1)",
             }}
           >
             {faq.q}
           </span>
 
-          {/* Icon toggles between + and — */}
+          {/* Toggle icon */}
           <div
-            className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 transition-all duration-400 ${
+            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all duration-400"
+            style={
               open
-                ? "bg-black border-transparent"
-                : "border-black/[0.09] group-hover:border-black/20"
-            }`}
+                ? { background: "var(--mk-btn-primary-bg)", border: "1px solid transparent" }
+                : { background: "transparent",              border: "1px solid var(--mk-border)" }
+            }
           >
             <AnimatePresence mode="wait" initial={false}>
               {open ? (
                 <motion.div
                   key="minus"
                   initial={{ opacity: 0, rotate: -90, scale: 0.7 }}
-                  animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                  exit={{ opacity: 0, rotate: 90, scale: 0.7 }}
+                  animate={{ opacity: 1, rotate: 0,   scale: 1   }}
+                  exit={{ opacity: 0,   rotate: 90,   scale: 0.7 }}
                   transition={{ duration: 0.22, ease: "easeOut" }}
                 >
-                  <Minus className="w-3.5 h-3.5 text-white" />
+                  <Minus className="w-3.5 h-3.5" style={{ color: "var(--mk-btn-primary-text)" }} />
                 </motion.div>
               ) : (
                 <motion.div
                   key="plus"
-                  initial={{ opacity: 0, rotate: 90, scale: 0.7 }}
-                  animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                  exit={{ opacity: 0, rotate: -90, scale: 0.7 }}
+                  initial={{ opacity: 0, rotate: 90,  scale: 0.7 }}
+                  animate={{ opacity: 1, rotate: 0,   scale: 1   }}
+                  exit={{ opacity: 0,   rotate: -90,  scale: 0.7 }}
                   transition={{ duration: 0.22, ease: "easeOut" }}
                 >
-                  <Plus className="w-3.5 h-3.5 text-black/50" />
+                  <Plus className="w-3.5 h-3.5" style={{ color: "var(--mk-text-2)" }} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -112,17 +123,20 @@ function FAQItem({ faq, index, isPageInView }: { faq: (typeof faqs)[0]; index: n
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{
-                height: { duration: 0.38, ease: [0.16, 1, 0.3, 1] },
+                height:  { duration: 0.38, ease: [0.16, 1, 0.3, 1] },
                 opacity: { duration: 0.28, ease: "easeOut" },
               }}
               className="overflow-hidden"
             >
               <div className="px-7 pb-6 pt-0">
-                {/* Hairline separator */}
-                <div className="h-px bg-black/[0.06] mb-5" />
+                <div className="h-px mb-5" style={{ background: "var(--mk-border)" }} />
                 <p
-                  className="text-black/55 leading-[1.9]"
-                  style={{ fontSize: "0.875rem", fontFamily: font }}
+                  className="leading-[1.9]"
+                  style={{
+                    fontSize:   "0.875rem",
+                    fontFamily: font,
+                    color:      "var(--mk-text-2)",
+                  }}
                 >
                   {faq.a}
                 </p>
@@ -143,8 +157,8 @@ export function FAQ() {
     <section
       id="faqs"
       ref={ref}
-      className="py-28 bg-[#F7F8FA]"
-      style={{ fontFamily: font }}
+      className="py-28"
+      style={{ background: "var(--mk-surface-2)", fontFamily: font }}
     >
       <div className="max-w-2xl mx-auto px-6 lg:px-8">
 
@@ -154,8 +168,8 @@ export function FAQ() {
             initial={{ opacity: 0, y: 14 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, ease: "easeOut" }}
-            className="text-black/60 text-[10.5px] uppercase tracking-[0.22em] mb-4"
-            style={{ fontWeight: 700, fontFamily: font }}
+            className="text-[10.5px] uppercase tracking-[0.22em] mb-4"
+            style={{ fontWeight: 700, fontFamily: font, color: "var(--mk-text-2)" }}
           >
             FAQ
           </motion.p>
@@ -165,12 +179,12 @@ export function FAQ() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.09, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              fontSize: "clamp(2rem, 4vw, 2.8rem)",
-              fontWeight: 800,
-              color: "#000",
-              lineHeight: 1.12,
+              fontSize:      "clamp(2rem, 4vw, 2.8rem)",
+              fontWeight:    800,
+              color:         "var(--mk-text-1)",
+              lineHeight:    1.12,
               letterSpacing: "-0.02em",
-              fontFamily: font,
+              fontFamily:    font,
             }}
           >
             Frequently Asked{" "}
@@ -181,8 +195,8 @@ export function FAQ() {
             initial={{ opacity: 0, y: 14 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, delay: 0.2, ease: "easeOut" }}
-            className="text-black/40 mt-5 max-w-sm mx-auto leading-relaxed"
-            style={{ fontSize: "0.88rem", fontFamily: font }}
+            className="mt-5 max-w-sm mx-auto leading-relaxed"
+            style={{ fontSize: "0.88rem", fontFamily: font, color: "var(--mk-text-3)" }}
           >
             Everything you need to know before you get started.
           </motion.p>
@@ -191,7 +205,8 @@ export function FAQ() {
             initial={{ scaleX: 0, opacity: 0 }}
             animate={isInView ? { scaleX: 1, opacity: 1 } : {}}
             transition={{ duration: 0.9, delay: 0.32, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-7 mx-auto h-px w-14 bg-black origin-center"
+            className="mt-7 mx-auto h-px w-14 origin-center"
+            style={{ background: "var(--mk-text-1)" }}
           />
         </div>
 

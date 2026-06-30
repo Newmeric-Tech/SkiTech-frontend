@@ -85,7 +85,7 @@ export default function DocumentOverviewPage() {
     const ROLE_DISPLAY: Record<string, string> = {
       owner: "Owner", manager: "Manager", staff: "Staff", superadmin: "Super Admin",
     };
-    const stored = localStorage.getItem("skitech_role");
+    const stored = sessionStorage.getItem("skitech_role");
     if (stored) setRole(ROLE_DISPLAY[stored.toLowerCase()] ?? stored);
   }, []);
 

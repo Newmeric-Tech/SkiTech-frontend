@@ -80,7 +80,7 @@ export function DocumentTable({
       staff:      "Staff",
       superadmin: "Super Admin",
     };
-    const stored = localStorage.getItem("skitech_role");
+    const stored = sessionStorage.getItem("skitech_role");
     if (stored) {
       setRole(ROLE_DISPLAY[stored.toLowerCase()] ?? stored);
     } else if (propRole) {
