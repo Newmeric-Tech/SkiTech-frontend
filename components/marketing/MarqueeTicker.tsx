@@ -3,14 +3,16 @@
 import { useState } from 'react'
 
 const items = [
-  { dot: 'green',  label: 'Properties Managed', value: '50+'      },
-  { dot: 'accent', label: 'Active Users',        value: '1,200+'   },
-  { dot: 'green',  label: 'Uptime SLA',          value: '99.9%'    },
-  { dot: 'amber',  label: 'User Rating',         value: '4.8 ★'   },
-  { dot: 'accent', label: 'SOPs Distributed',    value: '340+'     },
-  { dot: 'amber',  label: 'KRAs Tracked Daily',  value: '2,800+'   },
-  { dot: 'green',  label: 'Avg Setup Time',      value: '< 1 hr'   },
-  { dot: 'accent', label: 'Data Security',       value: 'AES-256'  },
+  { dot: 'green',  label: 'Room 204 checked in',          value: 'Just now'       },
+  { dot: 'amber',  label: 'Low stock: Minibar',           value: '8 units left'   },
+  { dot: 'accent', label: 'SOP Compliance',               value: '94%'            },
+  { dot: 'green',  label: '12 staff on shift',            value: 'Property A'     },
+  { dot: 'accent', label: 'KRA submissions due',          value: '6 pending'      },
+  { dot: 'green',  label: 'Revenue this month',           value: '₹2.4L'          },
+  { dot: 'amber',  label: 'HVAC maintenance',             value: 'Assigned'       },
+  { dot: 'green',  label: 'Weekly schedule published',    value: 'Property B'     },
+  { dot: 'accent', label: 'Occupancy rate',               value: '78%'            },
+  { dot: 'green',  label: 'New SOP version approved',     value: 'Housekeeping'   },
 ]
 
 /* Duplicated for seamless loop */
@@ -58,7 +60,7 @@ export function MarqueeTicker() {
       <div
         className="flex items-center h-full"
         style={{
-          animation: `mk-marquee 38s linear infinite`,
+          animation: `mk-marquee 28s linear infinite`,
           animationPlayState: paused ? 'paused' : 'running',
           width: 'max-content',
         }}

@@ -26,6 +26,43 @@ export function CTA() {
         }}
       />
 
+      {/* Indigo glow — echoes the primary button accent */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(99,102,241,0.12) 0%, transparent 70%)",
+        }}
+      />
+
+      {/* Orbit rings — concentric ellipses rotating at different speeds */}
+      {[
+        { w: 260, h: 96,  duration: 20, dir:  1 },
+        { w: 400, h: 148, duration: 32, dir: -1 },
+        { w: 540, h: 196, duration: 46, dir:  1 },
+      ].map((ring, i) => (
+        <motion.div
+          key={i}
+          className="absolute pointer-events-none rounded-full"
+          style={{
+            width:  ring.w,
+            height: ring.h,
+            left:   "50%",
+            top:    "50%",
+            x:      "-50%",
+            y:      "-50%",
+            border: "1px solid var(--mk-border)",
+            opacity: 0.6,
+          }}
+          animate={{ rotate: ring.dir * 360 }}
+          transition={{
+            duration: ring.duration,
+            repeat:   Infinity,
+            ease:     "linear",
+          }}
+        />
+      ))}
+
       {/* Large ghost "SkiTech" text */}
       <div
         className="absolute inset-0 flex items-center justify-center select-none pointer-events-none overflow-hidden"

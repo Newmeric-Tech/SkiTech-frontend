@@ -53,7 +53,16 @@ export function Testimonials() {
         }}
       />
 
-      {/* Ambient glows */}
+      {/* Centered radial glow — gives glass cards a visible backdrop to blur against */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 30%, rgba(99,102,241,0.08) 0%, transparent 62%)",
+        }}
+      />
+
+      {/* Ambient corner glows */}
       <div
         className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full blur-[120px] pointer-events-none"
         style={{ background: "var(--mk-accent-soft)" }}

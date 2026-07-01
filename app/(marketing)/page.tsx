@@ -3,6 +3,7 @@ import { MarqueeTicker } from "@/components/marketing/MarqueeTicker";
 import { Stats } from "@/components/marketing/Stats";
 import AboutUs from "@/components/marketing/AboutUs";
 import { Features } from "@/components/marketing/Features";
+import { HowItWorks } from "@/components/marketing/HowItWorks";
 import { Pricing } from "@/components/marketing/Pricing";
 import { Testimonials } from "@/components/marketing/Testimonials";
 import { FAQ } from "@/components/marketing/FAQ";
@@ -14,6 +15,7 @@ export default function Home() {
       <Hero />
       <MarqueeTicker />
       <Features />
+      <HowItWorks />
       <Stats />
       <AboutUs />
       <Pricing />
