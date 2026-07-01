@@ -356,6 +356,9 @@ html.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important; }
   --mk-radius-md: 10px;
   --mk-radius-lg: 14px;
   --mk-radius-xl: 20px;
+  background: var(--mk-bg);
+  color: var(--mk-text-1);
+  min-height: 100vh;
 }
 
 /* Menu overlay is always light regardless of page theme */
