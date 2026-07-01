@@ -10,50 +10,56 @@ export function ThemeToggle() {
     <button
       onClick={toggleTheme}
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="flex items-center gap-2 px-3 py-1.5 rounded-full"
       style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
         background: 'var(--mk-glass-bg)',
         border: '1px solid var(--mk-border-strong)',
+        borderRadius: 999,
+        padding: '5px 10px',
+        cursor: 'pointer',
         color: 'var(--mk-text-2)',
+        fontFamily: 'inherit',
+        outline: 'none',
       }}
     >
-      <span className="text-[13px] leading-none">{isDark ? '☀' : '🌙'}</span>
+      {/* Icon — variation selector U+FE0F forces emoji rendering (without it ☀ renders as * glyph) */}
+      <span style={{ fontSize: 13, lineHeight: 1 }}>
+        {isDark ? '☀️' : '🌙'}
+      </span>
 
-      {/* Pill track */}
-      <div
-        className="relative flex-shrink-0"
+      {/* Pill track — fully inline so no Tailwind purge risk */}
+      <span
         style={{
+          position: 'relative',
+          display: 'inline-block',
           width: 32,
           height: 18,
           borderRadius: 9,
           background: 'var(--mk-surface-3)',
           border: '1px solid var(--mk-border-strong)',
+          flexShrink: 0,
         }}
       >
-        {/* Sliding thumb — excluded from global transition via .theme-toggle-thumb */}
-        <div
-          className="theme-toggle-thumb absolute top-[3px]"
+        {/* Thumb — no theme-toggle-thumb class so globals.css transition:none !important doesn't kill the slide */}
+        <span
           style={{
+            position: 'absolute',
+            top: 3,
+            left: isDark ? 3 : 17,
             width: 12,
             height: 12,
             borderRadius: '50%',
             background: 'var(--mk-accent)',
             boxShadow: '0 0 6px var(--mk-accent-glow)',
-            transform: isDark ? 'translateX(3px)' : 'translateX(17px)',
-            transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            transition: 'left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}
         />
-      </div>
+      </span>
 
-      {/* Label — hidden on small screens */}
-      <span
-        className="hidden sm:block text-[11px]"
-        style={{
-          fontWeight: 600,
-          letterSpacing: '0.04em',
-          color: 'var(--mk-text-2)',
-        }}
-      >
+      {/* Label */}
+      <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.04em' }}>
         {isDark ? 'Light' : 'Dark'}
       </span>
     </button>
