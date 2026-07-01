@@ -1,19 +1,25 @@
 'use client'
 
-import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react'
+import {
+  createContext, useContext, useEffect,
+  useState, useCallback
+} from 'react'
 
 type Theme = 'dark' | 'light'
-
 const STORAGE_KEY = 'skitech-marketing-theme'
 
 interface ThemeContextValue {
   theme: Theme
   toggleTheme: () => void
+  isMenuOpen: boolean
+  setMenuOpen: (open: boolean) => void
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
   theme: 'dark',
   toggleTheme: () => {},
+  isMenuOpen: false,
+  setMenuOpen: () => {},
 })
 
 export function MarketingThemeProvider({
@@ -22,23 +28,19 @@ export function MarketingThemeProvider({
   children: React.ReactNode
 }) {
   const [theme, setTheme] = useState<Theme>('dark')
-  const divRef = useRef<HTMLDivElement>(null)
+  const [isMenuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as Theme | null
     const osDark = window.matchMedia('(prefers-color-scheme: dark)').matches
     const initial: Theme = saved ?? (osDark ? 'dark' : 'light')
     setTheme(initial)
-    // Set on the div — primary mechanism, immune to next-themes' <html> attribute
-    if (divRef.current) divRef.current.setAttribute('data-theme', initial)
-    // Also set on <html> for the [data-theme] .marketing-page selector
     document.documentElement.setAttribute('data-theme', initial)
   }, [])
 
   const toggleTheme = useCallback(() => {
     setTheme(prev => {
       const next: Theme = prev === 'dark' ? 'light' : 'dark'
-      if (divRef.current) divRef.current.setAttribute('data-theme', next)
       document.documentElement.setAttribute('data-theme', next)
       localStorage.setItem(STORAGE_KEY, next)
       return next
@@ -46,13 +48,8 @@ export function MarketingThemeProvider({
   }, [])
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <div
-        ref={divRef}
-        className="marketing-page font-merriweather"
-        data-theme={theme}
-        suppressHydrationWarning
-      >
+    <ThemeContext.Provider value={{ theme, toggleTheme, isMenuOpen, setMenuOpen }}>
+      <div className="marketing-page font-merriweather" suppressHydrationWarning>
         {children}
       </div>
     </ThemeContext.Provider>

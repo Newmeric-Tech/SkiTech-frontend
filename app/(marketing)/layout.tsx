@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/marketing/Navbar";
+import { MenuOverlay } from "@/components/marketing/MenuOverlay";
 import { Footer } from "@/components/marketing/Footer";
 import { MarketingThemeProvider } from "@/components/marketing/ThemeProvider";
 
@@ -10,6 +11,7 @@ export default function MarketingLayout({
   return (
     <MarketingThemeProvider>
       <Navbar />
+      <MenuOverlay />
       <main className="flex-1">{children}</main>
       <Footer />
 

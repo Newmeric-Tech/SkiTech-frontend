@@ -307,9 +307,9 @@ html[data-theme="dark"] {
   --mk-text-3:           rgba(255,255,255,0.35);
   --mk-success:          #22c55e;
   --mk-warning:          #f59e0b;
-  --mk-glass-bg:         rgba(255,255,255,0.04);
-  --mk-glass-hover:      rgba(255,255,255,0.07);
-  --mk-glass-border:     rgba(255,255,255,0.10);
+  --mk-glass-bg:         rgba(255,255,255,0.07);
+  --mk-glass-hover:      rgba(255,255,255,0.10);
+  --mk-glass-border:     rgba(255,255,255,0.14);
   --mk-nav-bg:           rgba(10,10,10,0.75);
   --mk-grid-line:        rgba(255,255,255,0.025);
   --mk-hero-glow:        rgba(99,102,241,0.18);
@@ -483,9 +483,13 @@ html[data-theme="light"] {
 .marketing-page .typed-cursor,
 .marketing-page .nav-logo-dot,
 #cursor-glow,
-#cursor-dot,
-#cursor-ring {
+#cursor-dot {
   transition: none !important;
+}
+
+/* cursor-ring gets size+border transitions for hover expand — nothing else */
+#cursor-ring {
+  transition: width 0.15s ease, height 0.15s ease, border-color 0.15s ease !important;
 }
 
 /* ════════════════════════════════════════
