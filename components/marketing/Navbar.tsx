@@ -339,7 +339,7 @@ export function Navbar() {
               <div className="flex items-center gap-3">
                 {/* Theme toggle — light-adapted for always-light overlay */}
                 <button
-                  onClick={toggleTheme}
+                  onClick={() => { toggleTheme(); setIsOpen(false); }}
                   aria-label={
                     isDark ? "Switch to light mode" : "Switch to dark mode"
                   }
