@@ -450,6 +450,21 @@ html.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important; }
   #cursor-glow, #cursor-dot, #cursor-ring { display: none !important; }
 }
 
+/* Cursor grows on hover over interactive elements */
+.marketing-page:has(a:hover) #cursor-dot,
+.marketing-page:has(button:hover) #cursor-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--mk-text-1);
+  opacity: 1;
+}
+.marketing-page:has(a:hover) #cursor-ring,
+.marketing-page:has(button:hover) #cursor-ring {
+  width: 44px;
+  height: 44px;
+  border-color: var(--mk-cursor-hover);
+}
+
 /* ── Transition exclusions: never animate on theme switch ─────────────── */
 .marketing-page canvas,
 .marketing-page .orbit-ring,
@@ -464,7 +479,6 @@ html.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important; }
 .marketing-page .module-icon,
 .marketing-page .typed-cursor,
 .marketing-page .nav-logo-dot,
-.marketing-page .theme-btn-thumb,
 #cursor-glow,
 #cursor-dot,
 #cursor-ring {

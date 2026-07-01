@@ -9,19 +9,18 @@ export default function MarketingLayout({
 }) {
   return (
     <MarketingThemeProvider>
-      <div className="marketing-page font-merriweather">
-        {/* Custom cursor — desktop only, hidden via CSS on touch devices */}
-        <div id="cursor-glow" aria-hidden="true" />
-        <div id="cursor-ring" aria-hidden="true" />
-        <div id="cursor-dot"  aria-hidden="true" />
+      {/* Custom cursor — desktop only, hidden via CSS on touch devices */}
+      <div id="cursor-glow" aria-hidden="true" />
+      <div id="cursor-ring" aria-hidden="true" />
+      <div id="cursor-dot"  aria-hidden="true" />
 
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+      <Navbar />
+      <main className="flex-1">{children}</main>
+      <Footer />
 
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
 (function() {
   var glowEl = document.getElementById('cursor-glow');
   var dotEl  = document.getElementById('cursor-dot');
@@ -52,10 +51,9 @@ export default function MarketingLayout({
     requestAnimationFrame(lerpRing);
   })();
 })();
-            `,
-          }}
-        />
-      </div>
+          `,
+        }}
+      />
     </MarketingThemeProvider>
   );
 }
