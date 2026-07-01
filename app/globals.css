@@ -399,8 +399,12 @@ html[data-theme="light"] {
 /* ════════════════════════════════════════
    CURSOR  (desktop only)
 ════════════════════════════════════════ */
-.marketing-page {
-  cursor: none;
+/* Hide system cursor everywhere on the marketing page for fine pointers */
+@media (pointer: fine) {
+  .marketing-page,
+  .marketing-page * {
+    cursor: none !important;
+  }
 }
 
 #cursor-glow {
@@ -411,7 +415,8 @@ html[data-theme="light"] {
   background: radial-gradient(circle, var(--mk-accent-glow) 0%, transparent 70%);
   pointer-events: none;
   transform: translate(-50%, -50%);
-  z-index: 1;
+  /* Above nav (z-50) and its backdrop-filter compositing layer */
+  z-index: 10000;
   will-change: transform;
   opacity: 0;
 }
@@ -425,7 +430,7 @@ html[data-theme="light"] {
   opacity: 0;
   pointer-events: none;
   transform: translate(-50%, -50%);
-  z-index: 9999;
+  z-index: 10002;
   will-change: transform;
 }
 
@@ -437,7 +442,7 @@ html[data-theme="light"] {
   border: 1px solid var(--mk-accent-glow);
   pointer-events: none;
   transform: translate(-50%, -50%);
-  z-index: 9998;
+  z-index: 10001;
   will-change: transform;
   opacity: 0;
 }

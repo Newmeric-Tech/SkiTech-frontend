@@ -9,14 +9,14 @@ export default function MarketingLayout({
 }) {
   return (
     <MarketingThemeProvider>
-      {/* Custom cursor — desktop only, hidden via CSS on touch devices */}
-      <div id="cursor-glow" aria-hidden="true" />
-      <div id="cursor-ring" aria-hidden="true" />
-      <div id="cursor-dot"  aria-hidden="true" />
-
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
+
+      {/* Cursor divs after all content — later DOM order + z-index 10000+ beats nav backdrop-filter */}
+      <div id="cursor-glow" aria-hidden="true" />
+      <div id="cursor-ring" aria-hidden="true" />
+      <div id="cursor-dot"  aria-hidden="true" />
 
       <script
         dangerouslySetInnerHTML={{
