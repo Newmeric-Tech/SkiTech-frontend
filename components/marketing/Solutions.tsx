@@ -545,7 +545,7 @@ function SolutionCard({ Illustration, title, description, bullets, cta, index }:
       />
 
       {/* ── Illustration area ── */}
-      <div className="relative h-[148px] overflow-hidden bg-gradient-to-br from-gray-50 to-white border-b border-black/[0.06]">
+      <div className="relative h-[120px] overflow-hidden bg-gradient-to-br from-gray-50 to-white border-b border-black/[0.06]">
         {/* Floating decorative circles */}
         <motion.div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-black/[0.03]"
           animate={{ scale: hovered ? 1.2 : 1, opacity: hovered ? 1 : 0.5 }}
@@ -571,7 +571,7 @@ function SolutionCard({ Illustration, title, description, bullets, cta, index }:
           {description}
         </p>
         <ul className="flex-1 space-y-2 mb-5" style={{ fontFamily: "'Merriweather', Georgia, serif" }}>
-          {bullets.map((b) => (
+          {bullets.slice(0, 3).map((b) => (
             <li key={b} className="flex items-start gap-2.5 text-[0.79rem] text-black/60">
               <motion.span className="mt-[6px] flex-shrink-0 w-[4px] h-[4px] rounded-full bg-black/30"
                 animate={{ scale: hovered ? 1.4 : 1, backgroundColor: hovered ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0.3)" }}
@@ -631,7 +631,7 @@ function SolutionCardWide({ Illustration, title, description, bullets, cta, inde
         <p className="text-[0.8rem] text-black/45 leading-relaxed mb-4 font-light"
           style={{ fontFamily: "'Merriweather', Georgia, serif" }}>{description}</p>
         <ul className="space-y-2 mb-5" style={{ fontFamily: "'Merriweather', Georgia, serif" }}>
-          {bullets.map((b) => (
+          {bullets.slice(0, 3).map((b) => (
             <li key={b} className="flex items-start gap-2.5 text-[0.79rem] text-black/60">
               <span className="mt-[6px] flex-shrink-0 w-[4px] h-[4px] rounded-full bg-black/30" />{b}
             </li>
@@ -648,7 +648,7 @@ function SolutionCardWide({ Illustration, title, description, bullets, cta, inde
         </motion.div>
       </div>
       {/* Illustration */}
-      <div className="relative flex-1 min-h-[180px] bg-gradient-to-br from-gray-50 to-white border-t md:border-t-0 md:border-l border-black/[0.06] overflow-hidden">
+      <div className="relative flex-1 h-[180px] md:h-auto md:max-h-[200px] bg-gradient-to-br from-gray-50 to-white border-t md:border-t-0 md:border-l border-black/[0.06] overflow-hidden">
         <motion.div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-black/[0.03]"
           animate={{ scale: hovered ? 1.2 : 1 }} transition={{ duration: 0.6 }} />
         <div className="absolute inset-0 p-4">
@@ -697,7 +697,7 @@ function SolutionCardBanner({ Illustration, title, description, bullets, cta, in
         <p className="text-[0.82rem] text-white/45 leading-relaxed mb-5 font-light"
           style={{ fontFamily: "'Merriweather', Georgia, serif" }}>{description}</p>
         <ul className="space-y-2.5 mb-7" style={{ fontFamily: "'Merriweather', Georgia, serif" }}>
-          {bullets.map((b) => (
+          {bullets.slice(0, 3).map((b) => (
             <li key={b} className="flex items-start gap-2.5 text-[0.79rem] text-white/60">
               <span className="mt-[6px] flex-shrink-0 w-[4px] h-[4px] rounded-full bg-white/30" />{b}
             </li>
@@ -715,7 +715,7 @@ function SolutionCardBanner({ Illustration, title, description, bullets, cta, in
         </motion.div>
       </div>
       {/* Illustration on dark */}
-      <div className="relative flex-1 min-h-[200px] overflow-hidden">
+      <div className="relative flex-1 h-[200px] md:h-auto md:max-h-[200px] overflow-hidden">
         <svg className="absolute inset-0 w-full h-full opacity-[0.06]" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="bgrid" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
@@ -771,7 +771,7 @@ export function Solutions() {
   const filtered = activeTab === "All" ? solutions : solutions.filter((s) => s.tab === activeTab);
 
   return (
-    <section id="solutions" className="relative w-full bg-white overflow-hidden py-24 md:py-36 px-6 lg:px-12"
+    <section id="solutions" className="relative w-full bg-white overflow-hidden py-14 md:py-20 px-6 lg:px-12"
       style={{ fontFamily: "'Merriweather', Georgia, serif" }}>
 
 
@@ -874,7 +874,7 @@ export function Solutions() {
         </AnimatePresence>
 
         {/* ── Stats strip ── */}
-        <div ref={statsRef} className="mt-20 rounded-2xl bg-black overflow-hidden"
+        <div ref={statsRef} className="mt-10 rounded-2xl bg-black overflow-hidden"
           style={{ border: "1px solid rgba(0,0,0,0.1)" }}>
           <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/10">
             {STATS.map((s, i) => (

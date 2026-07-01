@@ -3,7 +3,6 @@ import { MarqueeTicker } from "@/components/marketing/MarqueeTicker";
 import { Stats } from "@/components/marketing/Stats";
 import AboutUs from "@/components/marketing/AboutUs";
 import { Features } from "@/components/marketing/Features";
-import { WhySkiTech } from "@/components/marketing/WhySkiTech";
 import { Pricing } from "@/components/marketing/Pricing";
 import { Testimonials } from "@/components/marketing/Testimonials";
 import { FAQ } from "@/components/marketing/FAQ";
@@ -17,7 +16,6 @@ export default function Home() {
       <Features />
       <Stats />
       <AboutUs />
-      <WhySkiTech />
       <Pricing />
       <Testimonials />
       <FAQ />
