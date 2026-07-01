@@ -28,7 +28,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${merriweather.variable} font-sans antialiased`}>
         <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
-          <ThemeProvider attribute="data-theme" enableSystem={true} storageKey="next-theme-unused">
+          <ThemeProvider attribute="data-theme" enableSystem={false} storageKey="next-theme-unused">
             <SharedStoreProvider>
               {children}
               <Toaster richColors position="top-right" />
