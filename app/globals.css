@@ -287,13 +287,12 @@ html.dark .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
 html.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important; }
 
 /* ════════════════════════════════════════════════════════════
-   MARKETING TOKENS — double selector handles both placements:
-   data-theme on <html> (after Step 3) and on .marketing-page
-   div itself (current fallback). Portal pages unaffected.
+   MARKETING TOKENS — on <html> so toggleTheme's
+   document.documentElement.setAttribute fires them instantly.
+   --mk-* prefix avoids any conflict with portal CSS variables.
 ════════════════════════════════════════════════════════════ */
 
-[data-theme="dark"] .marketing-page,
-.marketing-page[data-theme="dark"] {
+html[data-theme="dark"] {
   --mk-bg:               #0a0a0a;
   --mk-surface-1:        #111111;
   --mk-surface-2:        #1a1a1a;
@@ -324,8 +323,7 @@ html.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important; }
   --mk-cursor-hover:     rgba(255,255,255,0.30);
 }
 
-[data-theme="light"] .marketing-page,
-.marketing-page[data-theme="light"] {
+html[data-theme="light"] {
   --mk-bg:               #f4f3ef;
   --mk-surface-1:        #ffffff;
   --mk-surface-2:        #eeede8;
@@ -538,8 +536,7 @@ html.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important; }
               box-shadow 0.35s ease !important;
 }
 
-[data-theme="light"] .theme-btn-thumb,
-.marketing-page[data-theme="light"] .theme-btn-thumb {
+html[data-theme="light"] .theme-btn-thumb {
   transform: translateX(14px);
 }
 
