@@ -6,6 +6,7 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import { motion, useInView, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { useMarketingTheme } from "./ThemeProvider";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ANIMATED ILLUSTRATIONS — one unique SVG animation per card
@@ -497,6 +498,8 @@ function SolutionCard({ Illustration, title, description, bullets, cta, index }:
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-50px" });
   const [hovered, setHovered] = useState(false);
+  const { theme } = useMarketingTheme();
+  const isDark = theme === 'dark';
 
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
@@ -522,8 +525,8 @@ function SolutionCard({ Illustration, title, description, bullets, cta, index }:
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={handleMouseLeave}
-      style={{ rotateX, rotateY, transformStyle: "preserve-3d", perspective: 800 }}
-      className="group relative flex flex-col rounded-2xl bg-white overflow-hidden cursor-pointer"
+      style={{ rotateX, rotateY, transformStyle: "preserve-3d", perspective: 800, background: "var(--mk-surface-1)" }}
+      className="group relative flex flex-col rounded-2xl overflow-hidden cursor-pointer"
     >
       {/* Border + shadow via wrapper */}
       <motion.div
@@ -534,24 +537,28 @@ function SolutionCard({ Illustration, title, description, bullets, cta, index }:
             : "0 2px 14px rgba(0,0,0,0.05)",
         }}
         transition={{ duration: 0.35 }}
-        style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: "inherit", pointerEvents: "none" }}
+        style={{ border: "1px solid var(--mk-border)", borderRadius: "inherit", pointerEvents: "none" }}
       />
 
       {/* Animated top line */}
-      <motion.div className="absolute top-0 left-0 h-[2px] bg-black z-10"
+      <motion.div className="absolute top-0 left-0 h-[2px] z-10"
+        style={{ background: "var(--mk-accent)" }}
         initial={{ width: "0%" }}
         animate={{ width: hovered ? "100%" : "0%" }}
         transition={{ duration: 0.45, ease: "easeInOut" }}
       />
 
       {/* ── Illustration area ── */}
-      <div className="relative h-[120px] overflow-hidden bg-gradient-to-br from-gray-50 to-white border-b border-black/[0.06]">
+      <div className="relative h-[120px] overflow-hidden border-b"
+        style={{ background: "var(--mk-surface-2, var(--mk-surface-1))", borderColor: "var(--mk-border)" }}>
         {/* Floating decorative circles */}
-        <motion.div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-black/[0.03]"
+        <motion.div className="absolute -top-6 -right-6 w-24 h-24 rounded-full"
+          style={{ background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)" }}
           animate={{ scale: hovered ? 1.2 : 1, opacity: hovered ? 1 : 0.5 }}
           transition={{ duration: 0.6 }}
         />
-        <motion.div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-black/[0.02]"
+        <motion.div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full"
+          style={{ background: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)" }}
           animate={{ scale: hovered ? 1.3 : 1 }}
           transition={{ duration: 0.7 }}
         />
@@ -562,19 +569,24 @@ function SolutionCard({ Illustration, title, description, bullets, cta, index }:
 
       {/* ── Text content ── */}
       <div className="relative flex flex-col flex-1 p-6">
-        <h3 className="text-[1.05rem] font-bold text-black mb-2 tracking-tight"
-          style={{ fontFamily: "'Merriweather', Georgia, serif" }}>
+        <h3 className="text-[1.05rem] font-bold mb-2 tracking-tight"
+          style={{ fontFamily: "'Merriweather', Georgia, serif", color: "var(--mk-text-1)" }}>
           {title}
         </h3>
-        <p className="text-[0.8rem] text-black/45 leading-relaxed mb-4 font-light"
-          style={{ fontFamily: "'Merriweather', Georgia, serif" }}>
+        <p className="text-[0.8rem] leading-relaxed mb-4 font-light"
+          style={{ fontFamily: "'Merriweather', Georgia, serif", color: "var(--mk-text-2)" }}>
           {description}
         </p>
         <ul className="flex-1 space-y-2 mb-5" style={{ fontFamily: "'Merriweather', Georgia, serif" }}>
           {bullets.slice(0, 3).map((b) => (
-            <li key={b} className="flex items-start gap-2.5 text-[0.79rem] text-black/60">
-              <motion.span className="mt-[6px] flex-shrink-0 w-[4px] h-[4px] rounded-full bg-black/30"
-                animate={{ scale: hovered ? 1.4 : 1, backgroundColor: hovered ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0.3)" }}
+            <li key={b} className="flex items-start gap-2.5 text-[0.79rem]" style={{ color: "var(--mk-text-2)" }}>
+              <motion.span className="mt-[6px] flex-shrink-0 w-[4px] h-[4px] rounded-full"
+                animate={{
+                  scale: hovered ? 1.4 : 1,
+                  backgroundColor: hovered
+                    ? (isDark ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.6)")
+                    : (isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)"),
+                }}
                 transition={{ duration: 0.25 }}
               />
               {b}
@@ -582,7 +594,12 @@ function SolutionCard({ Illustration, title, description, bullets, cta, index }:
           ))}
         </ul>
         <motion.div className="flex items-center gap-1.5 text-[0.75rem] font-medium tracking-wide"
-          animate={{ x: hovered ? 3 : 0, color: hovered ? "rgba(0,0,0,0.9)" : "rgba(0,0,0,0.38)" }}
+          animate={{
+            x: hovered ? 3 : 0,
+            color: hovered
+              ? (isDark ? "rgba(255,255,255,0.95)" : "rgba(0,0,0,0.9)")
+              : (isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.38)"),
+          }}
           transition={{ duration: 0.22 }}
           style={{ fontFamily: "'Merriweather', Georgia, serif" }}
         >
@@ -603,6 +620,8 @@ function SolutionCardWide({ Illustration, title, description, bullets, cta, inde
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-50px" });
   const [hovered, setHovered] = useState(false);
+  const { theme } = useMarketingTheme();
+  const isDark = theme === 'dark';
 
   return (
     <motion.div
@@ -612,33 +631,41 @@ function SolutionCardWide({ Illustration, title, description, bullets, cta, inde
       transition={{ duration: 0.65, delay: index * 0.09, ease: [0.22, 1, 0.36, 1] }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="relative flex flex-col md:flex-row rounded-2xl bg-white overflow-hidden cursor-pointer h-full"
+      className="relative flex flex-col md:flex-row rounded-2xl overflow-hidden cursor-pointer h-full"
       style={{
-        border: "1px solid rgba(0,0,0,0.08)",
+        background: "var(--mk-surface-1)",
+        border: "1px solid var(--mk-border)",
         boxShadow: hovered ? "0 28px 72px rgba(0,0,0,0.12), 0 4px 20px rgba(0,0,0,0.07)" : "0 2px 14px rgba(0,0,0,0.05)",
         transform: hovered ? "translateY(-4px)" : "translateY(0)",
         transition: "box-shadow 0.35s ease, transform 0.35s ease",
       }}
     >
-      <motion.div className="absolute top-0 left-0 h-[2px] bg-black z-10"
+      <motion.div className="absolute top-0 left-0 h-[2px] z-10"
+        style={{ background: "var(--mk-accent)" }}
         initial={{ width: "0%" }} animate={{ width: hovered ? "100%" : "0%" }}
         transition={{ duration: 0.45, ease: "easeInOut" }}
       />
       {/* Text */}
       <div className="flex flex-col justify-center p-7 md:p-8 md:w-[52%] flex-shrink-0">
-        <h3 className="text-[1.1rem] font-bold text-black mb-2.5 tracking-tight"
-          style={{ fontFamily: "'Merriweather', Georgia, serif" }}>{title}</h3>
-        <p className="text-[0.8rem] text-black/45 leading-relaxed mb-4 font-light"
-          style={{ fontFamily: "'Merriweather', Georgia, serif" }}>{description}</p>
+        <h3 className="text-[1.1rem] font-bold mb-2.5 tracking-tight"
+          style={{ fontFamily: "'Merriweather', Georgia, serif", color: "var(--mk-text-1)" }}>{title}</h3>
+        <p className="text-[0.8rem] leading-relaxed mb-4 font-light"
+          style={{ fontFamily: "'Merriweather', Georgia, serif", color: "var(--mk-text-2)" }}>{description}</p>
         <ul className="space-y-2 mb-5" style={{ fontFamily: "'Merriweather', Georgia, serif" }}>
           {bullets.slice(0, 3).map((b) => (
-            <li key={b} className="flex items-start gap-2.5 text-[0.79rem] text-black/60">
-              <span className="mt-[6px] flex-shrink-0 w-[4px] h-[4px] rounded-full bg-black/30" />{b}
+            <li key={b} className="flex items-start gap-2.5 text-[0.79rem]" style={{ color: "var(--mk-text-2)" }}>
+              <span className="mt-[6px] flex-shrink-0 w-[4px] h-[4px] rounded-full"
+                style={{ background: isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)" }} />{b}
             </li>
           ))}
         </ul>
         <motion.div className="flex items-center gap-1.5 text-[0.75rem] font-medium tracking-wide"
-          animate={{ x: hovered ? 3 : 0, color: hovered ? "rgba(0,0,0,0.9)" : "rgba(0,0,0,0.38)" }}
+          animate={{
+            x: hovered ? 3 : 0,
+            color: hovered
+              ? (isDark ? "rgba(255,255,255,0.95)" : "rgba(0,0,0,0.9)")
+              : (isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.38)"),
+          }}
           transition={{ duration: 0.22 }} style={{ fontFamily: "'Merriweather', Georgia, serif" }}
         >
           {cta}
@@ -648,8 +675,10 @@ function SolutionCardWide({ Illustration, title, description, bullets, cta, inde
         </motion.div>
       </div>
       {/* Illustration */}
-      <div className="relative flex-1 h-[180px] md:h-auto md:max-h-[200px] bg-gradient-to-br from-gray-50 to-white border-t md:border-t-0 md:border-l border-black/[0.06] overflow-hidden">
-        <motion.div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-black/[0.03]"
+      <div className="relative flex-1 h-[180px] md:h-auto md:max-h-[200px] overflow-hidden border-t md:border-t-0 md:border-l"
+        style={{ background: "var(--mk-surface-2, var(--mk-surface-1))", borderColor: "var(--mk-border)" }}>
+        <motion.div className="absolute -top-8 -right-8 w-32 h-32 rounded-full"
+          style={{ background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)" }}
           animate={{ scale: hovered ? 1.2 : 1 }} transition={{ duration: 0.6 }} />
         <div className="absolute inset-0 p-4">
           <Illustration hovered={hovered} />
@@ -748,8 +777,13 @@ function FloatingOrbs() {
         { w: 300, h: 300, bottom: "5%", left: "30%", delay: 4 },
       ].map((orb, i) => (
         <motion.div key={i}
-          className="absolute rounded-full bg-black/[0.025]"
-          style={{ width: orb.w, height: orb.h, top: (orb as any).top, left: (orb as any).left, right: (orb as any).right, bottom: (orb as any).bottom }}
+          className="absolute rounded-full"
+          style={{
+            width: orb.w, height: orb.h,
+            top: (orb as any).top, left: (orb as any).left,
+            right: (orb as any).right, bottom: (orb as any).bottom,
+            background: "var(--mk-accent-soft, rgba(99,102,241,0.04))",
+          }}
           animate={{ y: [0, -20, 0], x: [0, 10, 0] }}
           transition={{ duration: 8 + i * 2, repeat: Infinity, delay: orb.delay, ease: "easeInOut" }}
         />
@@ -767,12 +801,14 @@ export function Solutions() {
   const headingInView = useInView(headingRef, { once: true, margin: "-60px" });
   const statsRef = useRef(null);
   const statsInView = useInView(statsRef, { once: true, margin: "-40px" });
+  const { theme } = useMarketingTheme();
+  const isDark = theme === 'dark';
 
   const filtered = activeTab === "All" ? solutions : solutions.filter((s) => s.tab === activeTab);
 
   return (
-    <section id="solutions" className="relative w-full bg-white overflow-hidden py-14 md:py-20 px-6 lg:px-12"
-      style={{ fontFamily: "'Merriweather', Georgia, serif" }}>
+    <section id="solutions" className="relative w-full overflow-hidden py-14 md:py-20 px-6 lg:px-12"
+      style={{ fontFamily: "'Merriweather', Georgia, serif", background: "var(--mk-bg)" }}>
 
 
 
@@ -783,29 +819,32 @@ export function Solutions() {
           <motion.p
             initial={{ opacity: 0, y: 12 }} animate={headingInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.45 }}
-            className="text-[10px] tracking-[0.38em] text-black/30 mb-5 font-medium uppercase"
+            className="text-[10px] tracking-[0.38em] mb-5 font-medium uppercase"
+          style={{ color: "var(--mk-text-2)" }}
           >Built for Every Property Business</motion.p>
 
           <motion.h2
             initial={{ opacity: 0, y: 28 }} animate={headingInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.62, delay: 0.08 }}
-            className="text-4xl md:text-5xl lg:text-[3.4rem] font-black text-black leading-[1.07] tracking-tight mb-5"
-            style={{ fontFamily: "'Merriweather', Georgia, serif" }}
+            className="text-4xl md:text-5xl lg:text-[3.4rem] font-black leading-[1.07] tracking-tight mb-5"
+            style={{ fontFamily: "'Merriweather', Georgia, serif", color: "var(--mk-text-1)" }}
           >
             Solutions Built for<br />
-            <span className="italic font-light text-black/35">Every Property Owner</span>
+            <span className="italic font-light" style={{ color: "var(--mk-text-2)" }}>Every Property Owner</span>
           </motion.h2>
 
           <motion.div
             initial={{ scaleX: 0 }} animate={headingInView ? { scaleX: 1 } : {}}
             transition={{ duration: 0.7, delay: 0.2 }}
-            className="mx-auto mb-6 h-px w-14 bg-black/15 origin-center"
+            className="mx-auto mb-6 h-px w-14 origin-center"
+            style={{ background: "var(--mk-border)" }}
           />
 
           <motion.p
             initial={{ opacity: 0, y: 14 }} animate={headingInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, delay: 0.26 }}
-            className="text-base md:text-lg text-black/40 max-w-2xl mx-auto leading-relaxed font-light"
+            className="text-base md:text-lg max-w-2xl mx-auto leading-relaxed font-light"
+            style={{ color: "var(--mk-text-2)" }}
           >
             Whether you manage a single property or an entire portfolio, SkiTech gives you the tools
             to simplify operations, boost efficiency, and drive consistent growth.
@@ -818,14 +857,19 @@ export function Solutions() {
           transition={{ duration: 0.45, delay: 0.34 }}
           className="flex justify-center mb-12"
         >
-          <div className="inline-flex gap-1 p-1 rounded-full" style={{ border: "1px solid rgba(0,0,0,0.08)", background: "rgba(0,0,0,0.02)" }}>
+          <div className="inline-flex gap-1 p-1 rounded-full"
+            style={{ border: "1px solid var(--mk-border)", background: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)" }}>
             {TABS.map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab)}
                 className="relative px-5 py-2 rounded-full text-[0.78rem] font-medium outline-none"
-                style={{ color: activeTab === tab ? "#fff" : "rgba(0,0,0,0.42)", fontFamily: "'Merriweather', Georgia, serif" }}
+                style={{
+                  color: activeTab === tab ? "var(--mk-btn-primary-text, #fff)" : "var(--mk-text-2)",
+                  fontFamily: "'Merriweather', Georgia, serif",
+                }}
               >
                 {activeTab === tab && (
-                  <motion.span layoutId="tab-pill" className="absolute inset-0 rounded-full bg-black"
+                  <motion.span layoutId="tab-pill" className="absolute inset-0 rounded-full"
+                    style={{ background: "var(--mk-text-1)" }}
                     transition={{ type: "spring", stiffness: 400, damping: 34 }} />
                 )}
                 <span className="relative z-10">{tab}</span>
