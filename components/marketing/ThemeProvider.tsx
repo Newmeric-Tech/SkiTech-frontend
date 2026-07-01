@@ -1,8 +1,9 @@
 'use client'
 
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 
 type Theme = 'dark' | 'light'
+
 const STORAGE_KEY = 'skitech-marketing-theme'
 
 interface ThemeContextValue {
@@ -15,37 +16,33 @@ const ThemeContext = createContext<ThemeContextValue>({
   toggleTheme: () => {},
 })
 
-export function MarketingThemeProvider({ children }: { children: React.ReactNode }) {
+export function MarketingThemeProvider({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const [theme, setTheme] = useState<Theme>('dark')
-  const divRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as Theme | null
     const osDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const resolved: Theme = saved ?? (osDark ? 'dark' : 'light')
-    setTheme(resolved)
-    if (divRef.current) divRef.current.setAttribute('data-theme', resolved)
+    const initial: Theme = saved ?? (osDark ? 'dark' : 'light')
+    setTheme(initial)
+    document.documentElement.setAttribute('data-theme', initial)
   }, [])
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setTheme(prev => {
       const next: Theme = prev === 'dark' ? 'light' : 'dark'
+      document.documentElement.setAttribute('data-theme', next)
       localStorage.setItem(STORAGE_KEY, next)
-      if (divRef.current) divRef.current.setAttribute('data-theme', next)
       return next
     })
-  }
+  }, [])
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <div
-        ref={divRef}
-        className="marketing-page font-merriweather"
-        data-theme={theme}
-        suppressHydrationWarning
-      >
-        {children}
-      </div>
+      {children}
     </ThemeContext.Provider>
   )
 }

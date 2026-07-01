@@ -287,11 +287,12 @@ html.dark .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
 html.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important; }
 
 /* ════════════════════════════════════════════════════════════
-   MARKETING TOKENS — scoped to .marketing-page only.
-   data-theme is set on the .marketing-page div itself, so
-   portal pages (html.dark) are completely unaffected.
+   MARKETING TOKENS — double selector handles both placements:
+   data-theme on <html> (after Step 3) and on .marketing-page
+   div itself (current fallback). Portal pages unaffected.
 ════════════════════════════════════════════════════════════ */
 
+[data-theme="dark"] .marketing-page,
 .marketing-page[data-theme="dark"] {
   --mk-bg:               #0a0a0a;
   --mk-surface-1:        #111111;
@@ -316,11 +317,14 @@ html.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important; }
   --mk-particle-rgb:     99,102,241;
   --mk-btn-primary-bg:   #ffffff;
   --mk-btn-primary-text: #000000;
+  --mk-btn-pb:           #ffffff;
+  --mk-btn-pt:           #000000;
   --mk-shadow-md:        0 4px 12px rgba(0,0,0,0.50);
   --mk-shadow-lg:        0 8px 24px rgba(0,0,0,0.60);
-  --mk-noise-opacity:    1;
+  --mk-cursor-hover:     rgba(255,255,255,0.30);
 }
 
+[data-theme="light"] .marketing-page,
 .marketing-page[data-theme="light"] {
   --mk-bg:               #f4f3ef;
   --mk-surface-1:        #ffffff;
@@ -345,9 +349,11 @@ html.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important; }
   --mk-particle-rgb:     79,70,229;
   --mk-btn-primary-bg:   #0d0d0d;
   --mk-btn-primary-text: #ffffff;
+  --mk-btn-pb:           #0d0d0d;
+  --mk-btn-pt:           #ffffff;
   --mk-shadow-md:        0 4px 12px rgba(0,0,0,0.09);
   --mk-shadow-lg:        0 8px 24px rgba(0,0,0,0.13);
-  --mk-noise-opacity:    0.4;
+  --mk-cursor-hover:     rgba(0,0,0,0.22);
 }
 
 /* Shared radius tokens — never change between themes */
@@ -392,12 +398,56 @@ html.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important; }
   100% { transform: translateX(-50%); }
 }
 
-/* ── Custom cursor: hide system pointer on mouse-only devices ─────────── */
-@media (pointer: fine) {
-  .marketing-page,
-  .marketing-page * {
-    cursor: none !important;
-  }
+/* ════════════════════════════════════════
+   CURSOR  (desktop only)
+════════════════════════════════════════ */
+.marketing-page {
+  cursor: none;
+}
+
+#cursor-glow {
+  position: fixed;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--mk-accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  will-change: transform;
+  opacity: 0;
+}
+
+#cursor-dot {
+  position: fixed;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mk-accent);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  will-change: transform;
+}
+
+#cursor-ring {
+  position: fixed;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--mk-accent-glow);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 9998;
+  will-change: transform;
+  opacity: 0;
+}
+
+/* Hide custom cursor on touch devices */
+@media (pointer: coarse) {
+  .marketing-page { cursor: auto; }
+  #cursor-glow, #cursor-dot, #cursor-ring { display: none !important; }
 }
 
 /* ── Transition exclusions: never animate on theme switch ─────────────── */
@@ -406,9 +456,6 @@ html.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important; }
 .marketing-page .orbit-ring-2,
 .marketing-page .orbit-dot,
 .marketing-page .orbit-dot-2,
-.marketing-page #cursor-glow,
-.marketing-page #cursor-dot,
-.marketing-page #cursor-ring,
 .marketing-page .hero-grid-bg,
 .marketing-page .hero-glow,
 .marketing-page .mini-bar,
@@ -417,6 +464,71 @@ html.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important; }
 .marketing-page .module-icon,
 .marketing-page .typed-cursor,
 .marketing-page .nav-logo-dot,
-.marketing-page .theme-toggle-thumb {
+.marketing-page .theme-btn-thumb,
+#cursor-glow,
+#cursor-dot,
+#cursor-ring {
   transition: none !important;
+}
+
+/* ════════════════════════════════════════
+   THEME TOGGLE BUTTON
+════════════════════════════════════════ */
+.theme-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--mk-glass-bg);
+  border: 1px solid var(--mk-border-strong);
+  color: var(--mk-text-2);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: none;
+  letter-spacing: 0.04em;
+  font-family: 'Merriweather', Georgia, serif;
+  white-space: nowrap;
+}
+.theme-btn:hover {
+  background: var(--mk-glass-hover);
+  color: var(--mk-text-1);
+}
+
+.theme-btn-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.theme-btn-track {
+  width: 32px;
+  height: 18px;
+  border-radius: 100px;
+  background: var(--mk-surface-3);
+  border: 1px solid var(--mk-border-strong);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.theme-btn-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--mk-accent);
+  box-shadow: 0 0 6px var(--mk-accent-glow);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background 0.35s ease,
+              box-shadow 0.35s ease !important;
+}
+
+[data-theme="light"] .theme-btn-thumb,
+.marketing-page[data-theme="light"] .theme-btn-thumb {
+  transform: translateX(14px);
+}
+
+@media (max-width: 900px) {
+  .theme-btn-label { display: none; }
 }
