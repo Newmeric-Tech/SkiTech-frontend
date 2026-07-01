@@ -84,15 +84,6 @@ if (typeof window !== "undefined") {
   });
 }
 
-/* ─── Desktop center nav links ────────────────────────────────────────── */
-const centerLinks = [
-  { label: "Modules",    href: "/#features"   },
-  { label: "Solutions",  href: "/#solutions"  },
-  { label: "Pricing",    href: "/#pricing"    },
-  { label: "About",      href: "/about"       },
-  { label: "Contact",    href: "/contact"     },
-];
-
 /* ─── Image crossfade panel (overlay right column) ────────────────────── */
 function ImageSlide({
   src,
@@ -219,25 +210,6 @@ export function Navbar() {
               </span>
             </Link>
 
-            {/* Center links — desktop only */}
-            <div className="hidden lg:flex items-center gap-7">
-              {centerLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  style={{ color: "var(--mk-text-2)", fontSize: 13, fontWeight: 400 }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = "var(--mk-text-1)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = "var(--mk-text-2)")
-                  }
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-
             {/* Right controls */}
             <div className="flex items-center gap-2.5">
               <ThemeToggle />
@@ -339,7 +311,7 @@ export function Navbar() {
               <div className="flex items-center gap-3">
                 {/* Theme toggle — light-adapted for always-light overlay */}
                 <button
-                  onClick={() => { toggleTheme(); setIsOpen(false); }}
+                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleTheme(); }}
                   aria-label={
                     isDark ? "Switch to light mode" : "Switch to dark mode"
                   }
