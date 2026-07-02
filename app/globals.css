@@ -365,12 +365,35 @@ html[data-theme="light"] {
   min-height: 100vh;
 }
 
-/* Menu overlay is always light regardless of page theme */
+/* Menu overlay follows the page theme */
 .marketing-menu-overlay {
-  --menu-bg:         #f2f2ef;
-  --menu-text:       #0a0a0a;
-  --menu-text-muted: rgba(10,10,10,0.35);
-  --menu-border:     rgba(10,10,10,0.10);
+  --menu-bg:            #f2f2ef;
+  --menu-text:          #0a0a0a;
+  --menu-text-muted:    rgba(10,10,10,0.35);
+  --menu-border:        rgba(10,10,10,0.10);
+  --menu-border-strong: rgba(10,10,10,0.25);
+  --menu-hover-tint:    rgba(0,0,0,0.035);
+  --menu-divider-strong: rgba(10,10,10,0.18);
+  --menu-divider-weak:   rgba(10,10,10,0.07);
+  --menu-label-strong:   #000000;
+  --menu-label-dim:      rgba(10,10,10,0.15);
+  --menu-arrow-border:   rgba(10,10,10,0.2);
+  --menu-arrow-color:    rgba(10,10,10,0.5);
+}
+
+html[data-theme="dark"] .marketing-menu-overlay {
+  --menu-bg:            #0a0a0a;
+  --menu-text:          #ffffff;
+  --menu-text-muted:    rgba(255,255,255,0.40);
+  --menu-border:        rgba(255,255,255,0.12);
+  --menu-border-strong: rgba(255,255,255,0.30);
+  --menu-hover-tint:    rgba(255,255,255,0.05);
+  --menu-divider-strong: rgba(255,255,255,0.22);
+  --menu-divider-weak:   rgba(255,255,255,0.08);
+  --menu-label-strong:   #ffffff;
+  --menu-label-dim:      rgba(255,255,255,0.18);
+  --menu-arrow-border:   rgba(255,255,255,0.25);
+  --menu-arrow-color:    rgba(255,255,255,0.55);
 }
 
 /* Smooth colour transitions on theme switch — colour/opacity only */

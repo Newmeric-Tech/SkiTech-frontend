@@ -130,11 +130,11 @@ export function MenuOverlay() {
           exit={{ y: '-100%' }}
           transition={{ duration: 0.5, ease: [0.76, 0, 0.24, 1] }}
           className="fixed inset-0 z-[200] marketing-menu-overlay flex flex-col overflow-hidden"
-          style={{ backgroundColor: '#f2f2ef' }}
+          style={{ backgroundColor: 'var(--menu-bg)' }}
         >
           {/* ── Top bar ── */}
           <div className="flex items-center justify-between px-8 md:px-16 pt-6 pb-4 shrink-0">
-            {/* Logo — always dark on light overlay */}
+            {/* Logo */}
             <Link
               href="/"
               onClick={() => setMenuOpen(false)}
@@ -162,7 +162,7 @@ export function MenuOverlay() {
                 className="flex items-center gap-2 px-4 py-2 rounded-full"
                 style={{ border: '1px solid var(--menu-border)', color: 'var(--menu-text-muted)' }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(10,10,10,0.25)'
+                  e.currentTarget.style.borderColor = 'var(--menu-border-strong)'
                   e.currentTarget.style.color = 'var(--menu-text)'
                 }}
                 onMouseLeave={(e) => {
@@ -223,7 +223,7 @@ export function MenuOverlay() {
                           transition={{ duration: 0.18 }}
                           style={{
                             background:
-                              'linear-gradient(90deg, rgba(0,0,0,0.035) 0%, transparent 80%)',
+                              'linear-gradient(90deg, var(--menu-hover-tint) 0%, transparent 80%)',
                           }}
                         />
 
@@ -260,8 +260,8 @@ export function MenuOverlay() {
                             animate={{
                               background:
                                 hovered === i
-                                  ? 'rgba(10,10,10,0.18)'
-                                  : 'rgba(10,10,10,0.07)',
+                                  ? 'var(--menu-divider-strong)'
+                                  : 'var(--menu-divider-weak)',
                             }}
                             transition={{ duration: 0.2 }}
                           />
@@ -276,8 +276,8 @@ export function MenuOverlay() {
                                 hovered === null
                                   ? 'var(--menu-text)'
                                   : hovered === i
-                                  ? '#000000'
-                                  : 'rgba(10,10,10,0.15)',
+                                  ? 'var(--menu-label-strong)'
+                                  : 'var(--menu-label-dim)',
                               transition: 'color 0.2s ease',
                             }}
                           >
@@ -287,7 +287,7 @@ export function MenuOverlay() {
                           {/* Arrow circle */}
                           <motion.div
                             className="shrink-0 w-9 h-9 rounded-full border flex items-center justify-center"
-                            style={{ borderColor: 'rgba(10,10,10,0.2)' }}
+                            style={{ borderColor: 'var(--menu-arrow-border)' }}
                             animate={{
                               opacity: hovered === i ? 1 : 0,
                               scale: hovered === i ? 1 : 0.6,
@@ -296,7 +296,7 @@ export function MenuOverlay() {
                           >
                             <span
                               className="text-base leading-none"
-                              style={{ color: 'rgba(10,10,10,0.5)' }}
+                              style={{ color: 'var(--menu-arrow-color)' }}
                             >
                               →
                             </span>
