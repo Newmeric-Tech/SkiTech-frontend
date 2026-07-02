@@ -409,6 +409,8 @@ html[data-theme="light"] {
 
 #cursor-glow {
   position: fixed;
+  top: 0;
+  left: 0;
   width: 400px;
   height: 400px;
   border-radius: 50%;
@@ -423,6 +425,8 @@ html[data-theme="light"] {
 
 #cursor-dot {
   position: fixed;
+  top: 0;
+  left: 0;
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -436,6 +440,8 @@ html[data-theme="light"] {
 
 #cursor-ring {
   position: fixed;
+  top: 0;
+  left: 0;
   width: 28px;
   height: 28px;
   border-radius: 50%;
