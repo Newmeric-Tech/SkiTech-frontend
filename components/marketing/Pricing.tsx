@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { motion, useInView } from "motion/react";
 import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { SectionSeam } from "./SectionSeam";
 
 /* Merriweather is loaded globally in root layout — no re-import needed */
 
@@ -78,9 +79,10 @@ export function Pricing() {
     <section
       id="pricing"
       ref={ref}
-      className="py-24"
+      className="py-24 relative"
       style={{ background: "var(--mk-surface-1)", fontFamily: font }}
     >
+      <SectionSeam from="--mk-bg" to="--mk-surface-1" />
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
         <motion.div
           initial={{ opacity: 0, y: 28 }}

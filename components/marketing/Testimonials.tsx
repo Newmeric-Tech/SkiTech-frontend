@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { Star } from "lucide-react";
+import { SectionSeam } from "./SectionSeam";
 
 const font = "Merriweather, serif";
 
@@ -44,6 +45,7 @@ export function Testimonials() {
       className="py-28 relative overflow-hidden"
       style={{ background: "var(--mk-bg)", fontFamily: font }}
     >
+      <SectionSeam from="--mk-surface-1" to="--mk-bg" />
       {/* Subtle dot grid */}
       <div
         className="absolute inset-0 opacity-[0.045]"

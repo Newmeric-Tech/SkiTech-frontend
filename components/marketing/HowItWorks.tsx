@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useInView, useScroll, useSpring, useTransform } from "motion/react";
+import { SectionSeam } from "./SectionSeam";
 
 const font = "Merriweather, serif";
 
@@ -125,6 +126,7 @@ export function HowItWorks() {
       className="py-28 relative overflow-hidden"
       style={{ background: "var(--mk-bg)", fontFamily: font }}
     >
+      <SectionSeam from="--mk-surface-2" to="--mk-bg" />
       <div className="max-w-3xl mx-auto px-6 lg:px-10">
 
         {/* ── Header ── */}

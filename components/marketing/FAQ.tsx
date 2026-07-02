@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { motion, useInView, AnimatePresence } from "motion/react";
 import { Plus, Minus } from "lucide-react";
+import { SectionSeam } from "./SectionSeam";
 
 const font = "Merriweather, serif";
 
@@ -157,9 +158,10 @@ export function FAQ() {
     <section
       id="faqs"
       ref={ref}
-      className="py-28"
+      className="py-28 relative"
       style={{ background: "var(--mk-surface-2)", fontFamily: font }}
     >
+      <SectionSeam from="--mk-bg" to="--mk-surface-2" />
       <div className="max-w-2xl mx-auto px-6 lg:px-8">
 
         {/* Header */}

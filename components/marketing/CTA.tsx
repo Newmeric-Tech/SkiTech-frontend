@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { SectionSeam } from "./SectionSeam";
 
 const font = "Merriweather, serif";
 
@@ -17,6 +18,7 @@ export function CTA() {
       className="py-32 relative overflow-hidden"
       style={{ background: "var(--mk-surface-1)", fontFamily: font }}
     >
+      <SectionSeam from="--mk-surface-2" to="--mk-surface-1" />
       {/* Soft radial vignette */}
       <div
         className="absolute inset-0 pointer-events-none"

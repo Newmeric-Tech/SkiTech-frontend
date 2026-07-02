@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Send, Twitter, Linkedin, Github, Mail } from "lucide-react";
 import Link from "next/link";
+import { SectionSeam } from "./SectionSeam";
 
 const font = "Merriweather, serif";
 
@@ -48,6 +49,7 @@ export function Footer() {
       className="relative overflow-hidden"
       style={{ background: "var(--mk-bg)", fontFamily: font }}
     >
+      <SectionSeam from="--mk-surface-1" to="--mk-bg" />
       {/* Dot grid */}
       <div
         className="absolute inset-0 opacity-[0.04] pointer-events-none"
