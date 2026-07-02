@@ -46,7 +46,7 @@ export function Navbar() {
             </span>
           </Link>
 
-          {/* Right controls: ThemeToggle → Sign in → Get started → MENU */}
+          {/* Right controls: ThemeToggle → Sign in → MENU */}
           <div className="flex items-center gap-2.5">
             <ThemeToggle />
 
@@ -68,18 +68,6 @@ export function Navbar() {
               }}
             >
               Sign in
-            </Link>
-
-            <Link
-              href="/auth/login"
-              className="hidden md:inline-flex items-center gap-1 px-4 py-1.5 rounded-full text-[13px]"
-              style={{
-                background: "var(--mk-btn-primary-bg)",
-                color: "var(--mk-btn-primary-text)",
-                fontWeight: 700,
-              }}
-            >
-              Get started <span className="ml-0.5">→</span>
             </Link>
 
             <motion.button

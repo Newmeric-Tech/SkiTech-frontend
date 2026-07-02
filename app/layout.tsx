@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Merriweather } from "next/font/google";
 import "./globals.css";
 import { SharedStoreProvider } from "../store/SharedStore";
-import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import ChatWidgetGate from "@/components/chat/ChatWidgetGate";
 import { GoogleOAuthProvider } from "@react-oauth/google";
@@ -28,13 +27,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${merriweather.variable} font-sans antialiased`}>
         <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
-          <ThemeProvider attribute="data-theme" enableSystem={false} storageKey="next-theme-unused">
-            <SharedStoreProvider>
-              {children}
-              <Toaster richColors position="top-right" />
-              <ChatWidgetGate />
-            </SharedStoreProvider>
-          </ThemeProvider>
+          <SharedStoreProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+            <ChatWidgetGate />
+          </SharedStoreProvider>
         </GoogleOAuthProvider>
       </body>
     </html>
