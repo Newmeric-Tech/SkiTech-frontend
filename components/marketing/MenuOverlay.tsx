@@ -8,17 +8,17 @@ import { ThemeToggle } from './ThemeToggle'
 
 const menuItems = [
   {
-    num: '01', label: 'Home',        href: '/',
+    num: '01', label: 'Home',        href: '/#home',
     tag: 'Start here',  sub: 'Your journey begins',
     img: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=900&q=85',
   },
   {
-    num: '02', label: 'About',       href: '/about',
+    num: '02', label: 'About',       href: '/#about-us',
     tag: 'Our story',   sub: 'The people behind SkiTech',
     img: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=900&q=85',
   },
   {
-    num: '03', label: 'Features',    href: '/product',
+    num: '03', label: 'Features',    href: '/#features',
     tag: 'What we do',  sub: 'Powerful tools, refined',
     img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=900&q=85',
   },
@@ -33,12 +33,12 @@ const menuItems = [
     img: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=900&q=85',
   },
   {
-    num: '06', label: 'Pricing',     href: '/pricing',
+    num: '06', label: 'Pricing',     href: '/#pricing',
     tag: 'Fair & clear', sub: 'Transparent pricing',
     img: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=900&q=85',
   },
   {
-    num: '07', label: 'FAQs',        href: '/faqs',
+    num: '07', label: 'FAQs',        href: '/#faqs',
     tag: 'Got questions?', sub: 'We have answers',
     img: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=900&q=85',
   },

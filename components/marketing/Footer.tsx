@@ -10,13 +10,13 @@ const font = "Merriweather, serif";
 
 const footerLinks = {
   Product: [
-    { label: "Features", href: "/product" },
+    { label: "Features", href: "/#features" },
     { label: "Solutions", href: "/solutions" },
-    { label: "Pricing", href: "/pricing" },
+    { label: "Pricing", href: "/#pricing" },
     { label: "Dashboard", href: "/owner" },
   ],
   Company: [
-    { label: "About", href: "/about" },
+    { label: "About", href: "/#about-us" },
     { label: "Contact", href: "/contact" },
     { label: "Request Demo", href: "/demo" },
   ],
