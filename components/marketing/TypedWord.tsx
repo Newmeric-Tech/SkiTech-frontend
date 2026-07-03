@@ -38,8 +38,8 @@ export function TypedWord() {
       }, DELETE_MS)
     } else if (isDeleting && charIndex === 0) {
       /* Pause before next word */
-      setIsDeleting(false)
       timeout = setTimeout(() => {
+        setIsDeleting(false)
         setWordIndex((i) => (i + 1) % WORDS.length)
       }, PAUSE_NEXT)
     }
