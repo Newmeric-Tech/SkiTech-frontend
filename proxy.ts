@@ -10,6 +10,14 @@ const PUBLIC_ROUTES = [
   "/auth/superadmin-login",
   "/auth/verify-invite",
   "/demo",
+  "/about",
+  "/contact",
+  "/faqs",
+  "/features",
+  "/pricing",
+  "/product",
+  "/solutions",
+  "/why-skitec",
 ];
 
 // Role → allowed route prefixes
