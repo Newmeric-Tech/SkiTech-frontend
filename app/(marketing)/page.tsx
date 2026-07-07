@@ -1,6 +1,5 @@
 import Hero from "@/components/marketing/Hero";
 import { MarqueeTicker } from "@/components/marketing/MarqueeTicker";
-import { Stats } from "@/components/marketing/Stats";
 import AboutUs from "@/components/marketing/AboutUs";
 import { Features } from "@/components/marketing/Features";
 import { HowItWorks } from "@/components/marketing/HowItWorks";
@@ -16,7 +15,6 @@ export default function Home() {
       <MarqueeTicker />
       <Features />
       <HowItWorks />
-      <Stats />
       <AboutUs />
       <Pricing />
       <Testimonials />
