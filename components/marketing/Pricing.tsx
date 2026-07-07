@@ -179,7 +179,7 @@ export function Pricing() {
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.55, delay: i * 0.1 }}
               whileHover={{ y: plan.popular ? -6 : -4 }}
-              className="relative rounded-2xl p-8 transition-all duration-300"
+              className="relative rounded-2xl p-8 transition-all duration-300 backdrop-blur-lg"
               style={
                 plan.popular
                   ? {
@@ -188,8 +188,8 @@ export function Pricing() {
                       boxShadow:  "var(--mk-shadow-lg)",
                     }
                   : {
-                      background: "var(--mk-surface-1)",
-                      border:     "1px solid var(--mk-border)",
+                      background: "var(--mk-tile-glass-bg)",
+                      border:     "1px solid var(--mk-tile-glass-border)",
                       boxShadow:  "var(--mk-shadow-md)",
                     }
               }
