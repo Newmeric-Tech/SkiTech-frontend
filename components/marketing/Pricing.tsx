@@ -183,8 +183,8 @@ export function Pricing() {
               style={
                 plan.popular
                   ? {
-                      background: "var(--mk-btn-primary-bg)",
-                      border:     "1px solid var(--mk-btn-primary-bg)",
+                      background: "var(--mk-tile-glass-spotlight-bg)",
+                      border:     "1px solid var(--mk-tile-glass-spotlight-border)",
                       boxShadow:  "var(--mk-shadow-lg)",
                     }
                   : {
