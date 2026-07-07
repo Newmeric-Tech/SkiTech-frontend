@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from "react";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
+import { PrinciplesDeck } from "./PrinciplesDeck";
 
 // ── Reusable fade-up wrapper ──────────────────────────────────────────────────
 function FadeUp({
@@ -471,42 +472,9 @@ export default function AboutUs() {
           </h2>
         </FadeUp>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {[
-            { num: "I",   title: "Clarity First",    body: "Every decision we make removes complexity — never adds to it." },
-            { num: "II",  title: "Owner Obsessed",   body: "Every feature originates from a real problem faced by a real property team." },
-            { num: "III", title: "Speed by Design",  body: "Slow decisions cost money. Our platform is architected for velocity." },
-            { num: "IV",  title: "Globally Minded",  body: "Built for property teams across languages, timezones, and markets." },
-          ].map((p, i) => (
-            <GlassCard key={i} delay={i * 0.1} className="p-8">
-              <p
-                className="mb-6 leading-none"
-                style={{
-                  fontSize:   "3rem",
-                  fontWeight: 900,
-                  fontStyle:  "italic",
-                  color:      "var(--mk-text-3)",
-                }}
-              >
-                {p.num}
-              </p>
-              <h3
-                className="mb-3"
-                style={{
-                  fontSize:      "1rem",
-                  fontWeight:    700,
-                  letterSpacing: "-0.01em",
-                  color:         "var(--mk-text-1)",
-                }}
-              >
-                {p.title}
-              </h3>
-              <p className="text-sm leading-relaxed" style={{ fontWeight: 300, color: "var(--mk-text-3)" }}>
-                {p.body}
-              </p>
-            </GlassCard>
-          ))}
-        </div>
+        <FadeUp delay={0.15}>
+          <PrinciplesDeck />
+        </FadeUp>
       </section>
 
       {/* ═══════════════════════════════════════════════════════ CLOSING */}
