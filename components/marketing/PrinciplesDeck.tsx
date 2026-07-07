@@ -151,11 +151,11 @@ export function PrinciplesDeck() {
                   transformOrigin: "center bottom",
                   cursor: isActive ? (drag ? "grabbing" : "grab") : "default",
                   touchAction: "none",
-                  background: "linear-gradient(135deg, var(--mk-surface-2) 0%, var(--mk-surface-1) 100%)",
-                  border: "1px solid var(--mk-border)",
+                  background: "var(--mk-tile-glass-bg)",
+                  border: "1px solid var(--mk-tile-glass-border)",
                   boxShadow: isActive ? "var(--mk-shadow-lg)" : "var(--mk-shadow-md)",
                 }}
-                className="absolute inset-0 rounded-[24px] p-8 sm:p-9 flex flex-col justify-between select-none"
+                className="absolute inset-0 rounded-[24px] p-8 sm:p-9 flex flex-col justify-between select-none backdrop-blur-lg"
               >
                 <span
                   className="leading-none"

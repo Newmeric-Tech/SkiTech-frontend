@@ -130,13 +130,13 @@ function ModuleCard({
       }}
       style={{
         ...gridStyle,
-        background: isExpanded ? "var(--mk-surface-1)" : "var(--mk-surface-2)",
+        background: isExpanded ? "var(--mk-tile-glass-bg-hover)" : "var(--mk-tile-glass-bg)",
         border: `1px solid ${
           isExpanded
             ? "var(--mk-accent-glow)"
             : hovered
             ? "var(--mk-border-strong)"
-            : "var(--mk-border)"
+            : "var(--mk-tile-glass-border)"
         }`,
         boxShadow: isExpanded
           ? "var(--mk-shadow-lg)"
@@ -149,7 +149,7 @@ function ModuleCard({
         transition:
           "background 0.35s ease, border-color 0.3s ease, box-shadow 0.35s ease, transform 0.35s ease",
       }}
-      className="relative overflow-hidden rounded-2xl w-full"
+      className="relative overflow-hidden rounded-2xl w-full backdrop-blur-lg"
     >
       <AnimatePresence mode="wait" initial={false}>
         {isExpanded ? (

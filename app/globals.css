@@ -310,6 +310,11 @@ html[data-theme="dark"] {
   --mk-glass-bg:         rgba(255,255,255,0.07);
   --mk-glass-hover:      rgba(255,255,255,0.10);
   --mk-glass-border:     rgba(255,255,255,0.14);
+  /* Content-tile glass — inverted per theme so tiles never blend into --mk-bg.
+     Dark theme: white-tinted frosted glass. */
+  --mk-tile-glass-bg:        rgba(255,255,255,0.055);
+  --mk-tile-glass-bg-hover:  rgba(255,255,255,0.09);
+  --mk-tile-glass-border:    rgba(255,255,255,0.14);
   --mk-nav-bg:           rgba(10,10,10,0.75);
   --mk-grid-line:        rgba(255,255,255,0.025);
   --mk-hero-glow:        rgba(99,102,241,0.18);
@@ -341,6 +346,11 @@ html[data-theme="light"] {
   --mk-glass-bg:         rgba(255,255,255,0.60);
   --mk-glass-hover:      rgba(255,255,255,0.85);
   --mk-glass-border:     rgba(0,0,0,0.09);
+  /* Content-tile glass — inverted per theme so tiles never blend into --mk-bg.
+     Light theme: black-tinted frosted glass. */
+  --mk-tile-glass-bg:        rgba(0,0,0,0.045);
+  --mk-tile-glass-bg-hover:  rgba(0,0,0,0.075);
+  --mk-tile-glass-border:    rgba(0,0,0,0.14);
   --mk-nav-bg:           rgba(244,243,239,0.82);
   --mk-grid-line:        rgba(0,0,0,0.045);
   --mk-hero-glow:        rgba(79,70,229,0.09);

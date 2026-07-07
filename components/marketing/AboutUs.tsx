@@ -102,10 +102,10 @@ function GlassCard({
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ scale: 1.03, boxShadow: "var(--mk-shadow-lg)" }}
-      className={`backdrop-blur-sm rounded-2xl ${className}`}
+      className={`backdrop-blur-lg rounded-2xl ${className}`}
       style={{
-        background: "var(--mk-glass-bg)",
-        border:     "1px solid var(--mk-glass-border)",
+        background: "var(--mk-tile-glass-bg)",
+        border:     "1px solid var(--mk-tile-glass-border)",
       }}
     >
       {children}
