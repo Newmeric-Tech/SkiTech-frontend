@@ -30,14 +30,14 @@ export function ParticleCanvas() {
     const resize = () => {
       W = canvas.width  = canvas.offsetWidth
       H = canvas.height = canvas.offsetHeight
-      const count = Math.floor((W * H) / 14000)
+      const count = Math.floor((W * H) / 7000)
       particles = Array.from({ length: count }, () => ({
         x:        Math.random() * W,
         y:        Math.random() * H,
         vx:       (Math.random() - 0.5) * 0.3,
         vy:       (Math.random() - 0.5) * 0.3,
-        radius:   1 + Math.random() * 1.5,
-        alpha:    0.1 + Math.random() * 0.6,
+        radius:   1.2 + Math.random() * 1.8,
+        alpha:    0.18 + Math.random() * 0.7,
         alphaDir: Math.random() > 0.5 ? 1 : -1,
       }))
     }
@@ -74,8 +74,8 @@ export function ParticleCanvas() {
       particles.forEach((p) => {
         /* Pulse alpha */
         p.alpha += p.alphaDir * 0.005
-        if (p.alpha >= 0.75) { p.alpha = 0.75; p.alphaDir = -1 }
-        if (p.alpha <= 0.06) { p.alpha = 0.06; p.alphaDir =  1 }
+        if (p.alpha >= 0.9) { p.alpha = 0.9; p.alphaDir = -1 }
+        if (p.alpha <= 0.12) { p.alpha = 0.12; p.alphaDir =  1 }
 
         /* Mouse repulsion */
         const dx   = p.x - mouse.x
@@ -120,7 +120,7 @@ export function ParticleCanvas() {
             ctx.beginPath()
             ctx.moveTo(a.x, a.y)
             ctx.lineTo(b.x, b.y)
-            ctx.strokeStyle = `rgba(${rgb},${(1 - d / 90) * 0.16})`
+            ctx.strokeStyle = `rgba(${rgb},${(1 - d / 90) * 0.22})`
             ctx.lineWidth   = 0.6
             ctx.stroke()
           }
