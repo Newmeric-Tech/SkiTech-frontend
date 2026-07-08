@@ -140,16 +140,16 @@ export function Testimonials() {
               whileHover={{ y: -6, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }}
               className="group relative flex flex-col rounded-3xl p-8 cursor-default overflow-hidden transition-[background,border-color] duration-500"
               style={{
-                background:   "var(--mk-glass-bg)",
-                border:       "1px solid var(--mk-glass-border)",
+                background:   "var(--mk-tile-glass-bg)",
+                border:       "1px solid var(--mk-tile-glass-border)",
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.background    = "var(--mk-glass-hover)";
+                (e.currentTarget as HTMLDivElement).style.background    = "var(--mk-tile-glass-bg-hover)";
                 (e.currentTarget as HTMLDivElement).style.borderColor   = "var(--mk-border-strong)";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.background    = "var(--mk-glass-bg)";
-                (e.currentTarget as HTMLDivElement).style.borderColor   = "var(--mk-glass-border)";
+                (e.currentTarget as HTMLDivElement).style.background    = "var(--mk-tile-glass-bg)";
+                (e.currentTarget as HTMLDivElement).style.borderColor   = "var(--mk-tile-glass-border)";
               }}
             >
               {/* Corner glow on hover */}
