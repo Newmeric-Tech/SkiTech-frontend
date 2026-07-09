@@ -14,7 +14,7 @@ export function SectionSeam({
       style={{
         height,
         background: `linear-gradient(to bottom, var(${from}), var(${to}))`,
-        zIndex: 0,
+        zIndex: -1,
       }}
     />
   )

@@ -42,7 +42,7 @@ export function Testimonials() {
     <section
       id="testimonials"
       ref={ref}
-      className="py-28 relative overflow-hidden"
+      className="py-28 relative overflow-hidden isolate"
       style={{ background: "var(--mk-bg)", fontFamily: font }}
     >
       <SectionSeam from="--mk-surface-1" to="--mk-bg" />

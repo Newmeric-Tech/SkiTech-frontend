@@ -15,7 +15,7 @@ export function CTA() {
   return (
     <section
       ref={ref}
-      className="py-32 relative overflow-hidden"
+      className="py-32 relative overflow-hidden isolate"
       style={{ background: "var(--mk-surface-1)", fontFamily: font }}
     >
       <SectionSeam from="--mk-surface-2" to="--mk-surface-1" />

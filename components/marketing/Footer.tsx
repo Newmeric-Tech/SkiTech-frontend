@@ -46,7 +46,7 @@ export function Footer() {
 
   return (
     <footer
-      className="relative overflow-hidden"
+      className="relative overflow-hidden isolate"
       style={{ background: "var(--mk-bg)", fontFamily: font }}
     >
       <SectionSeam from="--mk-surface-1" to="--mk-bg" />

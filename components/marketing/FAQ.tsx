@@ -158,7 +158,7 @@ export function FAQ() {
     <section
       id="faqs"
       ref={ref}
-      className="py-28 relative"
+      className="py-28 relative isolate"
       style={{ background: "var(--mk-surface-2)", fontFamily: font }}
     >
       <SectionSeam from="--mk-bg" to="--mk-surface-2" />

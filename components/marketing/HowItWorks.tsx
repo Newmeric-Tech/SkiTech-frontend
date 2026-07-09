@@ -123,7 +123,7 @@ export function HowItWorks() {
     <section
       ref={sectionRef}
       id="how-it-works"
-      className="py-28 relative overflow-hidden"
+      className="py-28 relative overflow-hidden isolate"
       style={{ background: "var(--mk-bg)", fontFamily: font }}
     >
       <SectionSeam from="--mk-surface-2" to="--mk-bg" />

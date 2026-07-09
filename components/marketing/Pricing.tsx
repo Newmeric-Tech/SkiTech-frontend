@@ -79,7 +79,7 @@ export function Pricing() {
     <section
       id="pricing"
       ref={ref}
-      className="py-24 relative"
+      className="py-24 relative isolate"
       style={{ background: "var(--mk-surface-1)", fontFamily: font }}
     >
       <SectionSeam from="--mk-bg" to="--mk-surface-1" />
