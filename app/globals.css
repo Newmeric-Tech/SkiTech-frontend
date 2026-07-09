@@ -330,6 +330,11 @@ html[data-theme="dark"] {
   --mk-shadow-md:        0 4px 12px rgba(0,0,0,0.50);
   --mk-shadow-lg:        0 8px 24px rgba(0,0,0,0.60);
   --mk-cursor-hover:     rgba(255,255,255,0.30);
+  /* Footer watermark — metallic gradient text, reads as an etched/engraved
+     brand mark rather than flat type. Direction flips per theme so the
+     "shine" always falls toward the lighter end of that theme's palette. */
+  --mk-watermark-gradient: linear-gradient(to bottom, #ffffff 0%, #94a3b8 35%, #475569 60%, #0b0b0f 100%);
+  --mk-watermark-opacity:  0.05;
 }
 
 html[data-theme="light"] {
@@ -370,6 +375,8 @@ html[data-theme="light"] {
   --mk-shadow-md:        0 4px 12px rgba(0,0,0,0.09);
   --mk-shadow-lg:        0 8px 24px rgba(0,0,0,0.13);
   --mk-cursor-hover:     rgba(0,0,0,0.22);
+  --mk-watermark-gradient: linear-gradient(to bottom, #0f172a 0%, #475569 45%, #94a3b8 70%, #ffffff 100%);
+  --mk-watermark-opacity:  0.08;
 }
 
 /* Shared radius tokens — never change between themes */
