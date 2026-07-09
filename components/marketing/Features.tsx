@@ -23,7 +23,7 @@ const modules = [
     tag: "Core",
     stat: "Unified property control",
     desc: "Centralized property profiles, departments, vendor management, room tracking, and ownership details — all in one place. No more juggling spreadsheets across multiple properties.",
-    img: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=900&q=85",
+    img: "/images/modules/property_management.png",
     chips: ["Multi-property", "Vendor tracking", "Room status", "Owner portal"],
   },
   {
@@ -32,7 +32,7 @@ const modules = [
     tag: "People",
     stat: "Full workforce visibility",
     desc: "Workforce profiles, department mapping, shift scheduling, role assignment, and real-time staff visibility. Give every team member exactly the access they need — nothing more.",
-    img: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=900&q=85",
+    img: "/images/modules/employee_management.png",
     chips: ["Shift scheduling", "Role access", "Department map", "Attendance"],
   },
   {
@@ -41,7 +41,7 @@ const modules = [
     tag: "Compliance",
     stat: "Versioned & auditable",
     desc: "Create, version, and distribute SOPs across every property and department. Control who sees what, track compliance, and keep your standards consistent at scale.",
-    img: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=900&q=85",
+    img: "/images/modules/sop_management.png",
     chips: ["Versioned docs", "GPS proof", "Role visibility", "Compliance %"],
   },
   {
@@ -50,7 +50,7 @@ const modules = [
     tag: "Insights",
     stat: "Automated reporting",
     desc: "Revenue dashboards, KRA compliance tracking, occupancy metrics, and automated performance reports. Make data-driven decisions with clarity instead of guesswork.",
-    img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=900&q=85",
+    img: "/images/modules/analytics_reporting.png",
     chips: ["Revenue charts", "Occupancy %", "KRA trends", "CSV export"],
   },
   {
@@ -59,7 +59,7 @@ const modules = [
     tag: "Performance",
     stat: "Real-time compliance",
     desc: "Assign daily, weekly, and monthly KRAs to every department. Real-time compliance dashboards let managers spot underperformance early and course-correct before it becomes a problem.",
-    img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=900&q=85",
+    img: "/images/modules/kra_monitoring.png",
     chips: ["Daily KRAs", "Weekly KRAs", "Compliance %", "Staff ranking"],
   },
   {
@@ -68,7 +68,7 @@ const modules = [
     tag: "Operations",
     stat: "Zero stockout surprises",
     desc: "Track stock levels across all your properties with automated low-stock alerts, full audit trails, and reorder notifications. Never run out of essentials again.",
-    img: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=900&q=85",
+    img: "/images/modules/inventory_stock.png",
     chips: ["Auto-alerts", "Movement log", "Audit trail", "Multi-property"],
   },
 ];
