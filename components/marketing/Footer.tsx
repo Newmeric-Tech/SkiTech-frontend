@@ -65,7 +65,7 @@ export function Footer() {
         />
 
         <div
-          className="relative isolate overflow-hidden rounded-[24px] md:rounded-[36px] pt-14 md:pt-16 pb-8 px-6 md:px-16"
+          className="relative isolate overflow-hidden rounded-[24px] md:rounded-[36px] pt-10 md:pt-12 pb-6 px-6 md:px-16"
           style={{
             backgroundImage: "var(--mk-footer-wash)",
             border:      "1px solid var(--mk-border)",
@@ -73,12 +73,12 @@ export function Footer() {
           }}
         >
           <div className="relative z-10 max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
 
               {/* ── Brand col ── */}
               <div className="lg:col-span-2">
                 {/* Logo */}
-                <Link href="/" className="inline-flex items-center gap-2.5 mb-6 group">
+                <Link href="/" className="inline-flex items-center gap-2.5 mb-5 group">
                   <div
                     className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300"
                     style={{
@@ -115,7 +115,7 @@ export function Footer() {
                 </Link>
 
                 <p
-                  className="leading-relaxed max-w-xs mb-8"
+                  className="leading-relaxed max-w-xs mb-6"
                   style={{ fontSize: "0.85rem", fontFamily: font, color: "var(--mk-text-3)" }}
                 >
                   Property Operations Management System for modern property owners and managers.
@@ -225,7 +225,7 @@ export function Footer() {
 
             {/* ── Bottom bar ── */}
             <div
-              className="relative mt-14 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3"
+              className="relative mt-10 pt-5 flex flex-col sm:flex-row items-center justify-between gap-3"
               style={{ borderTop: "1px solid var(--mk-border)" }}
             >
               <p className="text-[11px]" style={{ fontFamily: font, color: "var(--mk-text-3)" }}>
@@ -246,7 +246,7 @@ export function Footer() {
             <span
               className="inline-block uppercase"
               style={{
-                fontSize:            "clamp(5rem, 16vw, 14rem)",
+                fontSize:            "clamp(4rem, 12vw, 9rem)",
                 fontWeight:          900,
                 fontFamily:          font,
                 letterSpacing:       "-0.04em",
