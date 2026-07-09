@@ -152,7 +152,7 @@ export function CTA() {
             whileTap={{ scale: 0.97 }}
           >
             <Link
-              href="/auth/login"
+              href="/demo"
               className="group inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl transition-opacity duration-300 hover:opacity-85"
               style={{
                 background: "var(--mk-btn-primary-bg)",
