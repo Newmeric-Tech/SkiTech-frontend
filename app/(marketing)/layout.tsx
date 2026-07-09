@@ -15,6 +15,11 @@ export default function MarketingLayout({
       <main className="flex-1">{children}</main>
       <Footer />
 
+      {/* Reserves scroll room so the fixed navbar (h-[60px], removed from
+          document flow) never permanently covers the tail of the footer
+          once the page is scrolled all the way to the bottom. */}
+      <div aria-hidden="true" className="h-[60px]" />
+
       {/* Cursor divs after all content — later DOM order + z-index 10000+ beats nav backdrop-filter */}
       <div id="cursor-glow" aria-hidden="true" />
       <div id="cursor-ring" aria-hidden="true" />

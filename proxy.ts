@@ -13,6 +13,11 @@ const PUBLIC_ROUTES = [
   "/solutions",
   "/why-skitec",
   "/contact",
+  "/features",
+  "/pricing",
+  "/about",
+  "/faqs",
+  "/product",
 ];
 
 // Role → allowed route prefixes

@@ -70,8 +70,8 @@ export function Footer() {
       />
 
       {/* Main content */}
-      <div className="relative max-w-6xl mx-auto px-6 lg:px-10 pt-20 pb-14">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8">
+      <div className="relative max-w-6xl mx-auto px-6 lg:px-10 pt-14 pb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8">
 
           {/* ── Brand col ── */}
           <div className="lg:col-span-2">
@@ -278,7 +278,7 @@ export function Footer() {
           SkiTech
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-6 lg:px-10 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="relative max-w-6xl mx-auto px-6 lg:px-10 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[11px]" style={{ fontFamily: font, color: "var(--mk-text-3)" }}>
             Built by Newmeric Tech LLC
           </p>
