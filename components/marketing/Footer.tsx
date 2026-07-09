@@ -40,9 +40,6 @@ const footerLinkClass =
   "after:bg-current after:origin-right after:scale-x-0 hover:after:origin-left hover:after:scale-x-100 " +
   "after:transition-transform after:duration-300";
 
-const noiseUrl =
-  "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E\")";
-
 export function Footer() {
   const [email, setEmail]         = useState("");
   const [subscribed, setSubscribed] = useState(false);
@@ -70,17 +67,11 @@ export function Footer() {
         <div
           className="relative isolate overflow-hidden rounded-[24px] md:rounded-[36px] pt-14 md:pt-16 pb-8 px-6 md:px-16"
           style={{
-            background:  "var(--mk-surface-1)",
+            backgroundImage: "var(--mk-footer-wash)",
             border:      "1px solid var(--mk-border)",
             boxShadow:   "var(--mk-shadow-lg)",
           }}
         >
-          {/* Noise texture */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{ backgroundImage: noiseUrl, opacity: 0.5 }}
-          />
-
           <div className="relative z-10 max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8">
 

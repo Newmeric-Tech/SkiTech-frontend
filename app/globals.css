@@ -335,6 +335,13 @@ html[data-theme="dark"] {
      "shine" always falls toward the lighter end of that theme's palette. */
   --mk-watermark-gradient: linear-gradient(to bottom, #ffffff 0%, #94a3b8 35%, #475569 60%, #0b0b0f 100%);
   --mk-watermark-opacity:  0.05;
+  /* Soft smoky black/white wash — replaces the noise texture on the footer
+     card with a smooth blurred-cloud gradient instead. */
+  --mk-footer-wash:
+    radial-gradient(60% 55% at 22% 12%,  rgba(255,255,255,0.14) 0%, transparent 70%),
+    radial-gradient(75% 65% at 62% 55%,  rgba(255,255,255,0.09) 0%, transparent 65%),
+    radial-gradient(55% 45% at 85% 90%,  rgba(255,255,255,0.05) 0%, transparent 70%),
+    #0b0b0f;
 }
 
 html[data-theme="light"] {
@@ -377,6 +384,11 @@ html[data-theme="light"] {
   --mk-cursor-hover:     rgba(0,0,0,0.22);
   --mk-watermark-gradient: linear-gradient(to bottom, #0f172a 0%, #475569 45%, #94a3b8 70%, #ffffff 100%);
   --mk-watermark-opacity:  0.08;
+  --mk-footer-wash:
+    radial-gradient(60% 55% at 22% 12%,  rgba(0,0,0,0.08) 0%, transparent 70%),
+    radial-gradient(75% 65% at 62% 55%,  rgba(0,0,0,0.05) 0%, transparent 65%),
+    radial-gradient(55% 45% at 85% 90%,  rgba(0,0,0,0.03) 0%, transparent 70%),
+    #ffffff;
 }
 
 /* Shared radius tokens — never change between themes */
