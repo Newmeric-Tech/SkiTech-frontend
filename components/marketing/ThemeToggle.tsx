@@ -1,6 +1,13 @@
 'use client'
 
+import { Sun, Moon } from 'lucide-react'
 import { useMarketingTheme } from './ThemeProvider'
+
+const SLOT = 26
+const PAD = 3
+const WIDTH = 64
+const HEIGHT = 32
+const TRAVEL = WIDTH - PAD * 2 - SLOT
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useMarketingTheme()
@@ -15,58 +22,88 @@ export function ThemeToggle() {
       }}
       aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
       style={{
+        position: 'relative',
         display: 'flex',
         alignItems: 'center',
-        gap: '6px',
-        background: 'rgba(255,255,255,0.06)',
-        border: '1px solid rgba(255,255,255,0.18)',
-        borderRadius: '10px',
-        padding: '5px 10px',
+        justifyContent: 'space-between',
+        width: `${WIDTH}px`,
+        height: `${HEIGHT}px`,
+        padding: `${PAD}px`,
+        borderRadius: '999px',
+        border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
+        background: isDark ? 'rgba(15,15,20,0.4)' : 'rgba(255,255,255,0.6)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        boxShadow: isDark ? 'none' : '0 4px 20px rgba(15,23,42,0.05)',
         cursor: 'pointer',
-        fontSize: '12px',
-        fontWeight: 600,
-        fontFamily: 'inherit',
-        color: 'inherit',
-        whiteSpace: 'nowrap',
+        flexShrink: 0,
+        transition:
+          'background-color 0.5s cubic-bezier(0.4,0,0.2,1), border-color 0.5s cubic-bezier(0.4,0,0.2,1), box-shadow 0.5s cubic-bezier(0.4,0,0.2,1)',
       }}
     >
-      {/* Mode icon */}
-      <span style={{ fontSize: '14px', lineHeight: '1' }}>
-        {isDark ? '☀️' : '🌙'}
-      </span>
+      {/* Sliding thumb */}
+      <span
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: `${PAD}px`,
+          left: `${PAD}px`,
+          width: `${SLOT}px`,
+          height: `${SLOT}px`,
+          borderRadius: '999px',
+          background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.05)',
+          border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(15,23,42,0.06)',
+          boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.25)' : '0 4px 12px rgba(15,23,42,0.04)',
+          transform: `translateX(${isDark ? TRAVEL : 0}px)`,
+          transition:
+            'transform 0.5s cubic-bezier(0.34,1.56,0.64,1), background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease',
+        }}
+      />
 
-      {/* Pill track */}
+      {/* Sun */}
       <span
         style={{
           position: 'relative',
-          display: 'inline-block',
-          width: '32px',
-          height: '18px',
-          borderRadius: '100px',
-          background: 'rgba(255,255,255,0.12)',
-          border: '1px solid rgba(255,255,255,0.22)',
-          flexShrink: 0,
+          zIndex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: `${SLOT}px`,
+          height: `${SLOT}px`,
         }}
       >
-        {/* Sliding thumb */}
-        <span
+        <Sun
+          size={15}
+          strokeWidth={2.5}
           style={{
-            position: 'absolute',
-            top: '2px',
-            left: isDark ? '2px' : '14px',
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            background: '#6366f1',
-            boxShadow: '0 0 6px rgba(99,102,241,0.6)',
-            transition: 'left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            color: !isDark ? '#eab308' : 'rgba(255,255,255,0.3)',
+            filter: !isDark ? 'drop-shadow(0 0 6px rgba(234,179,8,0.5))' : 'none',
+            transition: 'color 0.5s ease, filter 0.5s ease',
           }}
         />
       </span>
 
-      {/* Label */}
-      <span style={{ fontSize: '12px' }}>
-        {isDark ? 'Light' : 'Dark'}
+      {/* Moon */}
+      <span
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: `${SLOT}px`,
+          height: `${SLOT}px`,
+        }}
+      >
+        <Moon
+          size={15}
+          strokeWidth={2.5}
+          style={{
+            color: isDark ? '#3b82f6' : 'rgba(15,23,42,0.3)',
+            filter: isDark ? 'drop-shadow(0 0 6px rgba(59,130,246,0.5))' : 'none',
+            transition: 'color 0.5s ease, filter 0.5s ease',
+          }}
+        />
       </span>
     </button>
   )
