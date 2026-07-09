@@ -210,36 +210,6 @@ export default function AboutUs() {
             </p>
           </FadeUp>
 
-          {/* CTA */}
-          <FadeUp delay={0.9}>
-            <div className="mt-14">
-              <Link
-                href="/features"
-                className="group inline-flex items-center gap-3 px-8 py-4 rounded-full text-sm font-bold tracking-wide transition-all duration-300"
-                style={{
-                  background:  "var(--mk-btn-primary-bg)",
-                  color:       "var(--mk-btn-primary-text)",
-                  border:      "1px solid var(--mk-btn-primary-bg)",
-                  fontFamily:  font,
-                }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLAnchorElement;
-                  el.style.background  = "transparent";
-                  el.style.color       = "var(--mk-text-1)";
-                  el.style.borderColor = "var(--mk-text-1)";
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLAnchorElement;
-                  el.style.background  = "var(--mk-btn-primary-bg)";
-                  el.style.color       = "var(--mk-btn-primary-text)";
-                  el.style.borderColor = "var(--mk-btn-primary-bg)";
-                }}
-              >
-                Explore Platform
-                <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-              </Link>
-            </div>
-          </FadeUp>
         </motion.div>
 
         {/* Scroll indicator */}
@@ -519,31 +489,6 @@ export default function AboutUs() {
 
           <FadeUp delay={0.2}>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/features"
-                className="group inline-flex items-center gap-3 px-8 py-4 rounded-full text-sm font-bold tracking-wide transition-all duration-300"
-                style={{
-                  background:  "var(--mk-btn-primary-bg)",
-                  color:       "var(--mk-btn-primary-text)",
-                  border:      "1px solid var(--mk-btn-primary-bg)",
-                  fontFamily:  font,
-                }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLAnchorElement;
-                  el.style.background  = "transparent";
-                  el.style.color       = "var(--mk-text-1)";
-                  el.style.borderColor = "var(--mk-text-1)";
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLAnchorElement;
-                  el.style.background  = "var(--mk-btn-primary-bg)";
-                  el.style.color       = "var(--mk-btn-primary-text)";
-                  el.style.borderColor = "var(--mk-btn-primary-bg)";
-                }}
-              >
-                Explore Platform
-                <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-              </Link>
               <Link
                 href="/contact"
                 className="inline-flex items-center gap-3 px-6 py-4 text-sm transition-colors duration-200"
