@@ -12,6 +12,8 @@ interface Particle {
   alphaDir: number
 }
 
+const MDIST = 160 // mouse-to-dot connection reach, in px
+
 export function ParticleCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -77,29 +79,11 @@ export function ParticleCanvas() {
         if (p.alpha >= 0.9) { p.alpha = 0.9; p.alphaDir = -1 }
         if (p.alpha <= 0.12) { p.alpha = 0.12; p.alphaDir =  1 }
 
-        /* Mouse repulsion */
-        const dx   = p.x - mouse.x
-        const dy   = p.y - mouse.y
-        const dist = Math.sqrt(dx * dx + dy * dy)
-        if (dist > 0 && dist < 120) {
-          const force = (120 - dist) / 120
-          p.vx += (dx / dist) * force * 0.14
-          p.vy += (dy / dist) * force * 0.14
-        }
-
-        /* Dampen and clamp velocity */
-        p.vx *= 0.98
-        p.vy *= 0.98
-        const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy)
-        if (speed > 1.4) { p.vx *= 1.4 / speed; p.vy *= 1.4 / speed }
-
-        /* Move + wrap */
+        /* Move + bounce off walls (constant drift, no mouse repulsion) */
         p.x += p.vx
         p.y += p.vy
-        if (p.x < -5)    p.x = W + 5
-        if (p.x > W + 5) p.x = -5
-        if (p.y < -5)    p.y = H + 5
-        if (p.y > H + 5) p.y = -5
+        if (p.x < 0 || p.x > W) p.vx *= -1
+        if (p.y < 0 || p.y > H) p.vy *= -1
 
         /* Draw particle */
         ctx.beginPath()
@@ -122,6 +106,22 @@ export function ParticleCanvas() {
             ctx.lineTo(b.x, b.y)
             ctx.strokeStyle = `rgba(${rgb},${(1 - d / 90) * 0.22})`
             ctx.lineWidth   = 0.6
+            ctx.stroke()
+          }
+        }
+
+        /* Mouse-to-particle lines — dots don't flee the cursor, they connect to it */
+        if (mouse.x !== -9999) {
+          const a  = particles[i]
+          const dx = a.x - mouse.x
+          const dy = a.y - mouse.y
+          const d  = Math.sqrt(dx * dx + dy * dy)
+          if (d < MDIST) {
+            ctx.beginPath()
+            ctx.moveTo(a.x, a.y)
+            ctx.lineTo(mouse.x, mouse.y)
+            ctx.strokeStyle = `rgba(${rgb},${(1 - d / MDIST) * 0.65})`
+            ctx.lineWidth   = 0.8
             ctx.stroke()
           }
         }
