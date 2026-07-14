@@ -4,6 +4,31 @@
 
 ---
 
+## [2026-07-09] — Marketing Site: Images, Layout Fixes, Footer Redesign, Theme Toggle
+
+### Added
+- **Core module images**: Copied `sop_management.png`, `property_management.png`, `inventory_stock.png`, `kra_monitoring.png`, `employee_management.png`, `analytics_reporting.png` into `public/images/modules/`. `Features.tsx` now references these local files instead of the six Unsplash placeholder URLs.
+- **Footer "Connect" column**: `Footer.tsx` — added a 4th link column (X/LinkedIn/GitHub/Email as text links) alongside Product/Company/Access, replacing the old icon-button row. All footer links now use an animated underline-on-hover effect.
+- **Theme tokens**: `app/globals.css` — added `--mk-watermark-gradient` / `--mk-watermark-opacity` (metallic gradient text) and `--mk-footer-wash` (smooth black/white gradient background), each defined for both `html[data-theme="dark"]` and `html[data-theme="light"]`.
+
+### Changed
+- **Footer redesign ("Popcorn"-style floating card)**: `Footer.tsx` rewritten — the footer is now a floating rounded card (`rounded-[24px] md:rounded-[36px]`, margin around it, border, shadow, ambient glow) instead of a flush full-width bar. Added a large cropped metallic-gradient "SkiTech" watermark at the card's bottom edge. Kept the existing "Stay Updated" newsletter signup, restyled to fit above the link columns. Replaced a grainy noise-texture background with the smooth `--mk-footer-wash` gradient.
+- **Theme toggle redesign**: `ThemeToggle.tsx` — replaced the icon+pill+label button with a glassmorphic capsule switch (sliding thumb behind a Sun/Moon icon pair from lucide-react; active icon glows yellow/blue, inactive is dimmed). `ThemeProvider.tsx` and the underlying `data-theme` toggle logic were **not** touched.
+- **Removed duplicate "Explore Platform" CTAs**: `AboutUs.tsx` — removed from both the hero section and the "bottom line" closing section (kept "Get in touch").
+
+### Fixed
+- **Section-seam overlap**: `SectionSeam.tsx`'s transition gradient had `position: absolute` + `z-index: 0`, which per CSS stacking rules painted it *over* static heading text near a section's top (e.g. "Simple, Transparent Pricing" looked cut off). Changed `zIndex` to `-1` and added `isolate` to the six sections using it (`Pricing.tsx`, `CTA.tsx`, `Footer.tsx`, `FAQ.tsx`, `HowItWorks.tsx`, `Testimonials.tsx`) so each section's gradient stays contained within its own section.
+- **Public route gating**: `proxy.ts` — `/features`, `/pricing`, `/about`, `/faqs`, `/product` were missing from `PUBLIC_ROUTES`, so logged-out visitors clicking those links were redirected to `/auth/login`. Added all five.
+- **Fixed navbar covering footer**: `app/(marketing)/layout.tsx` — added a 60px spacer after `<Footer />` matching the fixed navbar's height. Fixed-position navbars are excluded from document flow, so on shorter pages scrolling to the true bottom left the navbar permanently overlapping the last ~60px of footer content with no way to scroll past it.
+- **Wrong "Request a Demo" link**: `CTA.tsx` — button's `href` was `/auth/login` (mislabeled), changed to `/demo`. Audited every other CTA/link across the marketing site (Hero, Navbar, Pricing, Footer, MenuOverlay, standalone `/demo` `/contact` `/product` `/pricing` pages) — no other mismatches found.
+- **Footer grid bug**: `Footer.tsx` — the card grid was `lg:grid-cols-5` (brand spans 2 + 3 original link columns = 5). Adding the 4th "Connect" column made it 2+4=6, which overflowed the grid — Connect wrapped onto an empty second row, roughly doubling the footer's height. Fixed to `lg:grid-cols-6`; also trimmed padding/margins and watermark size for a more compact card.
+
+### Known follow-ups (not yet fixed)
+- Social icon links (Footer "Connect" column, `MenuOverlay` social row) still point to `href="#"` placeholders — no real Twitter/X, LinkedIn, GitHub, or Instagram URLs provided yet.
+- `app/(marketing)/product/page.tsx` — the "Watch Demo" button has no `onClick` handler; it's currently inert.
+
+---
+
 ## [2026-05-25] — Bug Fixes (Session, Editor, Hotel Lock, Complaints, Persistence)
 
 ### Fixed

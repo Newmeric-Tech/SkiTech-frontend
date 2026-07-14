@@ -2,17 +2,28 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Zap, ShieldCheck, LineChart, Users, ChevronsDown } from "lucide-react";
 import Link from "next/link";
 import { ParticleCanvas } from "./ParticleCanvas";
 import { TypedWord } from "./TypedWord";
 
+const GRAIN_URL =
+  "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E\")";
+
+const FEATURE_PILLS = [
+  { icon: Zap, label: "Fast setup" },
+  { icon: ShieldCheck, label: "Enterprise security" },
+  { icon: LineChart, label: "Real-time analytics" },
+  { icon: Users, label: "Multi-role access" },
+];
+
 export default function Hero() {
   const sectionRef = useRef<HTMLElement | null>(null);
 
-  const [showPill,  setShowPill]  = useState(false);
-  const [showSub,   setShowSub]   = useState(false);
-  const [showCTAs,  setShowCTAs]  = useState(false);
+  const [showPill,      setShowPill]      = useState(false);
+  const [showSub,       setShowSub]       = useState(false);
+  const [showCTAs,      setShowCTAs]      = useState(false);
+  const [showScrollCue, setShowScrollCue] = useState(true);
   const [mouse,     setMouse]     = useState({ x: -9999, y: -9999 });
 
   /* Staggered content reveal */
@@ -22,6 +33,13 @@ export default function Hero() {
     const t3 = setTimeout(() => setShowCTAs(true),  1000)
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
   }, [])
+
+  /* Hide the scroll cue once the user starts scrolling past the fold */
+  useEffect(() => {
+    const onScroll = () => setShowScrollCue(window.scrollY < 80);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   /* Mouse spotlight */
   useEffect(() => {
@@ -45,8 +63,18 @@ export default function Hero() {
       id="home"
       ref={sectionRef}
       className="relative w-full min-h-screen overflow-hidden px-4 pt-32 pb-24 flex flex-col justify-center"
-      style={{ background: "var(--mk-bg)" }}
+      style={{
+        backgroundColor: "var(--mk-bg)",
+        backgroundImage:
+          "radial-gradient(ellipse 60% 50% at 50% 10%, var(--mk-hero-glow) 0%, transparent 70%)",
+      }}
     >
+      {/* Grain texture */}
+      <div
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{ backgroundImage: GRAIN_URL, opacity: 0.4 }}
+      />
+
       {/* Particle canvas */}
       <ParticleCanvas />
 
@@ -69,16 +97,18 @@ export default function Hero() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-6 px-5 py-2 rounded-full border backdrop-blur-sm text-xs"
+              className="mb-[30px] pl-2.5 pr-4 py-1.5 rounded-full border backdrop-blur-sm"
               style={{
-                background:   "var(--mk-glass-bg)",
-                borderColor:  "var(--mk-border)",
-                color:        "var(--mk-text-2)",
+                background:    "var(--mk-glass-bg)",
+                borderColor:   "var(--mk-border)",
+                color:         "var(--mk-text-2)",
+                fontSize:      "11.5px",
+                letterSpacing: "0.03em",
               }}
             >
               <span className="flex items-center gap-2">
-                <Sparkles className="w-3 h-3" />
-                Built for Owners. Made for Growth
+                <Sparkles className="w-3.5 h-3.5" />
+                Built for owners. Made for growth.
               </span>
             </motion.div>
           )}
@@ -126,14 +156,15 @@ export default function Hero() {
             >
               <Link
                 href="/demo"
-                className="flex items-center gap-2 px-8 py-3.5 rounded-full transition shadow-lg hover:shadow-xl"
+                className="group flex items-center gap-2.5 px-8 py-3.5 rounded-full transition-all duration-150 ease-out hover:-translate-y-0.5 active:scale-[0.97]"
                 style={{
                   background: "var(--mk-btn-primary-bg)",
                   color:      "var(--mk-btn-primary-text)",
                   boxShadow:  "var(--mk-shadow-lg)",
                 }}
               >
-                Book a Demo <ArrowRight className="w-4 h-4" />
+                Book a Demo
+                <ArrowRight className="w-4 h-4 transition-transform duration-150 group-hover:translate-x-1" />
               </Link>
             </motion.div>
           )}
@@ -148,27 +179,23 @@ export default function Hero() {
               transition={{ delay: 0.3 }}
               className="mt-10"
             >
-              <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
-                {[
-                  { icon: "M13 2L3 14h7l-1 8 10-12h-7l1-8z", label: "Fast Setup" },
-                  { icon: "M12 2l7 4v6c0 5-3.8 9.7-7 10-3.2-.3-7-5-7-10V6l7-4z", label: "Enterprise Security" },
-                  { icon: "M3 3v18h18M7 13l3-3 4 4 5-5", label: "Real-Time Analytics" },
-                ].map(({ icon, label }, i) => (
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {FEATURE_PILLS.map(({ icon: Icon, label }, i) => (
                   <motion.div
-                    key={i}
-                    whileHover={{ scale: 1.05, y: -4 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="flex items-center gap-3 px-5 py-3 rounded-full backdrop-blur-md transition"
+                    key={label}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.08 }}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-full backdrop-blur-sm transition-colors duration-200"
                     style={{
-                      background:   "var(--mk-glass-bg)",
-                      border:       "1px solid var(--mk-border)",
-                      color:        "var(--mk-text-1)",
+                      border:     "0.5px solid var(--mk-border)",
+                      background: "var(--mk-glass-bg)",
+                      color:      "var(--mk-text-2)",
+                      fontSize:   "12px",
                     }}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d={icon} />
-                    </svg>
-                    <span className="text-sm font-medium">{label}</span>
+                    <Icon className="w-3.5 h-3.5" style={{ color: "var(--mk-text-3)" }} />
+                    {label}
                   </motion.div>
                 ))}
               </div>
@@ -215,6 +242,30 @@ export default function Hero() {
                 }}
               />
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Scroll cue — pinned to viewport, fades once the user scrolls past the fold */}
+      <AnimatePresence>
+        {showScrollCue && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1, y: [0, 5, 0] }}
+            exit={{ opacity: 0 }}
+            transition={{
+              opacity: { duration: 0.3 },
+              y: { duration: 2.2, repeat: Infinity, ease: "easeInOut" },
+            }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 uppercase pointer-events-none"
+            style={{
+              color:         "var(--mk-text-3)",
+              fontSize:      "10px",
+              letterSpacing: "0.14em",
+            }}
+          >
+            <ChevronsDown className="w-3.5 h-3.5" />
+            Scroll
           </motion.div>
         )}
       </AnimatePresence>
