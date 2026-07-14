@@ -102,7 +102,7 @@ export function CustomCursor() {
           width:        GLOW_SIZE,
           height:       GLOW_SIZE,
           borderRadius: '50%',
-          background:   'radial-gradient(circle, var(--mk-accent-glow) 0%, transparent 68%)',
+          background:   'radial-gradient(circle, color-mix(in srgb, var(--mk-text-1) 25%, transparent) 0%, transparent 68%)',
           opacity:      0,
           willChange:   'transform',
         }}
@@ -118,7 +118,7 @@ export function CustomCursor() {
           width:        RING_SIZE,
           height:       RING_SIZE,
           borderRadius: '50%',
-          border:       '1.5px solid var(--mk-accent)',
+          border:       '1.5px solid var(--mk-text-1)',
           opacity:      0,
           willChange:   'transform',
           transformOrigin: '50% 50%',
@@ -135,7 +135,7 @@ export function CustomCursor() {
           width:        DOT_SIZE,
           height:       DOT_SIZE,
           borderRadius: '50%',
-          background:   'var(--mk-accent)',
+          background:   'var(--mk-text-1)',
           opacity:      0,
           willChange:   'transform',
         }}

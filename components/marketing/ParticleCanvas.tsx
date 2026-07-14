@@ -30,8 +30,13 @@ export function ParticleCanvas() {
     const mouse = { x: -9999, y: -9999 }
 
     const resize = () => {
-      W = canvas.width  = canvas.offsetWidth
-      H = canvas.height = canvas.offsetHeight
+      const newW = canvas.offsetWidth
+      const newH = canvas.offsetHeight
+      /* Skip re-init if the box hasn't actually changed size — avoids
+         resetting/jittering particles on every observer callback. */
+      if (newW === W && newH === H) return
+      W = canvas.width  = newW
+      H = canvas.height = newH
       const count = Math.floor((W * H) / 7000)
       particles = Array.from({ length: count }, () => ({
         x:        Math.random() * W,
@@ -58,7 +63,11 @@ export function ParticleCanvas() {
       }
     }
 
-    window.addEventListener('resize', resize)
+    /* Track the canvas's actual rendered box, not just window resizes —
+       the hero section grows taller once the dashboard preview animates in,
+       and a stale drawing-buffer size throws off mouse-to-dot coordinates. */
+    const observer = new ResizeObserver(resize)
+    observer.observe(canvas)
     window.addEventListener('mousemove', onMouseMove)
     resize()
 
@@ -134,7 +143,7 @@ export function ParticleCanvas() {
 
     return () => {
       cancelAnimationFrame(animId)
-      window.removeEventListener('resize', resize)
+      observer.disconnect()
       window.removeEventListener('mousemove', onMouseMove)
     }
   }, [])
