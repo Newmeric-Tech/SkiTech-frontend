@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useMarketingTheme } from './ThemeProvider'
 
 const WORDS      = ['hotel', 'resort', 'restaurant', 'property', 'portfolio']
 const TYPE_MS    = 90
@@ -10,8 +9,6 @@ const PAUSE_FULL = 1600
 const PAUSE_NEXT = 300
 
 export function TypedWord() {
-  const { theme } = useMarketingTheme()
-
   const [display,    setDisplay]    = useState('')
   const [wordIndex,  setWordIndex]  = useState(0)
   const [charIndex,  setCharIndex]  = useState(0)
@@ -47,31 +44,16 @@ export function TypedWord() {
     return () => clearTimeout(timeout)
   }, [charIndex, wordIndex, isDeleting])
 
-  const gradient =
-    theme === 'dark'
-      ? 'linear-gradient(135deg,#a5b4fc,#6366f1,#818cf8)'
-      : 'linear-gradient(135deg,#4338ca,#6366f1,#818cf8)'
-
   return (
-    <span className="relative inline-block">
-      {/* Gradient typed text */}
-      <span
-        style={{
-          backgroundImage: gradient,
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-        }}
-      >
-        {display || ' '}
-      </span>
+    <span className="relative inline-block" style={{ color: 'var(--mk-text-1)' }}>
+      {display || ' '}
 
       {/* Blinking cursor — excluded from global theme transition */}
       <span
         className="typed-cursor absolute -right-[5px] top-[0.08em] bottom-[0.08em] rounded-[1px]"
         style={{
           width: 3,
-          background: 'var(--mk-accent)',
+          background: 'var(--mk-text-1)',
           animation: 'mk-blink-cursor 0.8s step-end infinite',
         }}
       />

@@ -6,6 +6,7 @@ import { ArrowRight, Sparkles, Zap, ShieldCheck, LineChart, Users, ChevronsDown 
 import Link from "next/link";
 import { ParticleCanvas } from "./ParticleCanvas";
 import { TypedWord } from "./TypedWord";
+import { useMarketingTheme } from "./ThemeProvider";
 
 const GRAIN_URL =
   "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E\")";
@@ -19,6 +20,12 @@ const FEATURE_PILLS = [
 
 export default function Hero() {
   const sectionRef = useRef<HTMLElement | null>(null);
+  const { theme } = useMarketingTheme();
+
+  /* Monochrome (black/white) glows — kept local to the hero so the site-wide
+     indigo --mk-accent* tokens used elsewhere stay untouched. */
+  const heroGlow  = theme === "dark" ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.06)";
+  const spotGlow  = theme === "dark" ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.06)";
 
   const [showPill,      setShowPill]      = useState(false);
   const [showSub,       setShowSub]       = useState(false);
@@ -66,7 +73,7 @@ export default function Hero() {
       style={{
         backgroundColor: "var(--mk-bg)",
         backgroundImage:
-          "radial-gradient(ellipse 60% 50% at 50% 10%, var(--mk-hero-glow) 0%, transparent 70%)",
+          `radial-gradient(ellipse 60% 50% at 50% 10%, ${heroGlow} 0%, transparent 70%)`,
       }}
     >
       {/* Grain texture */}
@@ -83,7 +90,7 @@ export default function Hero() {
         className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-300"
         style={{
           background: `radial-gradient(500px circle at ${mouse.x}px ${mouse.y}px,
-            var(--mk-accent-soft) 0%,
+            ${spotGlow} 0%,
             transparent 70%)`,
         }}
       />

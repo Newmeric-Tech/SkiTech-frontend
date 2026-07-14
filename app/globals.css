@@ -322,7 +322,7 @@ html[data-theme="dark"] {
   --mk-nav-bg:           rgba(10,10,10,0.75);
   --mk-grid-line:        rgba(255,255,255,0.025);
   --mk-hero-glow:        rgba(99,102,241,0.18);
-  --mk-particle-rgb:     99,102,241;
+  --mk-particle-rgb:     255,255,255;
   --mk-btn-primary-bg:   #ffffff;
   --mk-btn-primary-text: #000000;
   --mk-btn-pb:           #ffffff;
@@ -374,7 +374,7 @@ html[data-theme="light"] {
   --mk-nav-bg:           rgba(244,243,239,0.82);
   --mk-grid-line:        rgba(0,0,0,0.045);
   --mk-hero-glow:        rgba(79,70,229,0.09);
-  --mk-particle-rgb:     79,70,229;
+  --mk-particle-rgb:     0,0,0;
   --mk-btn-primary-bg:   #0d0d0d;
   --mk-btn-primary-text: #ffffff;
   --mk-btn-pb:           #0d0d0d;
