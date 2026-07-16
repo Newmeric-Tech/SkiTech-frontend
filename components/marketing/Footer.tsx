@@ -73,7 +73,7 @@ export function Footer() {
           }}
         >
           <div className="relative z-10 max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2.4fr_1fr_1fr_1fr_1fr] gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2.9fr_1fr_1fr_1fr_1fr] gap-8">
 
               {/* ── Brand col ── */}
               <div>
@@ -150,33 +150,44 @@ export function Footer() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onSubmit={handleSubscribe}
-                        className="flex gap-2"
+                        className="relative flex items-center gap-1.5 p-1.5 rounded-full overflow-hidden w-full max-w-md"
+                        style={{
+                          background: "var(--mk-glass-bg)",
+                          border:     "1px solid var(--mk-glass-border)",
+                          boxShadow:
+                            "var(--mk-shadow-md), inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 1px rgba(0,0,0,0.06)",
+                          backdropFilter:       "blur(20px) saturate(180%)",
+                          WebkitBackdropFilter: "blur(20px) saturate(180%)",
+                        }}
                       >
+                        {/* liquid sheen */}
+                        <div
+                          aria-hidden
+                          className="pointer-events-none absolute inset-0 rounded-full"
+                          style={{
+                            background: "linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 45%)",
+                          }}
+                        />
                         <input
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="your@email.com"
-                          className="flex-1 min-w-0 rounded-xl px-4 py-2.5 focus:outline-none transition-colors duration-300 text-sm"
+                          className="relative z-10 flex-1 min-w-0 rounded-full px-4 py-2.5 bg-transparent focus:outline-none transition-colors duration-300 text-sm"
                           style={{
-                            background:   "var(--mk-glass-bg)",
-                            border:       "1px solid var(--mk-border)",
-                            color:        "var(--mk-text-1)",
-                            fontFamily:   font,
-                          }}
-                          onFocus={(e) => {
-                            (e.currentTarget as HTMLInputElement).style.borderColor = "var(--mk-border-strong)";
-                          }}
-                          onBlur={(e) => {
-                            (e.currentTarget as HTMLInputElement).style.borderColor = "var(--mk-border)";
+                            color:      "var(--mk-text-1)",
+                            fontFamily: font,
                           }}
                         />
                         <motion.button
                           whileHover={{ scale: 1.06 }}
                           whileTap={{ scale: 0.95 }}
                           type="submit"
-                          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-opacity duration-300 hover:opacity-85"
-                          style={{ background: "var(--mk-btn-primary-bg)" }}
+                          className="relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-opacity duration-300 hover:opacity-85"
+                          style={{
+                            background: "var(--mk-btn-primary-bg)",
+                            boxShadow:  "inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 2px rgba(0,0,0,0.15)",
+                          }}
                         >
                           <Send className="w-4 h-4" style={{ color: "var(--mk-btn-primary-text)" }} />
                         </motion.button>
