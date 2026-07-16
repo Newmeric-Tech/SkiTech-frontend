@@ -73,10 +73,10 @@ export function Footer() {
           }}
         >
           <div className="relative z-10 max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2.4fr_1fr_1fr_1fr_1fr] gap-8">
 
               {/* ── Brand col ── */}
-              <div className="lg:col-span-2">
+              <div>
                 {/* Logo */}
                 <Link href="/" className="inline-flex items-center gap-2.5 mb-5 group">
                   <div
