@@ -397,8 +397,13 @@ html[data-theme="light"] {
   --mk-radius-md: 10px;
   --mk-radius-lg: 14px;
   --mk-radius-xl: 20px;
+  /* Marketing-only font pairing — scoped here so dashboard/auth pages
+     (which use --font-merriweather from the root layout) are untouched. */
+  --mk-font-serif: var(--font-playfair), 'Playfair Display', Georgia, serif;
+  --mk-font-sans:  var(--font-plus-jakarta), 'Plus Jakarta Sans', system-ui, sans-serif;
   background: var(--mk-bg);
   color: var(--mk-text-1);
+  font-family: var(--mk-font-sans);
   min-height: 100vh;
 }
 

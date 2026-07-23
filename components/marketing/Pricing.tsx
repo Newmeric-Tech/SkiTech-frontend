@@ -6,9 +6,8 @@ import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { SectionSeam } from "./SectionSeam";
 
-/* Merriweather is loaded globally in root layout — no re-import needed */
-
-const font = "Merriweather, serif";
+const font = "var(--mk-font-serif)";
+const bodyFont = "var(--mk-font-sans)";
 
 const plans = [
   {
@@ -80,7 +79,7 @@ export function Pricing() {
       id="pricing"
       ref={ref}
       className="py-24 relative isolate"
-      style={{ background: "var(--mk-surface-1)", fontFamily: font }}
+      style={{ background: "var(--mk-surface-1)", fontFamily: bodyFont }}
     >
       <SectionSeam from="--mk-bg" to="--mk-surface-1" />
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
@@ -106,6 +105,7 @@ export function Pricing() {
               color:         "var(--mk-text-1)",
               lineHeight:    1.15,
               letterSpacing: "-0.01em",
+              fontFamily:    font,
             }}
           >
             Simple,{" "}

@@ -6,7 +6,8 @@ import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { SectionSeam } from "./SectionSeam";
 
-const font = "Merriweather, serif";
+const font = "var(--mk-font-serif)";
+const bodyFont = "var(--mk-font-sans)";
 
 export function CTA() {
   const ref = useRef(null);
@@ -16,7 +17,7 @@ export function CTA() {
     <section
       ref={ref}
       className="py-32 relative overflow-hidden isolate"
-      style={{ background: "var(--mk-surface-1)", fontFamily: font }}
+      style={{ background: "var(--mk-surface-1)", fontFamily: bodyFont }}
     >
       <SectionSeam from="--mk-surface-2" to="--mk-surface-1" />
       {/* Soft radial vignette */}
@@ -74,7 +75,7 @@ export function CTA() {
           style={{
             fontSize:      "clamp(6rem, 20vw, 16rem)",
             fontWeight:    900,
-            fontFamily:    font,
+            fontFamily:    bodyFont,
             fontStyle:     "italic",
             color:         "var(--mk-text-1)",
             opacity:       0.028,
@@ -95,7 +96,7 @@ export function CTA() {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.55, ease: "easeOut" }}
           className="text-[10.5px] uppercase tracking-[0.22em] mb-6"
-          style={{ fontWeight: 700, fontFamily: font, color: "var(--mk-text-2)" }}
+          style={{ fontWeight: 700, fontFamily: bodyFont, color: "var(--mk-text-2)" }}
         >
           Get Started
         </motion.p>
@@ -124,7 +125,7 @@ export function CTA() {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, delay: 0.18, ease: "easeOut" }}
           className="mt-6 max-w-lg mx-auto leading-[1.85]"
-          style={{ fontSize: "0.9rem", fontFamily: font, color: "var(--mk-text-2)" }}
+          style={{ fontSize: "0.9rem", fontFamily: bodyFont, color: "var(--mk-text-2)" }}
         >
           Join property teams who have simplified their daily operations with SkiTech's
           centralized management platform. Start your free 14-day trial today.
@@ -157,7 +158,7 @@ export function CTA() {
               style={{
                 background: "var(--mk-btn-primary-bg)",
                 color:      "var(--mk-btn-primary-text)",
-                fontFamily: font,
+                fontFamily: bodyFont,
                 fontWeight: 700,
                 fontSize:   "0.9rem",
               }}
@@ -176,7 +177,7 @@ export function CTA() {
               className="group inline-flex items-center gap-1.5 px-5 py-4 rounded-2xl border border-transparent transition-all duration-300"
               style={{
                 color:      "var(--mk-text-2)",
-                fontFamily: font,
+                fontFamily: bodyFont,
                 fontWeight: 700,
                 fontSize:   "0.88rem",
               }}
@@ -201,7 +202,7 @@ export function CTA() {
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ duration: 0.5, delay: 0.5 }}
           className="mt-8 text-[11px] uppercase tracking-[0.16em]"
-          style={{ fontFamily: font, fontWeight: 700, color: "var(--mk-text-2)" }}
+          style={{ fontFamily: bodyFont, fontWeight: 700, color: "var(--mk-text-2)" }}
         >
           No credit card required · 14-day free trial · Cancel anytime
         </motion.p>

@@ -13,10 +13,11 @@ import {
   X,
 } from "lucide-react";
 
-const font = "Merriweather, serif";
+const font = "var(--mk-font-serif)";
+const bodyFont = "var(--mk-font-sans)";
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-const modules = [
+export const modules = [
   {
     icon: Building2,
     title: "Property Management",
@@ -233,7 +234,7 @@ function ModuleCard({
                 </div>
                 <h3
                   className="text-[1.15rem] font-bold leading-tight tracking-tight sm:text-[1.35rem]"
-                  style={{ fontFamily: font, color: "var(--mk-text-1)" }}
+                  style={{ fontFamily: bodyFont, color: "var(--mk-text-1)" }}
                 >
                   {mod.title}
                 </h3>
@@ -247,7 +248,7 @@ function ModuleCard({
               >
                 <p
                   className="mb-4 text-[0.85rem] leading-relaxed"
-                  style={{ fontFamily: font, color: "var(--mk-text-2)" }}
+                  style={{ fontFamily: bodyFont, color: "var(--mk-text-2)" }}
                 >
                   {mod.desc}
                 </p>
@@ -260,7 +261,7 @@ function ModuleCard({
                         color: "var(--mk-accent)",
                         background: "var(--mk-accent-soft)",
                         border: "1px solid var(--mk-accent-glow)",
-                        fontFamily: font,
+                        fontFamily: bodyFont,
                       }}
                     >
                       {chip}
@@ -300,7 +301,7 @@ function ModuleCard({
               </div>
               <h3
                 className={isDense ? "text-[13px] font-semibold leading-snug" : "text-[15.5px] font-semibold leading-snug"}
-                style={{ fontFamily: font, color: "var(--mk-text-1)" }}
+                style={{ fontFamily: bodyFont, color: "var(--mk-text-1)" }}
               >
                 {mod.title}
               </h3>
@@ -352,7 +353,7 @@ export function Features() {
       id="features"
       ref={ref}
       className="py-24 md:py-28"
-      style={{ background: "var(--mk-surface-2)", fontFamily: font }}
+      style={{ background: "var(--mk-surface-2)", fontFamily: bodyFont }}
     >
       <div className="mx-auto max-w-[1300px] px-6 lg:px-10">
         {/* ── Header ── */}
@@ -362,7 +363,7 @@ export function Features() {
             animate={headerInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, ease: "easeOut" }}
             className="mb-4 text-[10.5px] uppercase tracking-[0.22em]"
-            style={{ fontWeight: 700, fontFamily: font, color: "var(--mk-text-2)" }}
+            style={{ fontWeight: 700, fontFamily: bodyFont, color: "var(--mk-text-2)" }}
           >
             Core Modules
           </motion.p>
@@ -389,7 +390,7 @@ export function Features() {
             animate={headerInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, delay: 0.2, ease: "easeOut" }}
             className="mx-auto mt-5 max-w-md leading-relaxed"
-            style={{ fontSize: "0.88rem", fontFamily: font, color: "var(--mk-text-3)" }}
+            style={{ fontSize: "0.88rem", fontFamily: bodyFont, color: "var(--mk-text-3)" }}
           >
             Six powerful modules working together to eliminate spreadsheets and disconnected tools. Click any to explore.
           </motion.p>
@@ -450,7 +451,7 @@ export function Features() {
               exit={{ opacity: 0, y: 5 }}
               transition={{ duration: 0.3 }}
               className="mt-8 flex items-center justify-center gap-2 text-[11px] tracking-[0.04em]"
-              style={{ color: "var(--mk-text-3)", fontFamily: font }}
+              style={{ color: "var(--mk-text-3)", fontFamily: bodyFont }}
             >
               <ArrowRight className="h-3 w-3 -scale-x-100" />
               Click any module to explore

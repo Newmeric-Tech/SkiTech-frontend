@@ -1,4 +1,5 @@
 import Hero from "@/components/marketing/Hero";
+import { ZoomParallax } from "@/components/marketing/ZoomParallax";
 import { MarqueeTicker } from "@/components/marketing/MarqueeTicker";
 import AboutUs from "@/components/marketing/AboutUs";
 import { Features } from "@/components/marketing/Features";
@@ -12,6 +13,7 @@ export default function Home() {
   return (
     <>
       <Hero />
+      <ZoomParallax />
       <MarqueeTicker />
       <Features />
       <HowItWorks />

@@ -5,7 +5,8 @@ import { motion, useInView } from "motion/react";
 import { Star } from "lucide-react";
 import { SectionSeam } from "./SectionSeam";
 
-const font = "Merriweather, serif";
+const font = "var(--mk-font-serif)";
+const bodyFont = "var(--mk-font-sans)";
 
 const testimonials = [
   {
@@ -43,7 +44,7 @@ export function Testimonials() {
       id="testimonials"
       ref={ref}
       className="py-28 relative overflow-hidden isolate"
-      style={{ background: "var(--mk-bg)", fontFamily: font }}
+      style={{ background: "var(--mk-bg)", fontFamily: bodyFont }}
     >
       <SectionSeam from="--mk-surface-1" to="--mk-bg" />
       {/* Subtle dot grid */}
@@ -83,7 +84,7 @@ export function Testimonials() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, ease: "easeOut" }}
             className="text-[10.5px] uppercase tracking-[0.22em] mb-4"
-            style={{ fontWeight: 700, fontFamily: font, color: "var(--mk-text-2)" }}
+            style={{ fontWeight: 700, fontFamily: bodyFont, color: "var(--mk-text-2)" }}
           >
             Testimonials
           </motion.p>
@@ -110,7 +111,7 @@ export function Testimonials() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, delay: 0.2, ease: "easeOut" }}
             className="mt-5 max-w-sm mx-auto leading-relaxed"
-            style={{ fontSize: "0.88rem", fontFamily: font, color: "var(--mk-text-2)" }}
+            style={{ fontSize: "0.88rem", fontFamily: bodyFont, color: "var(--mk-text-2)" }}
           >
             Hear from the operations teams already running on SkiTech.
           </motion.p>
@@ -191,7 +192,7 @@ export function Testimonials() {
               {/* Quote text */}
               <p
                 className="leading-[1.85] flex-1 mb-8"
-                style={{ fontSize: "0.875rem", fontFamily: font, color: "var(--mk-text-2)" }}
+                style={{ fontSize: "0.875rem", fontFamily: bodyFont, color: "var(--mk-text-2)" }}
               >
                 {t.quote}
               </p>
@@ -225,7 +226,7 @@ export function Testimonials() {
                 >
                   <span
                     className="text-[11px]"
-                    style={{ fontFamily: font, fontWeight: 800, letterSpacing: "0.04em", color: "var(--mk-text-2)" }}
+                    style={{ fontFamily: bodyFont, fontWeight: 800, letterSpacing: "0.04em", color: "var(--mk-text-2)" }}
                   >
                     {t.initials}
                   </span>
@@ -233,13 +234,13 @@ export function Testimonials() {
                 <div>
                   <p
                     className="text-[13px] leading-tight mb-0.5"
-                    style={{ fontFamily: font, fontWeight: 700, color: "var(--mk-text-1)" }}
+                    style={{ fontFamily: bodyFont, fontWeight: 700, color: "var(--mk-text-1)" }}
                   >
                     {t.name}
                   </p>
                   <p
                     className="text-[11px] leading-tight"
-                    style={{ fontFamily: font, fontWeight: 400, color: "var(--mk-text-2)" }}
+                    style={{ fontFamily: bodyFont, fontWeight: 400, color: "var(--mk-text-2)" }}
                   >
                     {t.role}
                   </p>

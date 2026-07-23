@@ -6,7 +6,7 @@ import { Send } from "lucide-react";
 import Link from "next/link";
 import { SectionSeam } from "./SectionSeam";
 
-const font = "Merriweather, serif";
+const font = "var(--mk-font-sans)";
 
 const footerLinks = {
   Product: [

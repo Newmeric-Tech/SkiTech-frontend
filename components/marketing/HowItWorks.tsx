@@ -4,7 +4,8 @@ import { useRef } from "react";
 import { motion, useInView, useScroll, useSpring, useTransform } from "motion/react";
 import { SectionSeam } from "./SectionSeam";
 
-const font = "Merriweather, serif";
+const font = "var(--mk-font-serif)";
+const bodyFont = "var(--mk-font-sans)";
 
 const steps = [
   {
@@ -51,7 +52,7 @@ function Step({ step, index }: { step: (typeof steps)[0]; index: number }) {
           style={{
             fontSize: "0.7rem",
             fontWeight: 700,
-            fontFamily: font,
+            fontFamily: bodyFont,
             letterSpacing: "0.1em",
             color: "var(--mk-text-3)",
           }}
@@ -69,7 +70,7 @@ function Step({ step, index }: { step: (typeof steps)[0]; index: number }) {
             background: "var(--mk-accent-soft)",
             border: "1px solid var(--mk-border)",
             color: "var(--mk-accent)",
-            fontFamily: font,
+            fontFamily: bodyFont,
             fontWeight: 700,
           }}
         >
@@ -81,7 +82,7 @@ function Step({ step, index }: { step: (typeof steps)[0]; index: number }) {
           style={{
             fontSize: "1.18rem",
             fontWeight: 800,
-            fontFamily: font,
+            fontFamily: bodyFont,
             color: "var(--mk-text-1)",
             lineHeight: 1.25,
             letterSpacing: "-0.015em",
@@ -95,7 +96,7 @@ function Step({ step, index }: { step: (typeof steps)[0]; index: number }) {
         <p
           style={{
             fontSize: "0.84rem",
-            fontFamily: font,
+            fontFamily: bodyFont,
             color: "var(--mk-text-2)",
             lineHeight: 1.85,
           }}
@@ -124,7 +125,7 @@ export function HowItWorks() {
       ref={sectionRef}
       id="how-it-works"
       className="py-28 relative overflow-hidden isolate"
-      style={{ background: "var(--mk-bg)", fontFamily: font }}
+      style={{ background: "var(--mk-bg)", fontFamily: bodyFont }}
     >
       <SectionSeam from="--mk-surface-2" to="--mk-bg" />
       <div className="max-w-3xl mx-auto px-6 lg:px-10">
@@ -136,7 +137,7 @@ export function HowItWorks() {
             animate={headerInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, ease: "easeOut" }}
             className="text-[10.5px] uppercase tracking-[0.22em] mb-4"
-            style={{ fontWeight: 700, fontFamily: font, color: "var(--mk-text-2)" }}
+            style={{ fontWeight: 700, fontFamily: bodyFont, color: "var(--mk-text-2)" }}
           >
             How it works
           </motion.p>
@@ -163,7 +164,7 @@ export function HowItWorks() {
             animate={headerInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, delay: 0.2, ease: "easeOut" }}
             className="mt-5 max-w-xs mx-auto leading-relaxed"
-            style={{ fontSize: "0.88rem", fontFamily: font, color: "var(--mk-text-3)" }}
+            style={{ fontSize: "0.88rem", fontFamily: bodyFont, color: "var(--mk-text-3)" }}
           >
             No long onboarding calls. Most teams are operational within a day.
           </motion.p>

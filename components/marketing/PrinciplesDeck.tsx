@@ -4,7 +4,8 @@ import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const font = "'Merriweather', Georgia, serif";
+const font = "var(--mk-font-serif)";
+const bodyFont = "var(--mk-font-sans)";
 const EASE = [0.16, 1, 0.3, 1] as const;
 const THROW_DISTANCE = 480;
 const SWIPE_THRESHOLD = 110;
@@ -178,7 +179,7 @@ export function PrinciplesDeck() {
                   </h3>
                   <p
                     className="text-[0.92rem] leading-relaxed"
-                    style={{ fontFamily: font, fontWeight: 300, color: "var(--mk-text-2)" }}
+                    style={{ fontFamily: bodyFont, fontWeight: 300, color: "var(--mk-text-2)" }}
                   >
                     {p.body}
                   </p>

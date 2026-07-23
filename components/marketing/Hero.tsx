@@ -126,7 +126,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="font-serif leading-[1.1]"
+          className="leading-[1.1]"
           style={{ fontSize: "clamp(2.5rem,5vw,4.5rem)", color: "var(--mk-text-1)" }}
         >
           <span className="font-medium block">One platform for every</span>
@@ -210,48 +210,6 @@ export default function Hero() {
           )}
         </AnimatePresence>
       </div>
-
-      {/* Dashboard image */}
-      <AnimatePresence>
-        {showCTAs && (
-          <motion.div
-            initial={{ opacity: 0, y: 80 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.9, ease: "easeOut" }}
-            className="mt-8 md:mt-10 w-full flex justify-center"
-          >
-            <motion.div
-              animate={{ y: [0, -20, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="relative w-full max-w-7xl px-4"
-            >
-              <div className="absolute inset-x-8 -bottom-6 top-10 bg-black/30 blur-3xl rounded-3xl -z-10" />
-              <div className="absolute inset-x-16 -bottom-2 top-16 bg-black/20 blur-2xl rounded-3xl -z-10" />
-              <div
-                className="relative backdrop-blur-sm rounded-3xl p-1 border shadow-2xl"
-                style={{ background: "var(--mk-glass-bg)", borderColor: "var(--mk-border)" }}
-              >
-                <motion.img
-                  src="/dashboard.png"
-                  alt="Dashboard Preview"
-                  className="relative w-full rounded-3xl shadow-[0_80px_160px_rgba(0,0,0,0.45)]"
-                  style={{ border: "1px solid var(--mk-border)" }}
-                  initial={{ scale: 0.94 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.8 }}
-                />
-              </div>
-              {/* Bottom fade into section bg */}
-              <div
-                className="absolute bottom-0 left-0 right-0 h-40 rounded-b-3xl"
-                style={{
-                  background: "linear-gradient(to top, var(--mk-bg), transparent)",
-                }}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Scroll cue — pinned to viewport, fades once the user scrolls past the fold */}
       <AnimatePresence>

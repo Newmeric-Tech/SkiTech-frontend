@@ -5,7 +5,8 @@ import { motion, useInView, AnimatePresence } from "motion/react";
 import { Plus, Minus } from "lucide-react";
 import { SectionSeam } from "./SectionSeam";
 
-const font = "Merriweather, serif";
+const font = "var(--mk-font-serif)";
+const bodyFont = "var(--mk-font-sans)";
 
 const faqs = [
   {
@@ -74,7 +75,7 @@ function FAQItem({
             style={{
               fontSize:   "0.93rem",
               fontWeight: open ? 800 : 700,
-              fontFamily: font,
+              fontFamily: bodyFont,
               color:      "var(--mk-text-1)",
             }}
           >
@@ -135,7 +136,7 @@ function FAQItem({
                   className="leading-[1.9]"
                   style={{
                     fontSize:   "0.875rem",
-                    fontFamily: font,
+                    fontFamily: bodyFont,
                     color:      "var(--mk-text-2)",
                   }}
                 >
@@ -159,7 +160,7 @@ export function FAQ() {
       id="faqs"
       ref={ref}
       className="py-28 relative isolate"
-      style={{ background: "var(--mk-surface-2)", fontFamily: font }}
+      style={{ background: "var(--mk-surface-2)", fontFamily: bodyFont }}
     >
       <SectionSeam from="--mk-bg" to="--mk-surface-2" />
       <div className="max-w-2xl mx-auto px-6 lg:px-8">
@@ -171,7 +172,7 @@ export function FAQ() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, ease: "easeOut" }}
             className="text-[10.5px] uppercase tracking-[0.22em] mb-4"
-            style={{ fontWeight: 700, fontFamily: font, color: "var(--mk-text-2)" }}
+            style={{ fontWeight: 700, fontFamily: bodyFont, color: "var(--mk-text-2)" }}
           >
             FAQ
           </motion.p>
@@ -198,7 +199,7 @@ export function FAQ() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, delay: 0.2, ease: "easeOut" }}
             className="mt-5 max-w-sm mx-auto leading-relaxed"
-            style={{ fontSize: "0.88rem", fontFamily: font, color: "var(--mk-text-3)" }}
+            style={{ fontSize: "0.88rem", fontFamily: bodyFont, color: "var(--mk-text-3)" }}
           >
             Everything you need to know before you get started.
           </motion.p>

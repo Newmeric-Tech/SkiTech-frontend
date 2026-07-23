@@ -24,8 +24,10 @@ const ThemeContext = createContext<ThemeContextValue>({
 
 export function MarketingThemeProvider({
   children,
+  fontVariables = '',
 }: {
   children: React.ReactNode
+  fontVariables?: string
 }) {
   const [theme, setTheme] = useState<Theme>('dark')
   const [isMenuOpen, setMenuOpen] = useState(false)
@@ -49,7 +51,7 @@ export function MarketingThemeProvider({
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, isMenuOpen, setMenuOpen }}>
-      <div className="marketing-page font-merriweather" suppressHydrationWarning>
+      <div className={`marketing-page ${fontVariables}`} suppressHydrationWarning>
         {children}
       </div>
     </ThemeContext.Provider>

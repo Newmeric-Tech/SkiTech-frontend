@@ -129,7 +129,8 @@ function Rule({ delay = 0 }: { delay?: number }) {
   );
 }
 
-const font = "'Merriweather', Georgia, serif";
+const font = "var(--mk-font-serif)";
+const bodyFont = "var(--mk-font-sans)";
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function AboutUs() {
@@ -142,7 +143,7 @@ export default function AboutUs() {
     <div
       id="about-us"
       className="min-h-screen overflow-x-hidden"
-      style={{ background: "var(--mk-bg)", color: "var(--mk-text-1)", fontFamily: font }}
+      style={{ background: "var(--mk-bg)", color: "var(--mk-text-1)", fontFamily: bodyFont }}
     >
 
       {/* ══════════════════════════════════════════════════════════ HERO */}
@@ -185,7 +186,7 @@ export default function AboutUs() {
           {/* Hero heading */}
           <h1
             className="leading-[1.08] tracking-[-0.03em] mb-8"
-            style={{ fontSize: "clamp(3rem, 8vw, 7rem)", fontWeight: 900, color: "var(--mk-text-1)" }}
+            style={{ fontSize: "clamp(3rem, 8vw, 7rem)", fontWeight: 900, color: "var(--mk-text-1)", fontFamily: font }}
           >
             <WordReveal text="Built for Owners." delay={0.1} />
             <br />
@@ -436,6 +437,7 @@ export default function AboutUs() {
               fontWeight:    900,
               letterSpacing: "-0.03em",
               color:         "var(--mk-text-1)",
+              fontFamily:    font,
             }}
           >
             Four principles. One direction.
@@ -472,6 +474,7 @@ export default function AboutUs() {
                 letterSpacing: "-0.03em",
                 fontStyle:     "italic",
                 color:         "var(--mk-text-1)",
+                fontFamily:    font,
               }}
             >
               "SkiTech isn&apos;t just a tool —<br className="hidden md:block" />

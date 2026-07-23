@@ -1,7 +1,21 @@
+import { Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
 import { Navbar } from "@/components/marketing/Navbar";
 import { MenuOverlay } from "@/components/marketing/MenuOverlay";
 import { Footer } from "@/components/marketing/Footer";
 import { MarketingThemeProvider } from "@/components/marketing/ThemeProvider";
+
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  style: ["normal", "italic"],
+  variable: "--font-playfair",
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-plus-jakarta",
+});
 
 export default function MarketingLayout({
   children,
@@ -9,7 +23,9 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <MarketingThemeProvider>
+    <MarketingThemeProvider
+      fontVariables={`${playfairDisplay.variable} ${plusJakartaSans.variable}`}
+    >
       <Navbar />
       <MenuOverlay />
       <main className="flex-1">{children}</main>
