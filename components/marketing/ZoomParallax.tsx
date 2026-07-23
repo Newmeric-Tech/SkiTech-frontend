@@ -9,6 +9,11 @@ import { modules } from "./Features";
 const font = "var(--mk-font-serif)";
 const bodyFont = "var(--mk-font-sans)";
 
+/* Same grain texture as Hero — keeps the two sections' --mk-bg surfaces
+   visually identical so the seam between them doesn't read as a hard cut. */
+const GRAIN_URL =
+  "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E\")";
+
 type Mod = (typeof modules)[number];
 type WidgetId = "property" | "employee" | "sop" | "analytics" | "kra" | "inventory";
 
@@ -238,17 +243,30 @@ export function ZoomParallax() {
 
   const quoteScale = useTransform(scrollYProgress, [0, 1], [0.4, 1]);
   const indicatorOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
+  /* Glow fades in rather than snapping to full strength at the very top of the
+     section — avoids a hard color-temperature cut where Hero's neutral glow
+     meets this section's indigo one. */
+  const glowOpacity = useTransform(scrollYProgress, [0, 0.2], [0, 1]);
 
   return (
     <section ref={sectionRef} className="relative h-[250vh]" style={{ background: "var(--mk-bg)" }}>
       <div className="sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden">
+        {/* Grain texture — matches Hero so the section boundary blends seamlessly */}
+        <div
+          className="pointer-events-none absolute inset-0 z-0"
+          style={{ backgroundImage: GRAIN_URL, opacity: 0.4 }}
+        />
+
         {/* Constellation particle background — same as Hero */}
         <ParticleCanvas />
 
-        {/* Central spotlight glow */}
-        <div
+        {/* Central spotlight glow — fades in with scroll, see glowOpacity above */}
+        <motion.div
           className="pointer-events-none absolute inset-0"
-          style={{ background: "radial-gradient(circle at center, var(--mk-accent-soft) 0%, transparent 70%)" }}
+          style={{
+            background: "radial-gradient(circle at center, var(--mk-accent-soft) 0%, transparent 70%)",
+            opacity: glowOpacity,
+          }}
         />
 
         {/* Scroll hint */}
