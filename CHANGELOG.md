@@ -4,6 +4,32 @@
 
 ---
 
+## [2026-07-23] — Marketing Landing Page Restyle: Typography, ZoomParallax Section, Seam Fix
+
+> Full write-up: `../DEVELOPMENT_LOG.md` § 4.11
+
+### Added
+- **Font system**: `app/(marketing)/layout.tsx` loads Playfair Display + Plus Jakarta Sans via `next/font/google`, scoped to the marketing route group only (dashboard/auth pages keep Merriweather). New `--mk-font-serif` / `--mk-font-sans` tokens in `app/globals.css`, threaded through `ThemeProvider.tsx` via a `fontVariables` prop.
+- **New component `components/marketing/ZoomParallax.tsx`**: scroll-pinned section (Framer Motion `useScroll`/`useTransform`) between Hero and the marquee ticker — six module cards fly outward and scale up while pinned, reusing `Features.tsx`'s module data. Enriched in a follow-up pass with real widget content per card (status dots, progress bars, avatar stack, sparkline, pulsing alert dot), the exact mockup quote with a gradient "growth partner." span, and the same `ParticleCanvas` constellation background used in the Hero.
+
+### Changed
+- **Font pass** across `Features`, `HowItWorks`, `PrinciplesDeck`, `AboutUs`, `Pricing`, `Testimonials`, `FAQ`, `CTA`, `Footer` — headlines now render in Playfair Display, body/labels/chips in Plus Jakarta Sans, matched element-by-element against the mockup's own `font-serif` usage rather than assumed uniformly.
+- **`Hero.tsx`**: removed the floating `dashboard.png` block entirely; hero now ends cleanly after the trust-pill row.
+
+### Fixed
+- **Hero → ZoomParallax seam**: the boundary had a visible hard line — Hero's neutral monochrome glow met ZoomParallax's indigo spotlight at full opacity with no transition. Added the matching grain-texture overlay to `ZoomParallax.tsx` and tied its spotlight opacity to scroll progress so it fades in instead of snapping on.
+- Removed a stale "Merriweather is loaded globally" comment in `Pricing.tsx` left over from before the font swap.
+
+### Verification
+- `npm run build` compiles clean across all ~107 routes after each change.
+- Manually scrolled every section in both dark and light themes; tested module-card expand/collapse, pricing monthly/annual toggle, FAQ accordion, theme toggle.
+- One pre-existing dev-only hydration console warning (`#cursor-ring` style mutation from the raw cursor-tracking script in `(marketing)/layout.tsx`) was investigated and confirmed unrelated — present before this session, not introduced by it.
+
+### Commits
+`4a2d95c` (typography + Hero cleanup + first ZoomParallax pass) · `09ebf2b` (ZoomParallax widget enrichment) · `806b819` (seam smoothing fix)
+
+---
+
 ## [2026-07-09] — Marketing Site: Images, Layout Fixes, Footer Redesign, Theme Toggle
 
 ### Added
