@@ -278,16 +278,35 @@ function ModuleCard({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className={`flex h-full flex-col justify-between ${isDense ? "p-5" : "p-6"}`}
+            className={`relative flex h-full flex-col justify-between ${isDense ? "p-5" : "p-6"}`}
           >
+            {/* Oversized icon watermark — faint by default, brightens on hover */}
+            <Icon
+              aria-hidden="true"
+              className="pointer-events-none absolute select-none"
+              style={{
+                top: isDense ? -10 : -16,
+                right: isDense ? -16 : -24,
+                width: isDense ? 104 : 148,
+                height: isDense ? 104 : 148,
+                strokeWidth: 0.75,
+                color: hovered ? "var(--mk-accent)" : "var(--mk-text-1)",
+                opacity: hovered ? 0.16 : 0.06,
+                transform: hovered ? "translate(-4px, 4px) scale(1.05)" : "translate(0, 0) scale(1)",
+                transition:
+                  "opacity 0.45s ease, color 0.45s ease, transform 0.6s cubic-bezier(0.16,1,0.3,1)",
+                zIndex: 0,
+              }}
+            />
+
             <span
-              className="font-mono text-[11px] font-semibold tracking-[0.15em]"
+              className="relative z-10 font-mono text-[11px] font-semibold tracking-[0.15em]"
               style={{ color: "var(--mk-text-3)" }}
             >
               {num}
             </span>
 
-            <div className={isDense ? "mb-2" : "mb-4"}>
+            <div className={`relative z-10 ${isDense ? "mb-2" : "mb-4"}`}>
               <div
                 className={`flex items-center justify-center rounded-xl transition-transform duration-300 ${
                   isDense ? "mb-3 h-8 w-8" : "mb-4 h-9 w-9"
@@ -308,7 +327,7 @@ function ModuleCard({
             </div>
 
             <div
-              className={`absolute flex items-center justify-center rounded-full transition-colors duration-300 ${
+              className={`absolute z-10 flex items-center justify-center rounded-full transition-colors duration-300 ${
                 isDense ? "bottom-4 right-4 h-7 w-7" : "bottom-5 right-5 h-8 w-8"
               }`}
               style={{
