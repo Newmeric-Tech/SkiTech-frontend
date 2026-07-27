@@ -285,13 +285,13 @@ function ModuleCard({
               aria-hidden="true"
               className="pointer-events-none absolute select-none"
               style={{
-                top: isDense ? -10 : -16,
+                top: isDense ? 8 : 12,
                 right: isDense ? -16 : -24,
                 width: isDense ? 104 : 148,
                 height: isDense ? 104 : 148,
                 strokeWidth: 0.75,
-                color: hovered ? "var(--mk-accent)" : "var(--mk-text-1)",
-                opacity: hovered ? 0.16 : 0.06,
+                color: "var(--mk-accent)",
+                opacity: hovered ? 0.22 : 0.11,
                 transform: hovered ? "translate(-4px, 4px) scale(1.05)" : "translate(0, 0) scale(1)",
                 transition:
                   "opacity 0.45s ease, color 0.45s ease, transform 0.6s cubic-bezier(0.16,1,0.3,1)",
