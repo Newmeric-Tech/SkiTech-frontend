@@ -54,11 +54,12 @@ export function PrinciplesDeck() {
 
     setTimeout(() => {
       setCurrentIndex((prev) => (direction === "next" ? (prev + 1) % n : (prev - 1 + n) % n));
-      setThrowing(null);
-      setTimeout(() => {
-        isAnimating.current = false;
-      }, 300);
     }, 350);
+
+    setTimeout(() => {
+      setThrowing(null);
+      isAnimating.current = false;
+    }, 650);
   };
 
   const cycleTo = (targetIndex: number) => {
@@ -71,11 +72,12 @@ export function PrinciplesDeck() {
     setThrowing({ index: currentIndex, x: 0, rotate: 0 });
     setTimeout(() => {
       setCurrentIndex(targetIndex);
-      setThrowing(null);
-      setTimeout(() => {
-        isAnimating.current = false;
-      }, 300);
     }, 220);
+
+    setTimeout(() => {
+      setThrowing(null);
+      isAnimating.current = false;
+    }, 520);
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
