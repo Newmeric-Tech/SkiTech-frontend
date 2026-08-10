@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Bell, Shield, CreditCard, Save, Loader2, Check, X, Zap, Building2, Users, ArrowUpRight, ExternalLink, Key, Plus, Clock, CheckCircle2, XCircle, ChevronDown } from "lucide-react";
+import { User, Bell, Shield, CreditCard, Save, Loader2, Check, X, Zap, Building2, Users, ArrowUpRight, ExternalLink, Key, Plus, Clock, CheckCircle2, XCircle, ChevronDown, Radio, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { usersAPI } from "@/lib/api/users";
 import { subscriptionsAPI, MyPlan, SubscriptionPlan } from "@/lib/api/subscriptions";
@@ -16,7 +16,16 @@ const ALL_TABS = [
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "security", label: "Security", icon: Shield },
   { id: "billing", label: "Billing", icon: CreditCard, coAdminHidden: true },
+  { id: "channel-manager", label: "Channel Manager", icon: Radio },
   { id: "permissions", label: "Permissions", icon: Key, coAdminHidden: true },
+];
+
+const CHANNEL_MANAGER_PROVIDERS = [
+  { value: "channex", label: "Channex" },
+  { value: "mews", label: "Mews" },
+  { value: "cloudbeds", label: "Cloudbeds" },
+  { value: "siteminder", label: "SiteMinder" },
+  { value: "little_hotelier", label: "Little Hotelier" },
 ];
 
 const FEATURE_LABELS = [
@@ -70,6 +79,11 @@ export default function SettingsPage() {
   const [showCoAdminForm, setShowCoAdminForm] = useState(false);
   const [coAdminForm, setCoAdminForm] = useState({ property_id: "", proposed_name: "", proposed_email: "" });
   const [coAdminSubmitting, setCoAdminSubmitting] = useState(false);
+
+  // Channel Manager (UI only — not yet backed by a real integration API)
+  const [cmProperty, setCmProperty] = useState("");
+  const [cmProvider, setCmProvider] = useState("");
+  const [cmPropertiesLoading, setCmPropertiesLoading] = useState(false);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -217,6 +231,32 @@ export default function SettingsPage() {
   useEffect(() => {
     if (tab === "permissions") loadPermissions();
   }, [tab, loadPermissions]);
+
+  const loadPropertiesForChannelManager = useCallback(async () => {
+    if (properties.length > 0) return;
+    setCmPropertiesLoading(true);
+    try {
+      const res = await propertiesAPI.list();
+      setProperties(res.data);
+    } catch {
+      toast.error("Failed to load properties");
+    } finally {
+      setCmPropertiesLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [properties.length]);
+
+  useEffect(() => {
+    if (tab === "channel-manager") loadPropertiesForChannelManager();
+  }, [tab, loadPropertiesForChannelManager]);
+
+  const handleConnectChannelManager = () => {
+    if (!cmProperty || !cmProvider) {
+      toast.error("Select a property and a provider");
+      return;
+    }
+    toast.info("Channel manager integrations are coming soon");
+  };
 
   const handleSubmitCoAdmin = async () => {
     if (!coAdminForm.property_id || !coAdminForm.proposed_name.trim() || !coAdminForm.proposed_email.trim()) {
@@ -524,6 +564,86 @@ export default function SettingsPage() {
               )}
             </motion.div>
           )}
+
+          {tab === "channel-manager" && (
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="bg-white/70 backdrop-blur rounded-2xl border border-black/10 shadow-sm p-8">
+              <h2 className="text-black" style={{ fontWeight: 700, fontSize: "1.05rem" }}>Channel Managers</h2>
+              <p className="text-neutral-400 text-xs mt-1 mb-6 max-w-xl leading-relaxed">
+                Connect your property&apos;s channel manager to automatically synchronize reservations, room availability, and guests in the background.
+              </p>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                {/* Connected Integrations */}
+                <div className="bg-black/[0.02] border border-black/5 rounded-2xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Radio className="w-4 h-4 text-black" />
+                    <p className="text-black text-sm" style={{ fontWeight: 700 }}>Connected Integrations</p>
+                  </div>
+                  <div className="border border-dashed border-black/15 rounded-xl py-10 px-4 text-center">
+                    <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center mx-auto mb-3">
+                      <Radio className="w-4 h-4 text-white" />
+                    </div>
+                    <p className="text-black text-sm" style={{ fontWeight: 700 }}>No integrations connected</p>
+                    <p className="text-neutral-400 text-xs mt-1 max-w-[220px] mx-auto leading-relaxed">
+                      Use the form to connect a channel manager and begin syncing reservation data.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Connect Channel Manager form */}
+                <div className="bg-black/[0.02] border border-black/5 rounded-2xl p-6">
+                  <div className="flex items-center gap-2 mb-5 text-black">
+                    <Plus className="w-4 h-4" />
+                    <p className="text-sm" style={{ fontWeight: 700 }}>Connect Channel Manager</p>
+                  </div>
+
+                  <div className="space-y-4 mb-5">
+                    <div>
+                      <label className="block text-neutral-700 text-xs mb-1.5" style={{ fontWeight: 500 }}>Target Property</label>
+                      <div className="relative">
+                        <select
+                          value={cmProperty}
+                          onChange={e => setCmProperty(e.target.value)}
+                          disabled={cmPropertiesLoading}
+                          className="w-full appearance-none bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 transition-all pr-9 disabled:opacity-50">
+                          <option value="">{cmPropertiesLoading ? "Loading properties…" : "Select property…"}</option>
+                          {properties.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-neutral-700 text-xs mb-1.5" style={{ fontWeight: 500 }}>Channel Manager Provider</label>
+                      <div className="relative">
+                        <select
+                          value={cmProvider}
+                          onChange={e => setCmProvider(e.target.value)}
+                          className="w-full appearance-none bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 transition-all pr-9">
+                          <option value="">Select a provider…</option>
+                          {CHANNEL_MANAGER_PROVIDERS.map(p => (
+                            <option key={p.value} value={p.value}>{p.label}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleConnectChannelManager}
+                    className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl text-sm shadow-md hover:bg-neutral-800 transition-colors"
+                    style={{ fontWeight: 600 }}>
+                    <Link2 className="w-4 h-4" />
+                    Connect Integration
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {tab === "permissions" && (
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               <div className="bg-white/70 backdrop-blur rounded-2xl border border-black/10 shadow-sm p-8">
