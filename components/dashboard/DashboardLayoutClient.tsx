@@ -4,8 +4,17 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { Playfair_Display } from "next/font/google";
 import { useAuthStore } from "@/store/authStore";
 import { motion, AnimatePresence } from "framer-motion";
+
+// Same serif used on the marketing/landing pages — loaded locally here since
+// the dashboard route group doesn't share the marketing layout's font tree.
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  variable: "--font-playfair-dash",
+});
 import {
   Zap, LayoutDashboard, Building2, Users, UserCheck, BarChart3,
   Shield, Truck, FileText, Settings, LogOut, ChevronLeft, ChevronRight,
@@ -148,9 +157,13 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
     logout();
   };
 
-  if (!mounted) return <div className="h-screen bg-[#f8f7f4] dark:bg-[#111111]" />;
+  if (!mounted) return <div className="h-screen bg-[#f4f3ef] dark:bg-[#0a0a0a]" />;
   return (
-    <div className="flex h-screen bg-[#f8f7f4] dark:bg-[#111111] overflow-hidden">
+    <div className={`${playfairDisplay.variable} flex h-screen bg-[#f4f3ef] dark:bg-[#0a0a0a] overflow-hidden relative`}>
+      {/* Ambient accent glows — decorative only, mirrors the landing page background */}
+      <div className="absolute -top-24 -left-24 w-[420px] h-[420px] rounded-full pointer-events-none z-0 opacity-60 dark:opacity-100 blur-[110px]" style={{ background: "radial-gradient(circle, rgba(79,70,229,0.10) 0%, transparent 70%)" }} />
+      <div className="absolute bottom-0 right-0 w-[520px] h-[520px] rounded-full pointer-events-none z-0 opacity-60 dark:opacity-100 blur-[130px]" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)" }} />
+
       {/* ── Mobile Sidebar Overlay ── */}
       <AnimatePresence>
         {mobileOpen && (
@@ -172,19 +185,19 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
           x: mobileOpen ? 0 : (typeof window !== 'undefined' && window.innerWidth < 768) ? -280 : 0
         }}
         transition={{ duration: 0.3, ease: [0.25, 1, 0.5, 1] }}
-        className={`fixed md:relative z-50 h-full bg-white/80 dark:bg-[#1c1c1c]/90 backdrop-blur-xl text-neutral-700 dark:text-[#c8c8c8] flex flex-col border-r border-black/10 dark:border-white/10 shadow-xl`}
+        className={`fixed md:relative z-50 h-full bg-white/80 dark:bg-[#111111]/90 backdrop-blur-xl text-neutral-700 dark:text-[#c8c8c8] flex flex-col border-r border-black/10 dark:border-white/10 shadow-xl`}
       >
         {/* Logo Area */}
         <div className={`h-20 flex items-center ${collapsed ? "justify-center" : "px-6 justify-between"} border-b border-black/10 dark:border-white/10`}>
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-black/10">
+            <div className="w-10 h-10 bg-[#4f46e5] dark:bg-[#6366f1] rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-[#4f46e5]/25 dark:shadow-[#6366f1]/30">
               <Zap className="w-6 h-6 text-white" fill="white" />
             </div>
             {!collapsed && (
               <motion.span
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-black dark:text-white font-bold text-xl tracking-tight"
+                className="text-black dark:text-white font-bold text-xl tracking-tight [font-family:var(--font-playfair-dash)]"
               >
                 SkiTech
               </motion.span>
@@ -210,11 +223,11 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                   href={item.href}
                   className={`flex items-center ${collapsed ? "justify-center px-2" : "gap-3 px-3"} py-2.5 rounded-lg transition-all duration-200 group relative ${
                     isActive
-                      ? "bg-black dark:bg-white text-white dark:text-black shadow-md shadow-black/10"
-                      : "hover:bg-black/5 dark:hover:bg-white/10 text-neutral-700 dark:text-[#c8c8c8]"
+                      ? "bg-[#4f46e5] dark:bg-[#6366f1] text-white shadow-md shadow-[#4f46e5]/25 dark:shadow-[#6366f1]/30"
+                      : "hover:bg-[#4f46e5]/5 dark:hover:bg-[#6366f1]/10 text-neutral-700 dark:text-[#c8c8c8]"
                   }`}
                 >
-                  <item.icon className={`w-[22px] h-[22px] shrink-0 ${isActive ? "text-white dark:text-black" : "text-neutral-500 dark:text-[#a0a0a0] group-hover:text-black dark:group-hover:text-white"}`} />
+                  <item.icon className={`w-[22px] h-[22px] shrink-0 ${isActive ? "text-white" : "text-neutral-500 dark:text-[#a0a0a0] group-hover:text-black dark:group-hover:text-white"}`} />
                   {!collapsed && <span className="font-medium whitespace-nowrap flex-1">{item.label}</span>}
                   {collapsed && (
                     <div className="absolute left-full ml-3 bg-black text-white text-xs px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none shadow-lg">
@@ -270,12 +283,12 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
       {/* ── Main Content Area ── */}
       <div className="flex-1 flex flex-col h-full relative z-0 min-w-0 overflow-x-hidden">
         {/* Header */}
-        <header className="h-20 bg-white/70 dark:bg-[#1c1c1c]/80 backdrop-blur-xl border-b border-black/10 dark:border-white/10 flex items-center justify-between px-6 lg:px-10 shrink-0">
+        <header className="h-20 bg-white/70 dark:bg-[#111111]/80 backdrop-blur-xl border-b border-black/10 dark:border-white/10 flex items-center justify-between px-6 lg:px-10 shrink-0">
           <div className="flex items-center gap-4">
             <button onClick={() => setMobileOpen(true)} className="md:hidden text-neutral-500 dark:text-[#a0a0a0] hover:text-black dark:hover:text-white">
                <Menu className="w-6 h-6" />
             </button>
-            <h2 className="text-xl font-bold text-black dark:text-white hidden sm:block">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-black dark:text-white hidden sm:block [font-family:var(--font-playfair-dash)]">
               {roleLabel} Dashboard
             </h2>
           </div>
@@ -295,7 +308,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                 className="relative text-neutral-500 dark:text-[#a0a0a0] hover:text-black dark:hover:text-white transition-colors"
               >
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-0 right-0 w-2 h-2 bg-black dark:bg-white rounded-full border-2 border-white dark:border-[#111111]" />
+                <span className="absolute top-0 right-0 w-2 h-2 bg-amber-500 rounded-full border-2 border-white dark:border-[#111111]" />
               </button>
               <NotificationPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
             </div>
@@ -345,7 +358,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                     {user?.role || roleLabel}
                   </p>
                 </div>
-                <div className="w-10 h-10 bg-white/80 dark:bg-[#2a2a2a] backdrop-blur rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-black dark:text-white font-bold shadow-sm shrink-0">
+                <div className="w-10 h-10 bg-[#4f46e5]/10 dark:bg-[#6366f1]/15 backdrop-blur rounded-xl border border-[#4f46e5]/20 dark:border-[#6366f1]/25 flex items-center justify-center text-[#4f46e5] dark:text-[#6366f1] font-bold shadow-sm shrink-0">
                   {user?.first_name?.[0]}{user?.last_name?.[0]}
                 </div>
               </button>
@@ -362,11 +375,11 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -6, scale: 0.97 }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
-                      className="fixed top-[88px] right-4 w-72 bg-white dark:bg-[#1c1c1c] rounded-2xl shadow-xl border border-black/10 dark:border-white/10 overflow-hidden z-[9999]"
+                      className="fixed top-[88px] right-4 w-72 bg-white dark:bg-[#111111] rounded-2xl shadow-xl border border-black/10 dark:border-white/10 overflow-hidden z-[9999]"
                     >
                       {/* User info */}
                       <div className="px-4 py-3.5 border-b border-black/8 dark:border-white/8 flex items-center gap-3">
-                        <div className="w-10 h-10 bg-black dark:bg-white rounded-full flex items-center justify-center text-white dark:text-black font-bold text-sm shrink-0">
+                        <div className="w-10 h-10 bg-[#4f46e5] dark:bg-[#6366f1] rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0">
                           {user?.first_name?.[0]}{user?.last_name?.[0]}
                         </div>
                         <div className="min-w-0">
@@ -399,7 +412,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
         </header>
 
         {/* Scrollable Page Content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#f8f7f4] dark:bg-[#111111] p-6 lg:p-10">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#f4f3ef] dark:bg-[#0a0a0a] p-6 lg:p-10">
           {children}
         </main>
       </div>

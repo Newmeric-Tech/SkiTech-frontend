@@ -221,18 +221,22 @@ html.dark body {
   color: #e8e8e8;
 }
 
-/* Card / surface backgrounds — true matte black, no blue tint */
-html.dark .bg-white { background-color: #1c1c1c !important; }
-html.dark .bg-white\/80 { background-color: rgba(28,28,28,0.8) !important; }
-html.dark .bg-white\/70 { background-color: rgba(28,28,28,0.7) !important; }
-html.dark .bg-white\/50 { background-color: rgba(28,28,28,0.5) !important; }
-html.dark .bg-slate-50 { background-color: #161616 !important; }
-html.dark .bg-slate-50\/80 { background-color: rgba(22,22,22,0.8) !important; }
-html.dark .bg-slate-50\/60 { background-color: rgba(22,22,22,0.6) !important; }
+/* Card / surface backgrounds — aligned to the landing page's dark palette
+   (--mk-surface-1 / --mk-surface-2 / --mk-surface-3 in the tokens below) */
+html.dark .bg-white { background-color: #111111 !important; }
+html.dark .bg-white\/80 { background-color: rgba(17,17,17,0.8) !important; }
+html.dark .bg-white\/70 { background-color: rgba(17,17,17,0.7) !important; }
+html.dark .bg-white\/50 { background-color: rgba(17,17,17,0.5) !important; }
+html.dark .bg-slate-50 { background-color: #1a1a1a !important; }
+html.dark .bg-slate-50\/80 { background-color: rgba(26,26,26,0.8) !important; }
+html.dark .bg-slate-50\/60 { background-color: rgba(26,26,26,0.6) !important; }
 html.dark .bg-slate-100 { background-color: #222222 !important; }
 
 /* Page background (the cream colour) */
 html.dark .bg-\[\#f8f7f4\] { background-color: #111111 !important; }
+
+/* Dashboard shell page background — landing page's --mk-bg tokens */
+html.dark .bg-\[\#f4f3ef\] { background-color: #0a0a0a !important; }
 
 /* Text colours */
 html.dark .text-slate-950 { color: #f0f0f0 !important; }
@@ -257,20 +261,20 @@ html.dark .divide-slate-100 > * + * { border-color: #222222 !important; }
 html.dark .divide-slate-50 > * + * { border-color: #191919 !important; }
 
 /* Hover backgrounds */
-html.dark .hover\:bg-slate-50\/60:hover { background-color: rgba(22,22,22,0.6) !important; }
-html.dark .hover\:bg-slate-50\/80:hover { background-color: rgba(22,22,22,0.8) !important; }
+html.dark .hover\:bg-slate-50\/60:hover { background-color: rgba(26,26,26,0.6) !important; }
+html.dark .hover\:bg-slate-50\/80:hover { background-color: rgba(26,26,26,0.8) !important; }
 html.dark .hover\:bg-slate-50:hover { background-color: #1a1a1a !important; }
 html.dark .hover\:bg-slate-100:hover { background-color: #232323 !important; }
 
 /* Table headers */
 html.dark thead tr,
-html.dark .bg-slate-50\/80 { background-color: #161616 !important; }
+html.dark .bg-slate-50\/80 { background-color: #1a1a1a !important; }
 
 /* Inputs / selects */
 html.dark input:not([type="checkbox"]):not([type="radio"]),
 html.dark textarea,
 html.dark select {
-  background-color: #1c1c1c !important;
+  background-color: #111111 !important;
   border-color: #2e2e2e !important;
   color: #f0f0f0 !important;
 }
@@ -279,7 +283,7 @@ html.dark input:-webkit-autofill,
 html.dark input:-webkit-autofill:hover,
 html.dark input:-webkit-autofill:focus {
   -webkit-text-fill-color: #f0f0f0 !important;
-  -webkit-box-shadow: 0 0 0 1000px #1c1c1c inset !important;
+  -webkit-box-shadow: 0 0 0 1000px #111111 inset !important;
 }
 
 /* Shadows on cards (soften them in dark mode) */

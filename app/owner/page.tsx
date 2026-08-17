@@ -80,7 +80,7 @@ export default function OwnerDashboard() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-950 tracking-tight">
+          <h2 className="text-2xl font-bold text-slate-950 tracking-tight [font-family:var(--font-playfair-dash)]">
             Welcome back, {user?.first_name || user?.email?.split("@")[0] || "User"}
           </h2>
           <p className="text-slate-500 text-sm mt-1">Here's your operations snapshot for today.</p>
@@ -131,7 +131,7 @@ export default function OwnerDashboard() {
             {!isCoAdmin && <div className="col-span-1 lg:col-span-2 bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="font-bold text-slate-950 text-lg">Revenue Trend</h3>
+                  <h3 className="font-bold text-slate-950 text-lg [font-family:var(--font-playfair-dash)]">Revenue Trend</h3>
                   <p className="text-slate-500 text-sm mt-0.5">Total booking revenue — last 6 months</p>
                 </div>
               </div>
@@ -177,7 +177,7 @@ export default function OwnerDashboard() {
 
             <div className={`${isCoAdmin ? "col-span-1 lg:col-span-3" : "col-span-1"} bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6 flex flex-col`}>
               <div className="mb-6">
-                <h3 className="font-bold text-slate-950 text-lg">Recent Alerts</h3>
+                <h3 className="font-bold text-slate-950 text-lg [font-family:var(--font-playfair-dash)]">Recent Alerts</h3>
                 <p className="text-slate-500 text-sm mt-0.5">Operational tasks &amp; inventory notices</p>
               </div>
               <div className="flex-1 overflow-y-auto space-y-3">
