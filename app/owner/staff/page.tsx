@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Search, X, Users, CheckCircle2, Loader2,
-  Building2, AlertCircle, Trash2, MoreHorizontal, User,
+  Building2, AlertCircle, Trash2, MoreHorizontal, User, ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { workforceAPI } from "@/lib/api/workforce";
@@ -251,12 +251,12 @@ function StaffPageInner() {
     <div className="p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-950 tracking-tight">Staff Management</h1>
-          <p className="text-slate-500 text-sm mt-1">{staff.length} staff members</p>
+          <h1 className="text-black text-2xl font-bold tracking-tight">Staff Management</h1>
+          <p className="text-neutral-500 text-xs mt-1">{staff.length} staff members</p>
         </div>
         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
           onClick={() => setShowAdd(true)} disabled={!selectedPropertyId}
-          className="flex items-center gap-2 bg-slate-950 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-lg disabled:opacity-50">
+          className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md disabled:opacity-50">
           <Plus className="w-4 h-4" /> Add Staff
         </motion.button>
       </div>
@@ -269,28 +269,32 @@ function StaffPageInner() {
           <Building2 className="w-4 h-4" /> No properties found.
         </div>
       ) : (
-        <div className="flex items-center gap-3">
-          <Building2 className="w-4 h-4 text-neutral-400" />
+        <div className="relative inline-flex items-center">
+          <Building2 className="absolute left-3.5 w-4 h-4 text-neutral-400 pointer-events-none" />
           <select value={selectedPropertyId} onChange={e => setSelectedPropertyId(e.target.value)}
-            className="bg-white border border-black/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-black/20">
+            className="appearance-none bg-white border border-black/10 rounded-xl pl-9 pr-8 py-2 text-xs font-bold text-neutral-700 focus:outline-none focus:border-black/20 shadow-sm cursor-pointer">
             {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
+          <ChevronDown className="absolute right-3 w-4 h-4 text-neutral-400 pointer-events-none" />
         </div>
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-2 gap-5 max-w-2xl">
         {[
-          { label: "Total Staff", value: staff.length, icon: Users, color: "#3B82F6", bg: "bg-blue-50 border-blue-100" },
-          { label: "Active", value: staff.filter(s => s.is_active).length, icon: CheckCircle2, color: "#10B981", bg: "bg-emerald-50 border-emerald-100" },
+          { label: "Total Staff", value: staff.length, icon: Users, color: "#000000", tint: "bg-black/5 border-black/10", bar: "bg-black" },
+          { label: "Active", value: staff.filter(s => s.is_active).length, icon: CheckCircle2, color: "#059669", tint: "bg-emerald-500/10 border-emerald-500/20", bar: "bg-emerald-500" },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className={`rounded-2xl p-5 border text-center ${s.bg}`}>
-            <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center mx-auto mb-3">
-              <s.icon className="w-5 h-5" style={{ color: s.color }} />
+            className="relative overflow-hidden bg-white border border-black/10 rounded-2xl p-5 shadow-sm hover:-translate-y-0.5 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <span className="text-neutral-400 text-[10px] font-bold uppercase tracking-wider">{s.label}</span>
+              <div className={`w-8 h-8 rounded-full border flex items-center justify-center ${s.tint}`}>
+                <s.icon className="w-4 h-4" style={{ color: s.color }} />
+              </div>
             </div>
-            <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
-            <div className="text-slate-600 text-sm mt-1 font-medium">{s.label}</div>
+            <span className="text-3xl font-bold text-black mt-2 block">{s.value}</span>
+            <div className={`absolute bottom-0 inset-x-0 h-1 opacity-60 ${s.bar}`} />
           </motion.div>
         ))}
       </div>
@@ -313,7 +317,7 @@ function StaffPageInner() {
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-100">
                 {["Staff Member", "Position", "Email", "Status", "Actions"].map(h => (
-                  <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
+                  <th key={h} className={`px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider ${h === "Actions" ? "text-center" : "text-left"}`}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -324,26 +328,26 @@ function StaffPageInner() {
                 return (
                   <motion.tr key={s.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
                     className="hover:bg-slate-50/60 transition-colors">
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs flex-shrink-0"
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] flex-shrink-0"
                           style={{ background: `linear-gradient(135deg, ${color}, ${color}CC)`, fontWeight: 700 }}>
                           {initials}
                         </div>
-                        <span className="text-slate-950 text-sm font-semibold">{s.first_name} {s.last_name}</span>
+                        <span className="text-black text-sm font-bold">{s.first_name} {s.last_name}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-slate-600 text-sm">{s.position || "—"}</td>
-                    <td className="px-5 py-4 text-slate-600 text-sm">{s.email || "—"}</td>
-                    <td className="px-5 py-4">
-                      <span className={`text-xs px-3 py-1.5 rounded-full font-semibold ${
-                        s.is_active ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-600 border border-slate-200"
+                    <td className="px-6 py-4 text-neutral-600 text-xs font-medium">{s.position || "—"}</td>
+                    <td className="px-6 py-4 text-neutral-500 text-xs">{s.email || "—"}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
+                        s.is_active ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-600 border-slate-200"
                       }`}>
                         {s.is_active ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="relative">
+                    <td className="px-6 py-4 text-center">
+                      <div className="relative inline-block">
                         <button onClick={() => setMenuOpen(menuOpen === s.id ? null : s.id)}
                           className="p-1.5 text-neutral-400 hover:text-neutral-600 hover:bg-black/[0.04] rounded-lg transition-colors">
                           <MoreHorizontal className="w-4 h-4" />
