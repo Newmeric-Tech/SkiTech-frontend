@@ -282,7 +282,7 @@ function StaffPageInner() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-5 max-w-2xl">
         {[
-          { label: "Total Staff", value: staff.length, icon: Users, color: "#000000", tint: "bg-black/5 border-black/10", bar: "bg-black" },
+          { label: "Total Staff", value: staff.length, icon: Users, color: "#0d0d0d", tint: "bg-black/5 border-black/10", bar: "bg-black" },
           { label: "Active", value: staff.filter(s => s.is_active).length, icon: CheckCircle2, color: "#059669", tint: "bg-emerald-500/10 border-emerald-500/20", bar: "bg-emerald-500" },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}

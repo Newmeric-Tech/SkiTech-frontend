@@ -207,6 +207,20 @@ html {
   }
 }
 
+/* ── Brand black override ─────────────────────────────────────────────────
+   The dashboard's "black" theme color (headings, primary buttons, opaque
+   borders) is repointed to the landing page's actual near-black token
+   (--mk-text-1 / --mk-btn-primary-bg in the html[data-theme="light"] block
+   above: #0d0d0d) instead of Tailwind's pure #000. Only the fully-opaque
+   utility classes are overridden — translucent variants like bg-black/5 or
+   border-black/10 already use plain rgba(0,0,0,x), which matches the
+   landing page's own translucent-black tokens (--mk-tile-glass-bg etc.),
+   so they're left alone. */
+.text-black { color: #0d0d0d !important; }
+.bg-black { background-color: #0d0d0d !important; }
+.border-black { border-color: #0d0d0d !important; }
+.accent-black { accent-color: #0d0d0d !important; }
+
 /* ── Dark mode global overrides ─────────────────────────────────────────────
    These target Tailwind utility classes so we don't have to add dark: to
    every component individually. The layout structure handles its own dark

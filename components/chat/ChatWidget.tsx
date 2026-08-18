@@ -832,7 +832,7 @@ function ContactPicker({ contacts, loading, error, mode: initialMode, creatingFo
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {name}
-                    {isCreating && <span style={{ fontSize: 11, color: "#111", marginLeft: 8, fontWeight: 400 }}>Opening…</span>}
+                    {isCreating && <span style={{ fontSize: 11, color: "#0d0d0d", marginLeft: 8, fontWeight: 400 }}>Opening…</span>}
                   </div>
                   <div style={{ fontSize: 11, color: "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.email}</div>
                 </div>
@@ -1180,7 +1180,7 @@ function MessageBubble({ message, isGroup }: { message: Message; isGroup?: boole
       <div style={{ maxWidth: "78%", display: "flex", flexDirection: "column", alignItems: sent ? "flex-end" : "flex-start" }}>
         {showSender && (
           <span style={{
-            fontSize: 11, fontWeight: 700, color: "#111",
+            fontSize: 11, fontWeight: 700, color: "#0d0d0d",
             fontFamily: "'Merriweather', serif",
             marginBottom: 3, paddingLeft: 4,
           }}>

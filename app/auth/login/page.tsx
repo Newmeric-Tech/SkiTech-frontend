@@ -86,7 +86,7 @@ export default function LoginPage() {
           --st-border: rgba(0, 0, 0, 0.08);
           --st-border-input: rgba(0, 0, 0, 0.12);
           --st-border-hover: rgba(0, 0, 0, 0.25);
-          --st-accent: #000000;
+          --st-accent: #0d0d0d;
           --st-accent-soft: rgba(0, 0, 0, 0.06);
           --st-accent-glow: rgba(0, 0, 0, 0.12);
           --st-text-1: #0f172a;
@@ -230,7 +230,7 @@ export default function LoginPage() {
           width: 40px;
           height: 40px;
           border-radius: 10px;
-          background: #000000;
+          background: #0d0d0d;
           border: 1px solid rgba(255, 255, 255, 0.1);
           display: flex;
           align-items: center;
@@ -241,7 +241,7 @@ export default function LoginPage() {
         .st-page.dark .st-logo-badge {
           background: #ffffff;
           border: 1px solid rgba(0, 0, 0, 0.08);
-          color: #0f172a;
+          color: #000000;
         }
 
         .st-hero-eyebrow {
@@ -300,7 +300,7 @@ export default function LoginPage() {
           width: 34px;
           height: 34px;
           border-radius: 8px;
-          background: #000000;
+          background: #0d0d0d;
           border: 1px solid rgba(255, 255, 255, 0.1);
           display: flex;
           align-items: center;
@@ -311,7 +311,7 @@ export default function LoginPage() {
         .st-page.dark .st-hotel-icon-badge {
           background: #ffffff;
           border: 1px solid rgba(0, 0, 0, 0.08);
-          color: #0f172a;
+          color: #000000;
         }
         .st-hotel-name { font-size: 14px; font-weight: 700; color: var(--st-text-1); }
         .st-hotel-sub { font-size: 11px; font-weight: 600; color: var(--st-text-3); }
