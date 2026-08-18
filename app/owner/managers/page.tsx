@@ -138,8 +138,8 @@ export default function ManagersPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-black" style={{ fontSize: "1.4rem", fontWeight: 800 }}>Managers</h1>
-          <p className="text-neutral-500 text-sm mt-0.5">
+          <h1 className="text-black text-2xl font-bold tracking-tight">Managers</h1>
+          <p className="text-neutral-500 text-xs mt-1">
             {loading
               ? "Loading…"
               : `${managers.length} manager${managers.length === 1 ? "" : "s"} across all properties`}
@@ -177,7 +177,7 @@ export default function ManagersPage() {
           <p className="text-sm">{search ? "No managers match your search." : "No managers yet. Invite one to get started."}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {filtered.map((m, i) => {
             const color = avatarColor(m.id);
             const initials = getInitials(m.first_name, m.last_name);
@@ -190,12 +190,12 @@ export default function ManagersPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.07 }}
-                className="bg-white/70 backdrop-blur rounded-2xl p-6 border border-black/10 shadow-sm hover:shadow-md transition-shadow"
+                className="bg-white/70 backdrop-blur rounded-2xl p-5 border border-black/10 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
               >
                 <div className="flex items-start gap-4">
                   <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md text-sm font-bold"
-                    style={{ background: `linear-gradient(135deg, ${color}, ${color}99)` }}
+                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold border"
+                    style={{ background: `${color}1A`, borderColor: `${color}33`, color }}
                   >
                     {initials}
                   </div>
@@ -203,15 +203,16 @@ export default function ManagersPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <h3 className="text-black font-bold truncate">{fullName}</h3>
-                        <p className="text-neutral-500 text-xs mt-0.5">Manager</p>
+                        <p className="text-neutral-400 text-[10px] uppercase font-semibold mt-0.5 tracking-wider">Manager</p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+                        <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
                           m.is_active
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
-                            : "bg-red-50 text-red-700 border border-red-200/60"
+                            ? "text-emerald-700 bg-emerald-50 border-emerald-200/60"
+                            : "text-red-700 bg-red-50 border-red-200/60"
                         }`}>
-                          {m.is_active ? "Active" : "Inactive"}
+                          <span className={`w-1 h-1 rounded-full ${m.is_active ? "bg-emerald-500 animate-ping" : "bg-red-500"}`}></span>
+                          <span>{m.is_active ? "Active" : "Inactive"}</span>
                         </span>
                         <div className="relative" ref={menuOpen === m.id ? menuRef : null}>
                           <button
@@ -259,17 +260,17 @@ export default function ManagersPage() {
                   </div>
                 </div>
 
-                <div className="mt-5 space-y-2.5">
-                  <div className="flex items-center gap-2 text-neutral-600 text-sm">
+                <div className="mt-5 space-y-3">
+                  <div className="flex items-center gap-2.5 text-neutral-600 text-xs">
                     <Building2 className="w-4 h-4 text-neutral-400 flex-shrink-0" />
                     <span className="truncate">{propertyName}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-neutral-600 text-sm">
+                  <div className="flex items-center gap-2.5 text-neutral-600 text-xs">
                     <Mail className="w-4 h-4 text-neutral-400 flex-shrink-0" />
                     <span className="truncate">{m.email}</span>
                   </div>
                   {m.phone_number && (
-                    <div className="flex items-center gap-2 text-neutral-600 text-sm">
+                    <div className="flex items-center gap-2.5 text-neutral-600 text-xs">
                       <Phone className="w-4 h-4 text-neutral-400 flex-shrink-0" />
                       <span>{m.phone_number}</span>
                     </div>
@@ -277,11 +278,11 @@ export default function ManagersPage() {
                 </div>
 
                 <div className="mt-5 pt-4 border-t border-black/10">
-                  <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold text-neutral-500">
                     {m.is_verified ? (
-                      <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Email verified</>
+                      <><CheckCircle2 className="w-4 h-4 text-emerald-500" /> Email verified</>
                     ) : (
-                      <><AlertCircle className="w-3.5 h-3.5 text-amber-500" /> Pending verification</>
+                      <><AlertCircle className="w-4 h-4 text-amber-500" /> Pending verification</>
                     )}
                   </div>
                 </div>
