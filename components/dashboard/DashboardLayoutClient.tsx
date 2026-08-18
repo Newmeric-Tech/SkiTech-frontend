@@ -190,8 +190,8 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
         {/* Logo Area */}
         <div className={`h-20 flex items-center ${collapsed ? "justify-center" : "px-6 justify-between"} border-b border-black/10 dark:border-white/10`}>
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 bg-[#4f46e5] dark:bg-[#6366f1] rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-[#4f46e5]/25 dark:shadow-[#6366f1]/30">
-              <Zap className="w-6 h-6 text-white" fill="white" />
+            <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-black/25 dark:shadow-white/10">
+              <Zap className="w-6 h-6 text-white dark:text-black" fill="currentColor" />
             </div>
             {!collapsed && (
               <motion.span
@@ -223,11 +223,11 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                   href={item.href}
                   className={`flex items-center ${collapsed ? "justify-center px-2" : "gap-3 px-3"} py-2.5 rounded-lg transition-all duration-200 group relative ${
                     isActive
-                      ? "bg-[#4f46e5] dark:bg-[#6366f1] text-white shadow-md shadow-[#4f46e5]/25 dark:shadow-[#6366f1]/30"
-                      : "hover:bg-[#4f46e5]/5 dark:hover:bg-[#6366f1]/10 text-neutral-700 dark:text-[#c8c8c8]"
+                      ? "bg-black dark:bg-white text-white dark:text-black shadow-md shadow-black/25 dark:shadow-white/10"
+                      : "hover:bg-black/5 dark:hover:bg-white/10 text-neutral-700 dark:text-[#c8c8c8]"
                   }`}
                 >
-                  <item.icon className={`w-[22px] h-[22px] shrink-0 ${isActive ? "text-white" : "text-neutral-500 dark:text-[#a0a0a0] group-hover:text-black dark:group-hover:text-white"}`} />
+                  <item.icon className={`w-[22px] h-[22px] shrink-0 ${isActive ? "text-white dark:text-black" : "text-neutral-500 dark:text-[#a0a0a0] group-hover:text-black dark:group-hover:text-white"}`} />
                   {!collapsed && <span className="font-medium whitespace-nowrap flex-1">{item.label}</span>}
                   {collapsed && (
                     <div className="absolute left-full ml-3 bg-black text-white text-xs px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none shadow-lg">
@@ -358,7 +358,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                     {user?.role || roleLabel}
                   </p>
                 </div>
-                <div className="w-10 h-10 bg-[#4f46e5]/10 dark:bg-[#6366f1]/15 backdrop-blur rounded-xl border border-[#4f46e5]/20 dark:border-[#6366f1]/25 flex items-center justify-center text-[#4f46e5] dark:text-[#6366f1] font-bold shadow-sm shrink-0">
+                <div className="w-10 h-10 bg-black/5 dark:bg-white/10 backdrop-blur rounded-xl border border-black/10 dark:border-white/15 flex items-center justify-center text-black dark:text-white font-bold shadow-sm shrink-0">
                   {user?.first_name?.[0]}{user?.last_name?.[0]}
                 </div>
               </button>
@@ -379,7 +379,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                     >
                       {/* User info */}
                       <div className="px-4 py-3.5 border-b border-black/8 dark:border-white/8 flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#4f46e5] dark:bg-[#6366f1] rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0">
+                        <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-black font-bold text-sm shrink-0">
                           {user?.first_name?.[0]}{user?.last_name?.[0]}
                         </div>
                         <div className="min-w-0">

@@ -86,9 +86,9 @@ export default function LoginPage() {
           --st-border: rgba(0, 0, 0, 0.08);
           --st-border-input: rgba(0, 0, 0, 0.12);
           --st-border-hover: rgba(0, 0, 0, 0.25);
-          --st-accent: #4f46e5;
-          --st-accent-soft: rgba(79, 70, 229, 0.08);
-          --st-accent-glow: rgba(79, 70, 229, 0.15);
+          --st-accent: #000000;
+          --st-accent-soft: rgba(0, 0, 0, 0.06);
+          --st-accent-glow: rgba(0, 0, 0, 0.12);
           --st-text-1: #0f172a;
           --st-text-2: #334155;
           --st-text-3: #64748b;
@@ -114,9 +114,9 @@ export default function LoginPage() {
           --st-border: rgba(255, 255, 255, 0.06);
           --st-border-input: rgba(255, 255, 255, 0.12);
           --st-border-hover: rgba(255, 255, 255, 0.25);
-          --st-accent: #6366f1;
-          --st-accent-soft: rgba(99, 102, 241, 0.1);
-          --st-accent-glow: rgba(99, 102, 241, 0.25);
+          --st-accent: #ffffff;
+          --st-accent-soft: rgba(255, 255, 255, 0.1);
+          --st-accent-glow: rgba(255, 255, 255, 0.18);
           --st-text-1: #ffffff;
           --st-text-2: rgba(255, 255, 255, 0.7);
           --st-text-3: rgba(255, 255, 255, 0.45);
@@ -194,7 +194,7 @@ export default function LoginPage() {
           height: 18px;
           border-radius: 50%;
           background: var(--st-accent);
-          box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -250,7 +250,7 @@ export default function LoginPage() {
           letter-spacing: 0.2em;
           text-transform: uppercase;
           color: var(--st-accent);
-          text-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+          text-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
         }
 
         .st-hero-title {
@@ -293,7 +293,7 @@ export default function LoginPage() {
         .st-hotel-card:hover {
           transform: translateY(-4px);
           border-color: var(--st-accent);
-          box-shadow: 0 15px 30px rgba(99, 102, 241, 0.08);
+          box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
         }
         .st-hotel-header { display: flex; align-items: center; gap: 12px; }
         .st-hotel-icon-badge {
@@ -413,7 +413,7 @@ export default function LoginPage() {
         .st-role-btn.is-selected {
           border-color: var(--st-accent);
           background: var(--st-accent-soft);
-          box-shadow: 0 0 10px rgba(99, 102, 241, 0.05);
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
         }
         .st-role-radio-circle {
           width: 14px;
@@ -523,9 +523,9 @@ export default function LoginPage() {
         }
         .st-btn-signin-submit:hover:not(:disabled) {
           background: var(--st-accent);
-          color: #ffffff;
+          color: var(--st-text-inverse);
           transform: translateY(-1px);
-          box-shadow: 0 6px 15px rgba(99, 102, 241, 0.3);
+          box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
         }
         .st-btn-signin-submit:hover:not(:disabled) svg { transform: translateX(3px); }
         .st-btn-signin-submit svg { width: 14px; height: 14px; transition: transform 0.3s ease; }

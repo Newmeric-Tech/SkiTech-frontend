@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
   Plus, Search, Building2, Utensils, MapPin, MoreHorizontal,
-  Loader2, X, Pencil, Trash2,
+  Loader2, X, Pencil, Trash2, ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { propertiesAPI, Property, PropertyCreate } from "@/lib/api/properties";
@@ -108,8 +108,8 @@ export default function PropertiesPage() {
     <div className="p-6 lg:p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-black" style={{ fontSize: "1.4rem", fontWeight: 800 }}>Properties</h1>
-          <p className="text-neutral-500 text-sm mt-0.5">
+          <h1 className="text-black text-2xl font-bold tracking-tight">Properties</h1>
+          <p className="text-neutral-500 text-xs mt-1">
             {loading ? "Loading…" : `${properties.length} propert${properties.length === 1 ? "y" : "ies"} in your portfolio`}
           </p>
         </div>
@@ -142,7 +142,7 @@ export default function PropertiesPage() {
           <Loader2 className="w-8 h-8 animate-spin text-neutral-300" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filtered.map((p, i) => (
             <motion.div
               key={p.id}
@@ -153,26 +153,29 @@ export default function PropertiesPage() {
               className="bg-white/70 backdrop-blur rounded-2xl border border-black/10 shadow-sm overflow-hidden group"
             >
               {/* Card header */}
-              <div className="relative h-36 bg-gradient-to-br from-neutral-800 to-neutral-950 flex items-center justify-center overflow-hidden">
+              <div className="relative h-44 bg-gradient-to-br from-neutral-800 to-neutral-950 flex flex-col justify-end p-5 overflow-hidden">
                 {p.image_urls && p.image_urls.length > 0 ? (
                   <img
                     src={p.image_urls[0]}
                     alt={p.name}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay"
                   />
                 ) : (
-                  <Building2 className="w-14 h-14 text-white/10" />
+                  <Building2 className="absolute inset-0 m-auto w-14 h-14 text-white/10" />
                 )}
-                <div className="absolute top-3 right-3">
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                    p.is_active ? "bg-emerald-500/90 text-white" : "bg-red-500/90 text-white"
+                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 to-transparent opacity-80" />
+
+                <div className="relative z-10">
+                  <span className={`absolute -top-24 right-0 flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border backdrop-blur-md ${
+                    p.is_active
+                      ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                      : "text-red-400 bg-red-500/10 border-red-500/20"
                   }`}>
-                    {p.is_active ? "Active" : "Inactive"}
+                    <span className={`w-1.5 h-1.5 rounded-full ${p.is_active ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`} />
+                    <span>{p.is_active ? "Active" : "Inactive"}</span>
                   </span>
-                </div>
-                <div className="absolute bottom-3 left-4 right-12">
-                  <p className="text-white text-sm font-bold truncate">{p.name}</p>
-                  <div className="flex items-center gap-1 text-white/60 text-xs mt-0.5">
+                  <p className="text-white text-lg font-bold leading-tight truncate">{p.name}</p>
+                  <div className="flex items-center gap-1 text-white/60 text-[10px] mt-1">
                     <MapPin className="w-3 h-3 flex-shrink-0" />
                     <span className="truncate">{buildLocation(p)}</span>
                   </div>
@@ -180,8 +183,8 @@ export default function PropertiesPage() {
               </div>
 
               <div className="p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs text-neutral-500 bg-black/[0.04] px-2.5 py-1 rounded-full capitalize">
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-black/10">
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                     {p.franchise_type ?? "Standard"}
                   </span>
                   {/* Overflow menu */}
@@ -220,27 +223,28 @@ export default function PropertiesPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center p-2 bg-white/50 rounded-xl">
-                    <Building2 className="w-3.5 h-3.5 mx-auto mb-1 text-blue-500" />
-                    <div className="text-black text-sm font-bold">{p.num_rooms ?? "—"}</div>
-                    <div className="text-neutral-400 text-[10px]">Rooms</div>
+                  <div className="text-center p-3 bg-white/50 border border-black/5 rounded-xl">
+                    <Building2 className="w-4 h-4 mx-auto mb-1.5 text-black" />
+                    <div className="text-black text-lg font-bold leading-none">{p.num_rooms ?? "—"}</div>
+                    <div className="text-neutral-400 text-[9px] font-semibold uppercase tracking-wider mt-1">Rooms</div>
                   </div>
-                  <div className="text-center p-2 bg-white/50 rounded-xl">
-                    <Utensils className="w-3.5 h-3.5 mx-auto mb-1 text-indigo-500" />
-                    <div className="text-black text-sm font-bold">{p.has_restaurant ? "Yes" : "No"}</div>
-                    <div className="text-neutral-400 text-[10px]">Restaurant</div>
+                  <div className="text-center p-3 bg-white/50 border border-black/5 rounded-xl">
+                    <Utensils className="w-4 h-4 mx-auto mb-1.5 text-black" />
+                    <div className="text-black text-lg font-bold leading-none">{p.has_restaurant ? "Yes" : "No"}</div>
+                    <div className="text-neutral-400 text-[9px] font-semibold uppercase tracking-wider mt-1">Restaurant</div>
                   </div>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-black/10 flex items-center justify-between">
-                  <span className="text-neutral-500 text-xs truncate max-w-[60%]">
+                  <span className="text-neutral-400 text-[10px] truncate max-w-[60%]">
                     {[p.address, p.city].filter(Boolean).join(", ") || "No address set"}
                   </span>
                   <button
                     onClick={() => router.push(`/owner/properties/${p.id}`)}
-                    className="text-black text-xs hover:underline flex-shrink-0"
+                    className="text-black text-[10px] font-bold hover:underline flex-shrink-0 flex items-center gap-0.5"
                   >
-                    View Details →
+                    <span>View Details</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -251,7 +255,7 @@ export default function PropertiesPage() {
           <motion.button
             whileHover={{ y: -4 }}
             onClick={() => setShowAdd(true)}
-            className="bg-white/50 border-2 border-dashed border-black/10 rounded-2xl min-h-[280px] flex flex-col items-center justify-center gap-3 text-neutral-400 hover:text-neutral-600 hover:border-black/20 hover:bg-black/[0.02] transition-all duration-300"
+            className="bg-white/50 border-2 border-dashed border-black/10 rounded-2xl min-h-[320px] flex flex-col items-center justify-center gap-3 text-neutral-400 hover:text-neutral-600 hover:border-black/20 hover:bg-black/[0.02] transition-all duration-300"
           >
             <div className="w-12 h-12 rounded-xl bg-black/[0.04] flex items-center justify-center">
               <Plus className="w-6 h-6" />
