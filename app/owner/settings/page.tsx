@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Bell, Shield, CreditCard, Save, Loader2, Check, X, Zap, Building2, Users, ArrowUpRight, ExternalLink, Key, Plus, Clock, CheckCircle2, XCircle, ChevronDown, Radio, Link2 } from "lucide-react";
+import { User, Bell, Shield, CreditCard, Save, Loader2, Check, X, Zap, Building2, Users, ArrowUpRight, ExternalLink, Key, Plus, Clock, CheckCircle2, XCircle, ChevronDown, Radio, Link2, AlertTriangle, RefreshCw, Trash2, PlugZap } from "lucide-react";
 import { toast } from "sonner";
 import { usersAPI } from "@/lib/api/users";
 import { subscriptionsAPI, MyPlan, SubscriptionPlan } from "@/lib/api/subscriptions";
 import { coAdminAPI, CoAdminRequestItem } from "@/lib/api/co-admin";
 import { propertiesAPI, Property } from "@/lib/api/properties";
+import { channelManagerAPI, Integration } from "@/lib/api/channel-manager";
 import { useAuthStore } from "@/store/authStore";
 
 const ALL_TABS = [
@@ -27,6 +28,24 @@ const CHANNEL_MANAGER_PROVIDERS = [
   { value: "siteminder", label: "SiteMinder" },
   { value: "little_hotelier", label: "Little Hotelier" },
 ];
+
+// Each provider's adapter expects a different credential shape (see app/services/adapters/*.py)
+const PROVIDER_CREDENTIAL_FIELDS: Record<string, { key: string; label: string; secret?: boolean }[]> = {
+  channex: [{ key: "api_key", label: "API Key", secret: true }],
+  mews: [
+    { key: "client_token", label: "Client Token", secret: true },
+    { key: "access_token", label: "Access Token", secret: true },
+  ],
+  cloudbeds: [
+    { key: "api_key", label: "API Key", secret: true },
+    { key: "property_id", label: "Cloudbeds Property ID" },
+  ],
+  siteminder: [
+    { key: "api_id", label: "API ID" },
+    { key: "api_key", label: "API Key", secret: true },
+  ],
+  little_hotelier: [{ key: "smx_token", label: "SMX Token", secret: true }],
+};
 
 const FEATURE_LABELS = [
   // Core
@@ -80,10 +99,17 @@ export default function SettingsPage() {
   const [coAdminForm, setCoAdminForm] = useState({ property_id: "", proposed_name: "", proposed_email: "" });
   const [coAdminSubmitting, setCoAdminSubmitting] = useState(false);
 
-  // Channel Manager (UI only — not yet backed by a real integration API)
+  // Channel Manager
   const [cmProperty, setCmProperty] = useState("");
   const [cmProvider, setCmProvider] = useState("");
+  const [cmCredentials, setCmCredentials] = useState<Record<string, string>>({});
   const [cmPropertiesLoading, setCmPropertiesLoading] = useState(false);
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [integrationsLoading, setIntegrationsLoading] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -246,16 +272,112 @@ export default function SettingsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [properties.length]);
 
-  useEffect(() => {
-    if (tab === "channel-manager") loadPropertiesForChannelManager();
-  }, [tab, loadPropertiesForChannelManager]);
+  const loadIntegrations = useCallback(async () => {
+    setIntegrationsLoading(true);
+    try {
+      const res = await channelManagerAPI.list();
+      setIntegrations(res.data);
+    } catch {
+      toast.error("Failed to load channel manager integrations");
+    } finally {
+      setIntegrationsLoading(false);
+    }
+  }, []);
 
-  const handleConnectChannelManager = () => {
+  useEffect(() => {
+    if (tab === "channel-manager") {
+      loadPropertiesForChannelManager();
+      loadIntegrations();
+    }
+  }, [tab, loadPropertiesForChannelManager, loadIntegrations]);
+
+  const cmCredentialFields = PROVIDER_CREDENTIAL_FIELDS[cmProvider] || [];
+
+  const handleProviderChange = (value: string) => {
+    setCmProvider(value);
+    setCmCredentials({});
+  };
+
+  const buildCredentialsPayload = () => {
+    const payload: Record<string, string> = {};
+    for (const field of cmCredentialFields) payload[field.key] = cmCredentials[field.key] || "";
+    return payload;
+  };
+
+  const validateCmForm = () => {
     if (!cmProperty || !cmProvider) {
       toast.error("Select a property and a provider");
-      return;
+      return false;
     }
-    toast.info("Channel manager integrations are coming soon");
+    const missing = cmCredentialFields.some(f => !cmCredentials[f.key]?.trim());
+    if (missing) {
+      toast.error("Fill in all credential fields for the selected provider");
+      return false;
+    }
+    return true;
+  };
+
+  const handleTestConnection = async () => {
+    if (!cmProvider) { toast.error("Select a provider first"); return; }
+    const missing = cmCredentialFields.some(f => !cmCredentials[f.key]?.trim());
+    if (missing) { toast.error("Fill in all credential fields for the selected provider"); return; }
+
+    setTestingConnection(true);
+    try {
+      const res = await channelManagerAPI.testConnection({
+        provider_name: cmProvider,
+        credentials: buildCredentialsPayload(),
+      });
+      toast.success(res.data.message || "Connection successful");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Connection test failed");
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
+  const handleConnectChannelManager = async () => {
+    if (!validateCmForm()) return;
+    setConnecting(true);
+    try {
+      await channelManagerAPI.create({
+        provider_name: cmProvider,
+        property_id: cmProperty,
+        credentials: buildCredentialsPayload(),
+      });
+      toast.success("Channel manager connected — syncing reservations in the background");
+      setCmProperty(""); setCmProvider(""); setCmCredentials({});
+      await loadIntegrations();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to connect channel manager");
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const handleDisconnectIntegration = async (id: string) => {
+    setDisconnectingId(id);
+    try {
+      await channelManagerAPI.disconnect(id);
+      toast.success("Integration disconnected");
+      await loadIntegrations();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to disconnect integration");
+    } finally {
+      setDisconnectingId(null);
+    }
+  };
+
+  const handleSyncNow = async (id: string) => {
+    setSyncingId(id);
+    try {
+      const res = await channelManagerAPI.syncNow(id);
+      toast.success(res.data.message || "Manual sync triggered");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to trigger sync");
+    } finally {
+      setSyncingId(null);
+    }
   };
 
   const handleSubmitCoAdmin = async () => {
@@ -579,15 +701,80 @@ export default function SettingsPage() {
                     <Radio className="w-4 h-4 text-black" />
                     <p className="text-black text-sm" style={{ fontWeight: 700 }}>Connected Integrations</p>
                   </div>
-                  <div className="border border-dashed border-black/15 rounded-xl py-10 px-4 text-center">
-                    <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center mx-auto mb-3">
-                      <Radio className="w-4 h-4 text-white" />
+
+                  {integrationsLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-6 h-6 animate-spin text-neutral-300" />
                     </div>
-                    <p className="text-black text-sm" style={{ fontWeight: 700 }}>No integrations connected</p>
-                    <p className="text-neutral-400 text-xs mt-1 max-w-[220px] mx-auto leading-relaxed">
-                      Use the form to connect a channel manager and begin syncing reservation data.
-                    </p>
-                  </div>
+                  ) : integrations.length === 0 ? (
+                    <div className="border border-dashed border-black/15 rounded-xl py-10 px-4 text-center">
+                      <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center mx-auto mb-3">
+                        <Radio className="w-4 h-4 text-white" />
+                      </div>
+                      <p className="text-black text-sm" style={{ fontWeight: 700 }}>No integrations connected</p>
+                      <p className="text-neutral-400 text-xs mt-1 max-w-[220px] mx-auto leading-relaxed">
+                        Use the form to connect a channel manager and begin syncing reservation data.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {integrations.map(intg => {
+                        const providerLabel = CHANNEL_MANAGER_PROVIDERS.find(p => p.value === intg.provider_name)?.label || intg.provider_name;
+                        const statusConfig = {
+                          active:       { color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200", label: "Active" },
+                          error:        { color: "text-red-500",     bg: "bg-red-50 border-red-200",         label: "Error" },
+                          pending:      { color: "text-amber-600",   bg: "bg-amber-50 border-amber-200",     label: "Pending" },
+                          disconnected: { color: "text-neutral-500", bg: "bg-neutral-100 border-neutral-200", label: "Disconnected" },
+                        }[intg.connection_status] || { color: "text-neutral-500", bg: "bg-neutral-100 border-neutral-200", label: intg.connection_status };
+
+                        return (
+                          <div key={intg.id} className="p-4 rounded-xl border border-black/5 bg-white/60">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-black text-sm truncate" style={{ fontWeight: 600 }}>{providerLabel}</p>
+                                <p className="text-neutral-400 text-xs mt-0.5 truncate">{intg.property_name || "—"}</p>
+                              </div>
+                              <span
+                                title={intg.connection_status === "error" ? intg.error_message || "Connection error" : undefined}
+                                className={`shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${statusConfig.bg} ${statusConfig.color}`}>
+                                {intg.connection_status === "error" && <AlertTriangle className="w-3.5 h-3.5" />}
+                                {statusConfig.label}
+                              </span>
+                            </div>
+
+                            {intg.connection_status === "error" && intg.error_message && (
+                              <div className="mt-2 flex items-start gap-1.5 text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                <span className="leading-relaxed">{intg.error_message}</span>
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-between mt-3">
+                              <p className="text-neutral-400 text-xs">
+                                {intg.last_sync_at ? `Last synced ${new Date(intg.last_sync_at).toLocaleString()}` : "Never synced"}
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleSyncNow(intg.id)}
+                                  disabled={syncingId === intg.id || intg.connection_status === "disconnected"}
+                                  className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-black transition-colors disabled:opacity-40 px-2 py-1">
+                                  {syncingId === intg.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                                  Sync Now
+                                </button>
+                                <button
+                                  onClick={() => handleDisconnectIntegration(intg.id)}
+                                  disabled={disconnectingId === intg.id}
+                                  className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 transition-colors disabled:opacity-40 px-2 py-1">
+                                  {disconnectingId === intg.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                                  Disconnect
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Connect Channel Manager form */}
@@ -620,7 +807,7 @@ export default function SettingsPage() {
                       <div className="relative">
                         <select
                           value={cmProvider}
-                          onChange={e => setCmProvider(e.target.value)}
+                          onChange={e => handleProviderChange(e.target.value)}
                           className="w-full appearance-none bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 transition-all pr-9">
                           <option value="">Select a provider…</option>
                           {CHANNEL_MANAGER_PROVIDERS.map(p => (
@@ -630,15 +817,38 @@ export default function SettingsPage() {
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
                       </div>
                     </div>
+
+                    {cmCredentialFields.map(field => (
+                      <div key={field.key}>
+                        <label className="block text-neutral-700 text-xs mb-1.5" style={{ fontWeight: 500 }}>{field.label}</label>
+                        <input
+                          type={field.secret ? "password" : "text"}
+                          value={cmCredentials[field.key] || ""}
+                          onChange={e => setCmCredentials(c => ({ ...c, [field.key]: e.target.value }))}
+                          placeholder={field.label}
+                          className="w-full bg-white border border-black/10 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-black/20 transition-all" />
+                      </div>
+                    ))}
                   </div>
 
-                  <button
-                    onClick={handleConnectChannelManager}
-                    className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl text-sm shadow-md hover:bg-neutral-800 transition-colors"
-                    style={{ fontWeight: 600 }}>
-                    <Link2 className="w-4 h-4" />
-                    Connect Integration
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleTestConnection}
+                      disabled={testingConnection || !cmProvider}
+                      className="flex items-center gap-2 bg-white border border-black/10 text-black px-5 py-2.5 rounded-xl text-sm shadow-sm hover:bg-black/5 transition-colors disabled:opacity-50"
+                      style={{ fontWeight: 600 }}>
+                      {testingConnection ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlugZap className="w-4 h-4" />}
+                      Test Connection
+                    </button>
+                    <button
+                      onClick={handleConnectChannelManager}
+                      disabled={connecting}
+                      className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl text-sm shadow-md hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                      style={{ fontWeight: 600 }}>
+                      {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+                      Connect Integration
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>
