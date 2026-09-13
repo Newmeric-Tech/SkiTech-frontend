@@ -4,7 +4,6 @@ import { useState, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { ArrowUpDown, ArrowUp, ArrowDown, ExternalLink } from "lucide-react";
 import { EmployeeRanking, RankingFilter } from "@/types/employee-ranking";
-import { departments, statusFilters } from "@/mock-data/employee-ranking";
 import RankBadge from "./RankBadge";
 import StatusBadge from "./StatusBadge";
 import SearchInput from "./SearchInput";
@@ -12,6 +11,9 @@ import FilterDropdown from "./FilterDropdown";
 import Pagination from "./Pagination";
 import EmptyState from "./EmptyState";
 import { useRouter } from "next/navigation";
+
+// Fixed ranking status categories — matches PERF_STATUS_LABEL in lib/api/ranking.ts, not tenant data.
+const STATUS_FILTERS = ["All Status", "High Performer", "Consistent", "Needs Attention", "New"];
 
 interface RankingTableProps {
   data: EmployeeRanking[];
@@ -41,6 +43,14 @@ export default function RankingTable({
     sortOrder: "asc",
   });
   const [currentPage, setCurrentPage] = useState(1);
+
+  const departmentOptions = useMemo(
+    () => [
+      "All Departments",
+      ...Array.from(new Set(data.map((r) => r.employee.department))).filter(Boolean).sort(),
+    ],
+    [data]
+  );
 
   const handleSearch = useCallback((value: string) => {
     setFilters((prev) => ({ ...prev, search: value }));
@@ -156,7 +166,7 @@ export default function RankingTable({
               />
             </div>
             <FilterDropdown
-              options={departments}
+              options={departmentOptions}
               value={filters.department}
               onChange={(val) => {
                 setFilters((prev) => ({ ...prev, department: val }));
@@ -164,7 +174,7 @@ export default function RankingTable({
               }}
             />
             <FilterDropdown
-              options={statusFilters}
+              options={STATUS_FILTERS}
               value={filters.status}
               onChange={(val) => {
                 setFilters((prev) => ({ ...prev, status: val }));
