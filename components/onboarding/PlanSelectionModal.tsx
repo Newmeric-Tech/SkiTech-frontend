@@ -17,14 +17,13 @@ const FEATURE_LABELS: Record<string, string> = {
   inventory: "Inventory Management",
   governance: "Governance & Compliance",
   employee_scheduling: "Employee Scheduling",
-  chat: "Team Chat",
   employee_ranking: "Employee Ranking",
   master_log: "Master Log Book",
 };
 
 const FEATURE_ORDER = [
   "reports", "kra", "sop", "attendance", "vendor_management",
-  "inventory", "governance", "employee_scheduling", "chat",
+  "inventory", "governance", "employee_scheduling",
   "employee_ranking", "master_log",
 ];
 

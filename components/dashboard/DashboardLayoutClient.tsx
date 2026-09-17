@@ -20,7 +20,7 @@ import {
   Shield, Truck, FileText, Settings, LogOut, ChevronLeft, ChevronRight,
   Bell, Search, Briefcase, Menu, ClipboardList, Clock, Package,
   ShieldCheck, Layers, X, Sun, Moon, BedDouble,
-  Folder, AlertCircle, Activity, Trophy, CalendarClock, CalendarDays, MessageCircle,
+  Folder, AlertCircle, Activity, Trophy, CalendarClock, CalendarDays,
   Inbox,
 } from "lucide-react";
 import NotificationPanel from "@/components/dashboard/NotificationPanel";

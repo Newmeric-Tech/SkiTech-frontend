@@ -27,7 +27,6 @@ export interface PlanFeatures {
   governance: boolean;
   // Upcoming
   employee_scheduling: boolean;
-  chat: boolean;
   employee_ranking: boolean;
   master_log: boolean;
   [key: string]: boolean;
@@ -42,7 +41,6 @@ const DEFAULT_FEATURES: PlanFeatures = {
   inventory: false,
   governance: false,
   employee_scheduling: false,
-  chat: false,
   employee_ranking: false,
   master_log: false,
 };
@@ -177,7 +175,7 @@ export const useAuthStore = create<AuthState>()(
             const allEnabled: PlanFeatures = {
               reports: true, kra: true, sop: true,
               attendance: true, vendor_management: true, inventory: true, governance: true,
-              employee_scheduling: true, chat: true, employee_ranking: true, master_log: true,
+              employee_scheduling: true, employee_ranking: true, master_log: true,
             };
             set({ features: allEnabled });
           } else {
@@ -236,7 +234,7 @@ export const useAuthStore = create<AuthState>()(
             const allEnabled: PlanFeatures = {
               reports: true, kra: true, sop: true,
               attendance: true, vendor_management: true, inventory: true, governance: true,
-              employee_scheduling: true, chat: true, employee_ranking: true, master_log: true,
+              employee_scheduling: true, employee_ranking: true, master_log: true,
             };
             set({ features: allEnabled });
           } else {
@@ -265,7 +263,7 @@ export const useAuthStore = create<AuthState>()(
           set({ features: {
             reports: true, kra: true, sop: true,
             attendance: true, vendor_management: true, inventory: true, governance: true,
-            employee_scheduling: true, chat: true, employee_ranking: true, master_log: true,
+            employee_scheduling: true, employee_ranking: true, master_log: true,
           }});
           return;
         }

@@ -3,7 +3,6 @@ import { Merriweather } from "next/font/google";
 import "./globals.css";
 import { SharedStoreProvider } from "../store/SharedStore";
 import { Toaster } from "sonner";
-import ChatWidgetGate from "@/components/chat/ChatWidgetGate";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const merriweather = Merriweather({
@@ -30,7 +29,6 @@ export default function RootLayout({
           <SharedStoreProvider>
             {children}
             <Toaster richColors position="top-right" />
-            <ChatWidgetGate />
           </SharedStoreProvider>
         </GoogleOAuthProvider>
       </body>

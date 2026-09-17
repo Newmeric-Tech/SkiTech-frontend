@@ -9,7 +9,6 @@ export interface PlanFeatures {
   inventory: boolean;
   governance: boolean;
   employee_scheduling: boolean;
-  chat: boolean;
   employee_ranking: boolean;
   master_log: boolean;
   [key: string]: boolean;

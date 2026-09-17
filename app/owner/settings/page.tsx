@@ -59,7 +59,6 @@ const FEATURE_LABELS = [
   { key: "governance",           label: "Governance & Compliance", desc: "Audit logs and compliance tracking",            soon: false },
   // Upcoming
   { key: "employee_scheduling",  label: "Employee Scheduling",     desc: "Shift planning and roster management",          soon: true  },
-  { key: "chat",                 label: "Team Chat",               desc: "In-app messaging for staff and managers",       soon: true  },
   { key: "employee_ranking",     label: "Employee Ranking",        desc: "Performance-based ranking and leaderboards",    soon: true  },
   { key: "master_log",           label: "Master Log Book",         desc: "Digital log book for daily operations",         soon: true  },
 ];
