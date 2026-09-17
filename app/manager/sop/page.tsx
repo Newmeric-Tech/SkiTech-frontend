@@ -246,16 +246,6 @@ export default function ManagerSOPPage() {
     }
   };
 
-  const handleDelete = async (sop: SOPItem) => {
-    try {
-      await sopAPI.deleteSOP(sop.id);
-      setSOPs(prev => prev.filter(s => s.id !== sop.id));
-      toast.success("SOP deleted");
-    } catch {
-      toast.error("Failed to delete SOP");
-    }
-  };
-
   const filtered = sops.filter(s => {
     const matchSearch = s.title.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || s.status === statusFilter;
@@ -384,9 +374,9 @@ export default function ManagerSOPPage() {
                   <button onClick={() => setModal(sop)} className="p-1.5 text-neutral-400 hover:text-black hover:bg-black/[0.04] rounded-lg transition-colors" title="Edit">
                     <Edit3 className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDelete(sop)} className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
-                    <X className="w-4 h-4" />
-                  </button>
+                  {/* No Delete action here — Manager's role permissions don't include
+                      delete_sop (deletion is reserved for Tenant Admin/Owner/Super Admin,
+                      same as every other resource type in ROLE_PERMISSIONS). */}
                 </div>
               </motion.div>
             );
