@@ -19,8 +19,9 @@ import {
   Zap, LayoutDashboard, Building2, Users, UserCheck, BarChart3,
   Shield, Truck, FileText, Settings, LogOut, ChevronLeft, ChevronRight,
   Bell, Search, Briefcase, Menu, ClipboardList, Clock, Package,
-  ShieldCheck, Layers, Lock, X, Sun, Moon, BedDouble,
+  ShieldCheck, Layers, X, Sun, Moon, BedDouble,
   Folder, AlertCircle, Activity, Trophy, CalendarClock, CalendarDays, MessageCircle,
+  Inbox,
 } from "lucide-react";
 import NotificationPanel from "@/components/dashboard/NotificationPanel";
 import { useDarkMode } from "@/hooks/useDarkMode";
@@ -34,6 +35,7 @@ type NavItem = {
 
 const ownerNav: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard",          href: "/owner" },
+  { icon: Inbox,           label: "Inbox",              href: "/owner/inbox" },
   { icon: Building2,       label: "Properties",         href: "/owner/properties" },
   { icon: Briefcase,       label: "Managers",           href: "/owner/managers" },
   { icon: Users,           label: "Staff",              href: "/owner/staff" },
@@ -52,7 +54,6 @@ const ownerConfigNav: NavItem[] = [
   { icon: Package,   label: "Vendors",     href: "/owner/vendors",     feature: "vendor_management" },
   { icon: UserCheck, label: "Owners",      href: "/owner/owners" },
   { icon: Layers,    label: "Departments", href: "/owner/departments" },
-  { icon: Lock,      label: "Permissions", href: "/owner/permissions" },
   { icon: Settings,  label: "Settings",    href: "/owner/settings" },
 ];
 
@@ -139,7 +140,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
         item.href !== "/owner/master-activity-log"
       );
       configNavItems = configNavItems.filter(item =>
-        item.href !== "/owner/owners" && item.href !== "/owner/permissions"
+        item.href !== "/owner/owners"
       );
     }
   } else if (pathname.startsWith("/manager")) {

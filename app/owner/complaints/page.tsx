@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Search, AlertCircle, Clock, Eye, ShieldAlert, Loader2, RefreshCw, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +12,11 @@ import {
 } from "@/lib/api/complaints";
 
 export default function OwnerComplaintsPage() {
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+  const highlightedRef = useRef<HTMLDivElement | null>(null);
+  const [hasScrolledToHighlight, setHasScrolledToHighlight] = useState(false);
+
   const [dashboard, setDashboard]       = useState<OwnerDashboard | null>(null);
   const [complaints, setComplaints]     = useState<ComplaintListItem[]>([]);
   const [total, setTotal]               = useState(0);
@@ -45,6 +51,17 @@ export default function OwnerComplaintsPage() {
   }, [search, filterStatus, filterPriority, filterCategory]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Deep-link support: /owner/complaints?highlight=<id> (used by Inbox)
+  useEffect(() => {
+    if (!highlightId || hasScrolledToHighlight || loading || complaints.length === 0) return;
+    const match = complaints.find((c) => c.id === highlightId);
+    if (match) {
+      setExpanded(highlightId);
+      highlightedRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    setHasScrolledToHighlight(true);
+  }, [highlightId, hasScrolledToHighlight, loading, complaints]);
 
   const handleEscalate = async (id: string) => {
     try {
@@ -140,9 +157,12 @@ export default function OwnerComplaintsPage() {
         <div className="space-y-3">
           {complaints.map((c) => {
             const isExpanded = expanded === c.id;
+            const isHighlighted = highlightId === c.id;
             return (
-              <motion.div key={c.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+              <motion.div key={c.id} ref={isHighlighted ? highlightedRef : undefined}
+                initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                 className={`bg-white dark:bg-[#1c1c1c] rounded-xl border p-5 shadow-sm ${
+                  isHighlighted ? "ring-2 ring-blue-400 border-blue-300" :
                   c.status === "resolved" ? "border-emerald-200" : c.status === "escalated" ? "border-red-200" : "border-slate-200 dark:border-white/10"}`}>
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-2 flex-wrap">

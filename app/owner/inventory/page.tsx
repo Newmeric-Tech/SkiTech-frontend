@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Search, AlertTriangle, Package, X, Edit2,
@@ -201,6 +202,12 @@ function EditStockModal({ item, onClose, onSave }: { item: InventoryItem; onClos
 }
 
 export default function InventoryPage() {
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+  const highlightProperty = searchParams.get("property");
+  const highlightedRef = useRef<HTMLTableRowElement | null>(null);
+  const [hasScrolledToHighlight, setHasScrolledToHighlight] = useState(false);
+
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState("");
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -214,11 +221,25 @@ export default function InventoryPage() {
     propertiesAPI.list()
       .then((propsRes) => {
         setProperties(propsRes.data);
-        if (propsRes.data.length > 0) setSelectedPropertyId(propsRes.data[0].id);
+        const initial = highlightProperty && propsRes.data.some((p: Property) => p.id === highlightProperty)
+          ? highlightProperty
+          : propsRes.data[0]?.id;
+        if (initial) setSelectedPropertyId(initial);
       })
       .catch(() => toast.error("Failed to load properties"))
       .finally(() => setPropsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Deep-link support: /owner/inventory?property=<id>&highlight=<item_id> (used by Inbox)
+  useEffect(() => {
+    if (!highlightId || hasScrolledToHighlight || loading || items.length === 0) return;
+    const match = items.find((i) => i.id === highlightId);
+    if (match) {
+      highlightedRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    setHasScrolledToHighlight(true);
+  }, [highlightId, hasScrolledToHighlight, loading, items]);
 
   const fetchItems = useCallback(async () => {
     if (!selectedPropertyId) return;
@@ -351,8 +372,10 @@ export default function InventoryPage() {
                       const status = computeStatus(item.quantity, item.reorder_level);
                       const s = statusMap[status];
                       const pct = item.reorder_level ? Math.min(100, (item.quantity / item.reorder_level) * 100) : 100;
+                      const isHighlighted = highlightId === item.id;
                       return (
-                        <tr key={item.id} className="border-t border-black/5 hover:bg-white/50 transition-colors">
+                        <tr key={item.id} ref={isHighlighted ? highlightedRef : undefined}
+                          className={`border-t border-black/5 hover:bg-white/50 transition-colors ${isHighlighted ? "bg-blue-50/70 ring-1 ring-inset ring-blue-300" : ""}`}>
                           <td className="px-5 py-4 text-black text-sm" style={{ fontWeight: 600 }}>{item.item_name}</td>
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-2">
