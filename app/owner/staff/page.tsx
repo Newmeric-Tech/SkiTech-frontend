@@ -23,6 +23,9 @@ interface Employee {
   position: string | null;
   is_active: boolean;
   created_at: string;
+  /** True when this row was synthesized from a Staff-role User with no
+   * matching `employees` row — `id` is a users.id, not an employees.id. */
+  isUserOnly?: boolean;
 }
 
 interface Department {
@@ -206,6 +209,7 @@ function StaffPageInner() {
           position: "Staff",
           is_active: u.is_active,
           created_at: "",
+          isUserOnly: true,
         }));
 
       setStaff([...employees, ...staffUsers]);
@@ -244,6 +248,30 @@ function StaffPageInner() {
       toast.success("Staff member removed");
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Failed to remove staff member");
+    }
+  };
+
+  // Staff-role users with no matching `employees` row have no employee record
+  // to delete — deactivate/activate the underlying user account instead.
+  const handleDeactivateUser = async (userId: string) => {
+    try {
+      await usersAPI.deactivate(userId);
+      setStaff(prev => prev.map(s => s.id === userId ? { ...s, is_active: false } : s));
+      setMenuOpen(null);
+      toast.success("Staff member deactivated");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to deactivate staff member");
+    }
+  };
+
+  const handleActivateUser = async (userId: string) => {
+    try {
+      await usersAPI.activate(userId);
+      setStaff(prev => prev.map(s => s.id === userId ? { ...s, is_active: true } : s));
+      setMenuOpen(null);
+      toast.success("Staff member activated");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to activate staff member");
     }
   };
 
@@ -356,10 +384,24 @@ function StaffPageInner() {
                           {menuOpen === s.id && (
                             <motion.div initial={{ opacity: 0, scale: 0.95, y: -4 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
                               className="absolute right-0 top-8 bg-white border border-black/10 rounded-xl shadow-lg z-10 min-w-[140px] overflow-hidden">
-                              <button onClick={() => handleDelete(s.id)}
-                                className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors">
-                                <Trash2 className="w-3.5 h-3.5" /> Remove
-                              </button>
+                              {s.isUserOnly ? (
+                                s.is_active ? (
+                                  <button onClick={() => handleDeactivateUser(s.id)}
+                                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors">
+                                    <Trash2 className="w-3.5 h-3.5" /> Deactivate
+                                  </button>
+                                ) : (
+                                  <button onClick={() => handleActivateUser(s.id)}
+                                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors">
+                                    <CheckCircle2 className="w-3.5 h-3.5" /> Activate
+                                  </button>
+                                )
+                              ) : (
+                                <button onClick={() => handleDelete(s.id)}
+                                  className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors">
+                                  <Trash2 className="w-3.5 h-3.5" /> Remove
+                                </button>
+                              )}
                             </motion.div>
                           )}
                         </AnimatePresence>
