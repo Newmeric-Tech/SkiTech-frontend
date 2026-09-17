@@ -5,10 +5,10 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Activity, Clock, CheckCircle2, Loader2, Sparkles, X,
+  ArrowLeft, Activity, Clock, CheckCircle2, XCircle, Loader2, Sparkles, X,
 } from "lucide-react";
 import {
-  schedulingAPI, BackendManagerDashboard, BackendReplacementRequest, RecommendedEmployee,
+  schedulingAPI, BackendReplacementRequest, RecommendedEmployee,
 } from "@/lib/api/scheduling";
 import { workforceAPI } from "@/lib/api/workforce";
 import { usersAPI } from "@/lib/api/users";
@@ -28,6 +28,13 @@ function StatusBadge({ status }: { status: string }) {
     return (
       <span className="flex items-center gap-1 text-[10px] font-bold bg-emerald-500 text-white px-2.5 py-1 rounded-full uppercase tracking-wide">
         <CheckCircle2 className="w-3 h-3" /> ACCEPTED
+      </span>
+    );
+  }
+  if (status === "rejected") {
+    return (
+      <span className="flex items-center gap-1 text-[10px] font-bold bg-red-100 text-red-700 px-2.5 py-1 rounded-full uppercase tracking-wide border border-red-200">
+        <XCircle className="w-3 h-3" /> REJECTED
       </span>
     );
   }
@@ -85,7 +92,9 @@ function RequestCard({
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
       className={`p-4 rounded-xl border transition-shadow hover:shadow-md ${
-        request.status === "accepted" ? "border-emerald-200 bg-emerald-50/40" : "border-gray-200 bg-white"}`}>
+        request.status === "accepted" ? "border-emerald-200 bg-emerald-50/40" :
+        request.status === "rejected" ? "border-red-100 bg-red-50/30" :
+        "border-gray-200 bg-white"}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-900">{employeeName}</p>
@@ -102,7 +111,7 @@ function RequestCard({
         </div>
       </div>
 
-      {!showRecs && (
+      {request.status === "pending" && !showRecs && (
         <button onClick={handleFindReplacement}
           className="mt-3 text-xs font-semibold text-slate-700 border border-slate-300 bg-white px-3 py-1.5 rounded-lg hover:bg-slate-50 flex items-center gap-1.5">
           <Sparkles className="w-3 h-3" /> Find Replacement
@@ -155,10 +164,10 @@ function RequestCard({
 }
 
 export default function ResponseTrackingPage() {
-  const [dashboard, setDashboard] = useState<BackendManagerDashboard | null>(null);
+  const [requests, setRequests] = useState<BackendReplacementRequest[]>([]);
   const [employeeNames, setEmployeeNames] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"all" | "pending" | "accepted">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "pending" | "accepted" | "rejected">("all");
 
   const load = useCallback(async () => {
     try {
@@ -166,11 +175,11 @@ export default function ResponseTrackingPage() {
       const propertyId = meRes.data.property_id;
       if (!propertyId) { toast.error("No property assigned to your account"); setLoading(false); return; }
 
-      const [dash, empRes] = await Promise.all([
-        schedulingAPI.managerDashboard(),
+      const [reqs, empRes] = await Promise.all([
+        schedulingAPI.listReplacementRequests(),
         workforceAPI.listEmployees(propertyId),
       ]);
-      setDashboard(dash);
+      setRequests(reqs);
       const names = new Map<string, string>();
       for (const e of empRes.data as any[]) {
         names.set(e.id, `${e.first_name ?? ""} ${e.last_name ?? ""}`.trim() || e.email || "Unknown");
@@ -193,10 +202,10 @@ export default function ResponseTrackingPage() {
     );
   }
 
-  const requests = dashboard?.pending_responses ?? [];
   const pending = requests.filter(r => r.status === "pending");
   const accepted = requests.filter(r => r.status === "accepted");
-  const filtered = activeTab === "pending" ? pending : activeTab === "accepted" ? accepted : requests;
+  const rejected = requests.filter(r => r.status === "rejected");
+  const filtered = activeTab === "pending" ? pending : activeTab === "accepted" ? accepted : activeTab === "rejected" ? rejected : requests;
 
   return (
     <div className="space-y-6">
@@ -213,10 +222,11 @@ export default function ResponseTrackingPage() {
       </div>
 
       {/* Status Counts */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         {[
           { label: "PENDING", value: pending.length, color: "text-amber-700", bg: "bg-amber-50 border-amber-200", tab: "pending" as const },
           { label: "ACCEPTED", value: accepted.length, color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", tab: "accepted" as const },
+          { label: "REJECTED", value: rejected.length, color: "text-red-700", bg: "bg-red-50 border-red-200", tab: "rejected" as const },
         ].map((s) => (
           <button key={s.tab} onClick={() => setActiveTab(activeTab === s.tab ? "all" : s.tab)}
             className={`rounded-xl border p-4 text-center transition-all hover:shadow-sm ${s.bg} ${activeTab === s.tab ? "ring-2 ring-offset-1 ring-slate-900" : ""}`}>

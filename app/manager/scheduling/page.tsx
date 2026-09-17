@@ -1,22 +1,70 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   Activity, ChevronRight, Users, UserMinus, AlertTriangle,
-  TrendingUp, Loader2, Sparkles, Send, X, CheckCircle2,
+  TrendingUp, Loader2, Sparkles, Send, X, CheckCircle2, Plus, CalendarDays,
 } from "lucide-react";
 import {
   schedulingAPI, BackendManagerDashboard, BackendCriticalAction,
-  BackendReplacementRequest, RecommendedEmployee,
+  BackendReplacementRequest, RecommendedEmployee, BackendWeeklySchedule,
 } from "@/lib/api/scheduling";
 import { workforceAPI } from "@/lib/api/workforce";
 import { usersAPI } from "@/lib/api/users";
 
+interface EmployeeItem {
+  id: string;
+  name: string;
+  position: string | null;
+}
+
+interface WeekDay {
+  date: Date;
+  iso: string;
+  label: string;
+  dayName: string;
+}
+
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+// Compares by UTC calendar date, not by Date-object-in-local-time. shift_date
+// from the backend and the iso we send when creating a shift are both built
+// as "<local-calendar-date>T00:00:00.000Z" (see getWeekDays), so comparing on
+// UTC Y-M-D keeps this correct regardless of the viewer's own timezone offset.
+function dateKey(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+}
+
+function sameDay(isoA: string, isoB: string): boolean {
+  return dateKey(isoA) === dateKey(isoB);
+}
+
+function getWeekDays(): WeekDay[] {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sun .. 6 = Sat
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday);
+  return Array.from({ length: 7 }, (_, i) => {
+    // Build from local calendar components (not a UTC conversion of a local
+    // Date) so "the Monday the manager sees" is what gets sent as the date,
+    // regardless of which side of UTC midnight their local time falls on.
+    const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day2 = String(d.getDate()).padStart(2, "0");
+    return {
+      date: d,
+      iso: `${y}-${m}-${day2}T00:00:00.000Z`,
+      label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      dayName: d.toLocaleDateString("en-US", { weekday: "short" }),
+    };
+  });
 }
 
 const URGENCY_STYLES: Record<string, string> = {
@@ -225,27 +273,180 @@ function PendingRequestRow({
   );
 }
 
+// ── Add Shift modal ─────────────────────────────────────────
+function AddShiftModal({
+  employeeName, day, onClose, onSave,
+}: {
+  employeeName: string;
+  day: WeekDay;
+  onClose: () => void;
+  onSave: (startTime: string, endTime: string, shiftType: string) => Promise<void>;
+}) {
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("17:00");
+  const [shiftType, setShiftType] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSave = async () => {
+    if (endTime <= startTime) { setError("End time must be after start time"); return; }
+    setSaving(true);
+    try {
+      await onSave(startTime, endTime, shiftType.trim());
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || "Failed to save shift");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+        className="bg-white rounded-2xl w-full max-w-sm shadow-2xl border border-black/10 overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-black/10">
+          <div>
+            <h2 className="text-black font-bold">Add Shift</h2>
+            <p className="text-neutral-400 text-xs mt-0.5">{employeeName} · {day.dayName} {day.label}</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-neutral-700 text-sm font-semibold mb-1.5">Start</label>
+              <input type="time" value={startTime} onChange={e => { setStartTime(e.target.value); setError(""); }}
+                className="w-full bg-slate-50 border border-black/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-black/20" />
+            </div>
+            <div>
+              <label className="block text-neutral-700 text-sm font-semibold mb-1.5">End</label>
+              <input type="time" value={endTime} onChange={e => { setEndTime(e.target.value); setError(""); }}
+                className="w-full bg-slate-50 border border-black/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-black/20" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-neutral-700 text-sm font-semibold mb-1.5">Role / Department (optional)</label>
+            <input value={shiftType} onChange={e => setShiftType(e.target.value)} placeholder="e.g. Front Desk"
+              className="w-full bg-slate-50 border border-black/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black/20" />
+          </div>
+          {error && <p className="text-red-500 text-xs flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{error}</p>}
+        </div>
+        <div className="px-6 py-4 border-t border-black/10 flex gap-3">
+          <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-black/10 text-neutral-600 text-sm font-semibold hover:bg-black/[0.04] transition-colors">Cancel</button>
+          <button onClick={handleSave} disabled={saving}
+            className="flex-1 py-2.5 rounded-xl bg-black text-white text-sm font-semibold disabled:opacity-40 flex items-center justify-center gap-2">
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save Shift
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ── Weekly schedule grid ────────────────────────────────────
+function ScheduleGrid({
+  employees, schedules, weekDays, onAddShift,
+}: {
+  employees: EmployeeItem[];
+  schedules: BackendWeeklySchedule[];
+  weekDays: WeekDay[];
+  onAddShift: (employee: EmployeeItem, day: WeekDay) => void;
+}) {
+  const scheduleByEmployee = useMemo(() => {
+    const map = new Map<string, BackendWeeklySchedule>();
+    for (const s of schedules) map.set(s.employee_id, s);
+    return map;
+  }, [schedules]);
+
+  if (employees.length === 0) {
+    return <p className="text-sm text-slate-400 text-center py-10">No employees found for this property.</p>;
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[760px]">
+        <thead>
+          <tr className="bg-slate-50/80 border-b border-slate-100">
+            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider sticky left-0 bg-slate-50/80">Employee</th>
+            {weekDays.map((d) => (
+              <th key={d.iso} className="px-3 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                {d.dayName}<span className="block text-[10px] font-normal normal-case text-slate-400">{d.label}</span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {employees.map((emp) => {
+            const schedule = scheduleByEmployee.get(emp.id);
+            return (
+              <tr key={emp.id} className="hover:bg-slate-50/60 transition-colors">
+                <td className="px-4 py-3 sticky left-0 bg-white">
+                  <p className="text-sm font-semibold text-slate-900">{emp.name}</p>
+                  {emp.position && <p className="text-xs text-slate-400">{emp.position}</p>}
+                </td>
+                {weekDays.map((d) => {
+                  const shift = schedule?.shift_assignments.find((sh) => sameDay(sh.shift_date, d.iso));
+                  return (
+                    <td key={d.iso} className="px-2 py-2 text-center">
+                      {shift ? (
+                        <div className="inline-flex flex-col items-center gap-0.5 bg-blue-50 border border-blue-200/60 rounded-lg px-2 py-1.5 min-w-[76px]">
+                          <span className="text-[11px] font-semibold text-blue-700">{shift.shift_start_time}–{shift.shift_end_time}</span>
+                          {shift.shift_type && <span className="text-[10px] text-blue-500">{shift.shift_type}</span>}
+                        </div>
+                      ) : (
+                        <button onClick={() => onAddShift(emp, d)}
+                          className="w-7 h-7 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center mx-auto">
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function ManagerSchedulingPage() {
+  const [propertyId, setPropertyId] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<BackendManagerDashboard | null>(null);
-  const [employeeNames, setEmployeeNames] = useState<Map<string, string>>(new Map());
+  const [employees, setEmployees] = useState<EmployeeItem[]>([]);
+  const [schedules, setSchedules] = useState<BackendWeeklySchedule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addShiftTarget, setAddShiftTarget] = useState<{ employee: EmployeeItem; day: WeekDay } | null>(null);
+
+  const weekDays = useMemo(() => getWeekDays(), []);
+  const employeeNames = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const e of employees) map.set(e.id, e.name);
+    return map;
+  }, [employees]);
 
   const load = useCallback(async () => {
     try {
       const meRes = await usersAPI.me();
-      const propertyId = meRes.data.property_id;
-      if (!propertyId) { toast.error("No property assigned to your account"); setLoading(false); return; }
+      const propId = meRes.data.property_id;
+      if (!propId) { toast.error("No property assigned to your account"); setLoading(false); return; }
+      setPropertyId(propId);
 
-      const [dash, empRes] = await Promise.all([
+      const [dash, empRes, scheduleList] = await Promise.all([
         schedulingAPI.managerDashboard(),
-        workforceAPI.listEmployees(propertyId),
+        workforceAPI.listEmployees(propId),
+        schedulingAPI.listSchedules(),
       ]);
       setDashboard(dash);
-      const names = new Map<string, string>();
-      for (const e of empRes.data as any[]) {
-        names.set(e.id, `${e.first_name ?? ""} ${e.last_name ?? ""}`.trim() || e.email || "Unknown");
-      }
-      setEmployeeNames(names);
+      setEmployees((empRes.data as any[]).map((e) => ({
+        id: e.id,
+        name: `${e.first_name ?? ""} ${e.last_name ?? ""}`.trim() || e.email || "Unknown",
+        position: e.position ?? null,
+      })));
+      setSchedules(scheduleList);
     } catch {
       toast.error("Failed to load scheduling data");
     } finally {
@@ -254,6 +455,32 @@ export default function ManagerSchedulingPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleSaveShift = async (startTime: string, endTime: string, shiftType: string) => {
+    if (!addShiftTarget || !propertyId) return;
+    const { employee, day } = addShiftTarget;
+    let schedule = schedules.find((s) => s.employee_id === employee.id);
+    if (!schedule) {
+      const weekStart = weekDays[0].iso;
+      const weekEnd = weekDays[6].iso;
+      schedule = await schedulingAPI.createSchedule({
+        employeeId: employee.id,
+        weekStartDate: weekStart,
+        weekEndDate: weekEnd,
+      });
+    }
+    await schedulingAPI.createShift({
+      scheduleId: schedule.id,
+      employeeId: employee.id,
+      shiftDate: day.iso,
+      shiftStartTime: startTime,
+      shiftEndTime: endTime,
+      shiftType: shiftType || undefined,
+    });
+    toast.success(`Shift added for ${employee.name}`);
+    setAddShiftTarget(null);
+    load();
+  };
 
   if (loading) {
     return (
@@ -347,6 +574,32 @@ export default function ManagerSchedulingPage() {
           </div>
         )}
       </div>
+
+      {/* Weekly Schedule Grid */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+          <CalendarDays className="w-4 h-4 text-slate-500" />
+          <h3 className="text-sm font-semibold text-gray-900">Weekly Schedule</h3>
+          <span className="text-xs text-slate-400 ml-1">{weekDays[0].label} – {weekDays[6].label}</span>
+        </div>
+        <ScheduleGrid
+          employees={employees}
+          schedules={schedules}
+          weekDays={weekDays}
+          onAddShift={(employee, day) => setAddShiftTarget({ employee, day })}
+        />
+      </div>
+
+      <AnimatePresence>
+        {addShiftTarget && (
+          <AddShiftModal
+            employeeName={addShiftTarget.employee.name}
+            day={addShiftTarget.day}
+            onClose={() => setAddShiftTarget(null)}
+            onSave={handleSaveShift}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

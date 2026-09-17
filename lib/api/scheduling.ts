@@ -190,6 +190,62 @@ export const schedulingAPI = {
     );
     return data;
   },
+
+  /** List replacement requests for the property, optionally filtered by status */
+  listReplacementRequests: async (status?: BackendRequestStatus): Promise<BackendReplacementRequest[]> => {
+    const { data } = await api.get<BackendReplacementRequest[]>("/v1/scheduling/replacement-requests", {
+      params: status ? { status } : undefined,
+    });
+    return data;
+  },
+
+  /** List weekly schedules (with shift assignments) for the property — defaults to current week */
+  listSchedules: async (weekStart?: string, weekEnd?: string): Promise<BackendWeeklySchedule[]> => {
+    const { data } = await api.get<BackendWeeklySchedule[]>("/v1/scheduling/schedules", {
+      params: { week_start: weekStart, week_end: weekEnd },
+    });
+    return data;
+  },
+
+  /** Create (or get) an employee's weekly schedule row for a given week */
+  createSchedule: async (params: {
+    employeeId: string;
+    weekStartDate: string;
+    weekEndDate: string;
+    departmentId?: string;
+  }): Promise<BackendWeeklySchedule> => {
+    const { data } = await api.post<BackendWeeklySchedule>("/v1/scheduling/schedules", {
+      employee_id: params.employeeId,
+      week_start_date: params.weekStartDate,
+      week_end_date: params.weekEndDate,
+      department_id: params.departmentId ?? null,
+      status: "draft",
+    });
+    return data;
+  },
+
+  /** Add a shift assignment to an existing weekly schedule */
+  createShift: async (params: {
+    scheduleId: string;
+    employeeId: string;
+    shiftDate: string;
+    shiftStartTime: string;
+    shiftEndTime: string;
+    shiftType?: string;
+  }): Promise<BackendShiftAssignment> => {
+    const { data } = await api.post<BackendShiftAssignment>(
+      "/v1/scheduling/shifts",
+      {
+        shift_date: params.shiftDate,
+        shift_start_time: params.shiftStartTime,
+        shift_end_time: params.shiftEndTime,
+        shift_type: params.shiftType ?? null,
+        status: "scheduled",
+      },
+      { params: { schedule_id: params.scheduleId, employee_id: params.employeeId } },
+    );
+    return data;
+  },
 };
 
 /** Convert a backend shift to the simplified frontend Shift shape */
