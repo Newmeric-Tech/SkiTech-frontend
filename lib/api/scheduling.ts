@@ -76,6 +76,22 @@ export interface BackendManagerDashboard {
   weekly_schedule_count: number;
 }
 
+export interface RecommendedEmployee {
+  employee_id: string;
+  employee_name: string;
+  department: string;
+  position: string;
+  compatibility_score: number;
+  reason: string;
+  available: boolean;
+}
+
+export interface AIRecommendationResult {
+  recommendations: RecommendedEmployee[];
+  total_available: number;
+  timestamp: string;
+}
+
 // ─── Mapping helpers ──────────────────────────────────────
 /** Day name from ISO date string */
 function dateToDayName(iso: string): string {
@@ -117,6 +133,62 @@ export const schedulingAPI = {
     await api.post(`/v1/scheduling/replacement-requests/${requestId}/assign`, null, {
       params: { replacement_employee_id: replacementEmployeeId },
     });
+  },
+
+  /** Create a replacement request for a critical action (manager) */
+  createReplacementRequest: async (params: {
+    shiftAssignmentId: string;
+    originalEmployeeId: string;
+    shiftDate: string;
+    shiftStartTime: string;
+    shiftEndTime: string;
+    reason?: string;
+    priority?: BackendRequestPriority;
+  }): Promise<BackendReplacementRequest> => {
+    const { data } = await api.post<BackendReplacementRequest>(
+      "/v1/scheduling/replacement-requests",
+      {
+        // shift_assignment_id/original_employee_id are also required as query
+        // params by the backend (see params below) — original_employee_id is
+        // duplicated in the body because ReplacementRequestCreate requires it,
+        // even though the handler only reads the query-param copy.
+        original_employee_id: params.originalEmployeeId,
+        shift_date: params.shiftDate,
+        shift_start_time: params.shiftStartTime,
+        shift_end_time: params.shiftEndTime,
+        reason: params.reason ?? null,
+        priority: params.priority ?? "normal",
+        request_type: "send_request",
+      },
+      {
+        params: {
+          shift_assignment_id: params.shiftAssignmentId,
+          original_employee_id: params.originalEmployeeId,
+        },
+      },
+    );
+    return data;
+  },
+
+  /** AI-recommended replacement candidates for a critical action / pending request */
+  getRecommendations: async (params: {
+    originalEmployeeId: string;
+    shiftDate: string;
+    shiftStartTime: string;
+    shiftEndTime: string;
+    maxRecommendations?: number;
+  }): Promise<AIRecommendationResult> => {
+    const { data } = await api.post<AIRecommendationResult>(
+      "/v1/scheduling/recommendations",
+      {
+        shift_date: params.shiftDate,
+        shift_start_time: params.shiftStartTime,
+        shift_end_time: params.shiftEndTime,
+        max_recommendations: params.maxRecommendations ?? 5,
+      },
+      { params: { original_employee_id: params.originalEmployeeId } },
+    );
+    return data;
   },
 };
 

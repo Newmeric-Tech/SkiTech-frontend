@@ -1,142 +1,282 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { useScheduling, EmergencyAlert, Employee, SchedulingProvider } from "@/store/SchedulingStore";
-import { EmergencyAlertBanner } from "@/components/scheduling/EmergencyAlertBanner";
-import { StaffingAnalytics } from "@/components/scheduling/StaffingAnalytics";
-import { ScheduleTable } from "@/components/scheduling/ScheduleTable";
-import { AIRecommendationCard } from "@/components/scheduling/AIRecommendationCard";
-import { TimelineActivity } from "@/components/scheduling/TimelineActivity";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import {
-  Activity, Bell, ChevronRight, Users, UserMinus, AlertTriangle,
-  TrendingUp, BarChart2, Sparkles, ArrowRight, CheckCircle
+  Activity, ChevronRight, Users, UserMinus, AlertTriangle,
+  TrendingUp, Loader2, Sparkles, Send, X, CheckCircle2,
 } from "lucide-react";
+import {
+  schedulingAPI, BackendManagerDashboard, BackendCriticalAction,
+  BackendReplacementRequest, RecommendedEmployee,
+} from "@/lib/api/scheduling";
+import { workforceAPI } from "@/lib/api/workforce";
+import { usersAPI } from "@/lib/api/users";
 
-function ManagerSchedulingContent() {
-  const {
-    employees,
-    shifts,
-    emergencyAlerts,
-    replacementRequests,
-    timeline,
-    dismissEmergencyAlert,
-    resolveEmergencyAlert,
-    sendReplacementRequest,
-    assignShift,
-    getPendingRequests,
-    getAcceptedRequests,
-    getRejectedRequests,
-    getAwaitingRequests,
-  } = useScheduling();
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
 
-  const [selectedDepartment, setSelectedDepartment] = useState("All");
+const URGENCY_STYLES: Record<string, string> = {
+  immediate: "bg-red-100 text-red-700",
+  high: "bg-amber-100 text-amber-700",
+  normal: "bg-slate-100 text-slate-600",
+};
 
-  const [showAssignSuccess, setShowAssignSuccess] = useState<{ employee: string; type: string } | null>(null);
+const PRIORITY_STYLES: Record<string, string> = {
+  urgent: "bg-red-50 text-red-700 border-red-200",
+  high: "bg-amber-50 text-amber-700 border-amber-200",
+  normal: "bg-slate-50 text-slate-600 border-slate-200",
+};
 
-  const handleAssignReplacement = (alert: EmergencyAlert) => {
-    const vacantShift = shifts.find((s) => s.isVacant && s.department === alert.department);
-    const availableEmployee = employees.find((e) => e.status === "available" && e.department === alert.department);
-    
-    if (vacantShift && availableEmployee) {
-      sendReplacementRequest({
-        emergencyAlertId: alert.id,
-        shiftId: vacantShift.id,
-        fromEmployee: "Manager",
-        toEmployeeId: availableEmployee.id,
-        toEmployeeName: availableEmployee.name,
-        toEmployeeDept: availableEmployee.department,
-        shiftTime: `${vacantShift.startTime} - ${vacantShift.endTime}`,
-        department: alert.department,
-        incentive: 150,
-        overtimeEligible: availableEmployee.overtimeEligible,
+// ── AI recommendation panel — shared by both critical actions and pending requests ──
+function RecommendationPanel({
+  candidates, loading, onAssign, assigningId, onClose,
+}: {
+  candidates: RecommendedEmployee[];
+  loading: boolean;
+  onAssign: (employeeId: string) => void;
+  assigningId: string | null;
+  onClose: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+      className="overflow-hidden">
+      <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-500" /> Suggested replacements
+          </p>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-slate-300" />
+          </div>
+        ) : candidates.length === 0 ? (
+          <p className="text-xs text-slate-400 py-3">No available employees matched for this shift.</p>
+        ) : (
+          candidates.map((c) => (
+            <div key={c.employee_id} className="flex items-center justify-between gap-3 bg-slate-50 rounded-xl px-3 py-2.5">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-900 truncate">{c.employee_name}</p>
+                <p className="text-xs text-slate-500">{c.department} · {c.position} · {c.reason}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-xs font-bold text-indigo-600">{Math.round(c.compatibility_score)}%</span>
+                <button
+                  onClick={() => onAssign(c.employee_id)}
+                  disabled={assigningId === c.employee_id}
+                  className="text-xs font-semibold bg-slate-900 text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 disabled:opacity-50 flex items-center gap-1.5">
+                  {assigningId === c.employee_id ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                  Assign
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+function CriticalActionRow({
+  action, onRequested,
+}: {
+  action: BackendCriticalAction;
+  onRequested: () => void;
+}) {
+  const [requesting, setRequesting] = useState(false);
+  const [requested, setRequested] = useState(false);
+
+  const handleRequest = async () => {
+    setRequesting(true);
+    try {
+      await schedulingAPI.createReplacementRequest({
+        shiftAssignmentId: action.shift_assignment_id,
+        originalEmployeeId: action.employee_id,
+        shiftDate: action.shift_date,
+        shiftStartTime: action.shift_start_time,
+        shiftEndTime: action.shift_end_time,
+        reason: action.reason_off,
+        priority: action.urgency === "immediate" ? "urgent" : action.urgency === "high" ? "high" : "normal",
       });
-      resolveEmergencyAlert(alert.id);
-      setShowAssignSuccess({ employee: availableEmployee.name, type: "request" });
-      setTimeout(() => setShowAssignSuccess(null), 3000);
-    } else if (vacantShift) {
-      setSelectedDepartment(alert.department);
+      setRequested(true);
+      toast.success(`Replacement request sent for ${action.employee_name}`);
+      onRequested();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to create replacement request");
+    } finally {
+      setRequesting(false);
     }
   };
 
-  const handleSendRequest = (employee: Employee) => {
-    const vacantShift = shifts.find((s) => s.isVacant);
-    sendReplacementRequest({
-      emergencyAlertId: emergencyAlerts[0]?.id || "ea1",
-      shiftId: vacantShift?.id || "s4",
-      fromEmployee: "Manager",
-      toEmployeeId: employee.id,
-      toEmployeeName: employee.name,
-      toEmployeeDept: employee.department,
-      shiftTime: vacantShift ? `${vacantShift.startTime} - ${vacantShift.endTime}` : "6:00 PM - 2:00 AM",
-      department: employee.department,
-      incentive: 150,
-      overtimeEligible: employee.overtimeEligible,
-    });
-  };
+  return (
+    <div className="flex items-start justify-between p-3 bg-red-50 dark:bg-red-950/20 rounded-lg gap-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-slate-900 dark:text-white">{action.employee_name}</p>
+        <p className="text-xs text-slate-500 mt-0.5">
+          {action.department} · {action.shift_start_time}–{action.shift_end_time} · {action.reason_off}
+        </p>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${URGENCY_STYLES[action.urgency] ?? URGENCY_STYLES.normal}`}>
+          {action.urgency}
+        </span>
+        {requested ? (
+          <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Sent</span>
+        ) : (
+          <button onClick={handleRequest} disabled={requesting}
+            className="text-xs font-semibold bg-slate-900 text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 disabled:opacity-50 flex items-center gap-1.5 flex-shrink-0">
+            {requesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+            Request Replacement
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
-  const handleAutoAssign = (employee: Employee) => {
-    const vacantShift = shifts.find((s) => s.isVacant);
-    if (vacantShift) {
-      assignShift(vacantShift.id, employee.id);
+function PendingRequestRow({
+  request, employeeName, onAssigned,
+}: {
+  request: BackendReplacementRequest;
+  employeeName: string;
+  onAssigned: () => void;
+}) {
+  const [showRecs, setShowRecs] = useState(false);
+  const [recs, setRecs] = useState<RecommendedEmployee[]>([]);
+  const [loadingRecs, setLoadingRecs] = useState(false);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
+
+  const handleFindReplacement = async () => {
+    setShowRecs(true);
+    setLoadingRecs(true);
+    try {
+      const res = await schedulingAPI.getRecommendations({
+        originalEmployeeId: request.original_employee_id,
+        shiftDate: request.shift_date,
+        shiftStartTime: request.shift_start_time,
+        shiftEndTime: request.shift_end_time,
+      });
+      setRecs(res.recommendations);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to load recommendations");
+      setShowRecs(false);
+    } finally {
+      setLoadingRecs(false);
     }
   };
 
-  const presentCount = employees.filter((e) => e.status === "available").length;
-  const onLeaveCount = employees.filter((e) => e.status === "on-leave").length;
-  const shortageCount = shifts.filter((s) => s.isVacant).length;
-  const efficiency = Math.round(((presentCount - shortageCount) / employees.length) * 100) || 85;
+  const handleAssign = async (employeeId: string) => {
+    setAssigningId(employeeId);
+    try {
+      await schedulingAPI.assignReplacement(request.id, employeeId);
+      toast.success("Replacement assigned");
+      onAssigned();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to assign replacement");
+    } finally {
+      setAssigningId(null);
+    }
+  };
 
-  const pendingCount = getPendingRequests().length;
-  const acceptedCount = getAcceptedRequests().length;
-  const rejectedCount = getRejectedRequests().length;
+  return (
+    <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-slate-900 dark:text-white">{employeeName}</p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {fmtDate(request.shift_date)} · {request.shift_start_time}–{request.shift_end_time}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize border ${PRIORITY_STYLES[request.priority] ?? PRIORITY_STYLES.normal}`}>
+            {request.priority}
+          </span>
+          {request.status === "pending" && !showRecs && (
+            <button onClick={handleFindReplacement}
+              className="text-xs font-semibold text-slate-700 border border-slate-300 bg-white px-3 py-1.5 rounded-lg hover:bg-slate-50 flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3" /> Find Replacement
+            </button>
+          )}
+          {request.status === "accepted" && (
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Accepted</span>
+          )}
+        </div>
+      </div>
+      <AnimatePresence>
+        {showRecs && (
+          <RecommendationPanel
+            candidates={recs}
+            loading={loadingRecs}
+            onAssign={handleAssign}
+            assigningId={assigningId}
+            onClose={() => setShowRecs(false)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
-  // Staffing efficiency by department
-  const deptEfficiency = [
-    { dept: "Front Office", pct: 82, color: "#3B82F6" },
-    { dept: "Housekeeping", pct: 71, color: "#10B981" },
-    { dept: "Food & Bev.", pct: 55, color: "#F59E0B" },
-  ];
+export default function ManagerSchedulingPage() {
+  const [dashboard, setDashboard] = useState<BackendManagerDashboard | null>(null);
+  const [employeeNames, setEmployeeNames] = useState<Map<string, string>>(new Map());
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const meRes = await usersAPI.me();
+      const propertyId = meRes.data.property_id;
+      if (!propertyId) { toast.error("No property assigned to your account"); setLoading(false); return; }
+
+      const [dash, empRes] = await Promise.all([
+        schedulingAPI.managerDashboard(),
+        workforceAPI.listEmployees(propertyId),
+      ]);
+      setDashboard(dash);
+      const names = new Map<string, string>();
+      for (const e of empRes.data as any[]) {
+        names.set(e.id, `${e.first_name ?? ""} ${e.last_name ?? ""}`.trim() || e.email || "Unknown");
+      }
+      setEmployeeNames(names);
+    } catch {
+      toast.error("Failed to load scheduling data");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  const pendingCount = dashboard?.pending_responses.filter(r => r.status === "pending").length ?? 0;
 
   return (
     <div className="space-y-6">
-      {showAssignSuccess && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3"
-        >
-          <CheckCircle className="w-5 h-5 text-emerald-600" />
-          <p className="text-sm font-medium text-emerald-800">
-            Replacement request sent to {showAssignSuccess.employee}
-          </p>
-        </motion.div>
-      )}
-
-      {/* Page Header */}
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Employee Scheduling</h1>
-            <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-emerald-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              42% STARTED
-            </span>
-          </div>
-          <p className="text-gray-500 text-sm">Manage workforce scheduling and replacements</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Employee Scheduling</h1>
+          <p className="text-gray-500 text-sm">Coverage gaps and replacement requests for this week</p>
         </div>
-
-        {/* Response Tracking Button — navigates to page 2 */}
         <Link href="/manager/scheduling/response-tracking">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="flex items-center gap-2.5 bg-slate-900 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-md hover:bg-slate-800 transition-colors relative"
-          >
-            <Activity className="w-4 h-4" />
-            Response Tracking
+          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            className="flex items-center gap-2.5 bg-slate-900 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-md hover:bg-slate-800 transition-colors relative">
+            <Activity className="w-4 h-4" /> Response Tracking
             {pendingCount > 0 && (
               <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
                 {pendingCount}
@@ -147,148 +287,66 @@ function ManagerSchedulingContent() {
         </Link>
       </div>
 
-      {/* Emergency Alert Banner */}
-      <EmergencyAlertBanner
-        alerts={emergencyAlerts}
-        onDismiss={dismissEmergencyAlert}
-        onAssign={handleAssignReplacement}
-      />
-
-      {/* Stats Row */}
+      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-start gap-4"
-        >
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-            <Users className="w-5 h-5 text-emerald-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{String(presentCount).padStart(3, "0").slice(-3)}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Present Employees</p>
-            <p className="text-[10px] text-emerald-600 font-medium mt-1">↑ 91% capacity</p>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-start gap-4"
-        >
-          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-            <UserMinus className="w-5 h-5 text-blue-500" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{String(onLeaveCount).padStart(2, "0")}</p>
-            <p className="text-xs text-gray-500 mt-0.5">On Planned Leave</p>
-            <p className="text-[10px] text-blue-500 font-medium mt-1">Vacancies 24 – 72 hrs</p>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-start gap-4"
-        >
-          <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="w-5 h-5 text-red-500" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-red-600">{String(shortageCount).padStart(2, "0")}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Staff Shortage</p>
-            <p className="text-[10px] text-red-500 font-medium mt-1">Critical — needs staffing</p>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-start gap-4"
-        >
-          <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
-            <TrendingUp className="w-5 h-5 text-purple-500" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{efficiency}%</p>
-            <p className="text-xs text-gray-500 mt-0.5">Staffing Efficiency</p>
-            <p className="text-[10px] text-purple-500 font-medium mt-1">Coverage rate</p>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Schedule Table */}
-      <ScheduleTable
-        employees={employees}
-        shifts={shifts}
-        selectedDepartment={selectedDepartment}
-        onDepartmentChange={setSelectedDepartment}
-        onAssignShift={assignShift}
-      />
-
-      {/* Bottom section: Staffing Efficiency + AI Smart Suggest */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* Staffing Efficiency Card */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-gray-500" />
-              <h3 className="text-sm font-semibold text-gray-900">Staffing Efficiency</h3>
+        {[
+          { icon: Users, label: "Total Employees", value: dashboard?.employee_count ?? 0, color: "#3B82F6" },
+          { icon: UserMinus, label: "Scheduled", value: dashboard?.scheduled_count ?? 0, color: "#10B981" },
+          { icon: AlertTriangle, label: "Unscheduled", value: dashboard?.unscheduled_count ?? 0, color: "#F59E0B" },
+          { icon: TrendingUp, label: "Coverage", value: `${(dashboard?.scheduling_progress ?? 0).toFixed(0)}%`, color: "#8B5CF6" },
+        ].map((s, i) => (
+          <motion.div key={s.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+            className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: s.color + "15" }}>
+              <s.icon className="w-5 h-5" style={{ color: s.color }} />
             </div>
-          </div>
-          <div className="p-5 space-y-4">
-            {deptEfficiency.map((d) => (
-              <div key={d.dept}>
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">{d.dept}</span>
-                  <span className="text-xs font-bold text-gray-900">{d.pct}%</span>
-                </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${d.pct}%` }}
-                    transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                    className="h-full rounded-full"
-                    style={{ backgroundColor: d.color }}
-                  />
-                </div>
-              </div>
-            ))}
-
-            <Link
-              href="/manager/scheduling/response-tracking"
-              className="mt-4 flex items-center justify-between px-4 py-3 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors group"
-            >
-              <span>View Response Tracking</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
-          </div>
-        </div>
-
-        {/* AI Smart Suggest */}
-        <AIRecommendationCard
-          employees={employees}
-          department={selectedDepartment}
-          onAutoAssign={handleAutoAssign}
-          onSendRequest={handleSendRequest}
-        />
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{s.value}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+            </div>
+          </motion.div>
+        ))}
       </div>
 
-      {/* Timeline Activity */}
-      <TimelineActivity events={timeline} />
-    </div>
-  );
-}
+      {/* Critical Actions */}
+      <div className="bg-white rounded-xl border border-red-200 shadow-sm p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <AlertTriangle className="w-4 h-4 text-red-500" />
+          <p className="text-sm font-semibold text-red-700">
+            Critical Actions Required ({dashboard?.critical_actions.length ?? 0})
+          </p>
+        </div>
+        {(dashboard?.critical_actions.length ?? 0) === 0 ? (
+          <p className="text-sm text-slate-400 text-center py-6">No coverage gaps this week.</p>
+        ) : (
+          <div className="space-y-3">
+            {dashboard!.critical_actions.map((action) => (
+              <CriticalActionRow key={action.shift_assignment_id} action={action} onRequested={load} />
+            ))}
+          </div>
+        )}
+      </div>
 
-export default function ManagerSchedulingPage() {
-  return (
-    <SchedulingProvider>
-      <ManagerSchedulingContent />
-    </SchedulingProvider>
+      {/* Pending Replacement Requests */}
+      <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-5">
+        <p className="text-sm font-semibold text-amber-700 mb-4">
+          Pending Replacement Requests ({dashboard?.pending_responses.length ?? 0})
+        </p>
+        {(dashboard?.pending_responses.length ?? 0) === 0 ? (
+          <p className="text-sm text-slate-400 text-center py-6">No open replacement requests.</p>
+        ) : (
+          <div className="space-y-3">
+            {dashboard!.pending_responses.map((r) => (
+              <PendingRequestRow
+                key={r.id}
+                request={r}
+                employeeName={employeeNames.get(r.original_employee_id) ?? "Unknown employee"}
+                onAssigned={load}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
