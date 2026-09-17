@@ -45,16 +45,29 @@ export default function PlanSelectionModal({ currentPlan, onDismiss }: Props) {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleSelect = async (planId: string) => {
-    setSelecting(planId);
+  const handleSelect = async (plan: SubscriptionPlan) => {
+    setSelecting(plan.id);
+    if (plan.price === 0) {
+      // Free plan — switch directly, no payment needed
+      try {
+        const res = await subscriptionsAPI.selectPlan(plan.id);
+        localStorage.setItem(PLAN_SELECTED_KEY, "true");
+        toast.success("Plan selected successfully!");
+        onDismiss(res.data);
+      } catch (err: any) {
+        toast.error(err?.response?.data?.detail || "Failed to select plan");
+      } finally {
+        setSelecting(null);
+      }
+      return;
+    }
+    // Paid plan — redirect to Stripe Checkout, never activate directly
     try {
-      const res = await subscriptionsAPI.selectPlan(planId);
+      const res = await subscriptionsAPI.createCheckoutSession(plan.id);
       localStorage.setItem(PLAN_SELECTED_KEY, "true");
-      toast.success("Plan selected successfully!");
-      onDismiss(res.data);
+      window.location.href = res.data.session_url;
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to select plan");
-    } finally {
+      toast.error(err?.response?.data?.detail || "Failed to initiate payment");
       setSelecting(null);
     }
   };
@@ -166,7 +179,7 @@ export default function PlanSelectionModal({ currentPlan, onDismiss }: Props) {
                     </ul>
 
                     <button
-                      onClick={() => isCurrent ? handleContinueWithCurrent() : handleSelect(plan.id)}
+                      onClick={() => isCurrent ? handleContinueWithCurrent() : handleSelect(plan)}
                       disabled={!!selecting}
                       className={`w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50 ${
                         isCurrent
