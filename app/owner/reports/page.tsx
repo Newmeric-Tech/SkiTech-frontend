@@ -181,7 +181,7 @@ export default function ReportsPage() {
                   <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94A3B8", fontWeight: 500 }} axisLine={false} tickLine={false} dy={12} />
                   <YAxis tick={{ fontSize: 12, fill: "#94A3B8", fontWeight: 500 }} axisLine={false} tickLine={false}
                     tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} width={65} />
-                  <Tooltip content={<RevenueTooltip />} cursor={{ fill: "#F8FAFC" }} />
+                  <Tooltip content={<RevenueTooltip />} cursor={{ fill: "rgba(148,163,184,0.12)" }} />
                   <Legend iconType="circle" iconSize={8} formatter={(v) => <span className="text-slate-600 text-xs">{v}</span>} />
                   {propertyKeys.map((p, i) => (
                     <Bar key={p.id} dataKey={p.name} fill={PROP_COLORS[i % PROP_COLORS.length]} radius={[6, 6, 0, 0]} maxBarSize={32} />

@@ -216,7 +216,7 @@ export default function ManagerDashboard() {
             <CartesianGrid strokeDasharray="0" vertical={false} stroke="#E2E8F0" />
             <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#94A3B8", fontWeight: 500 }} axisLine={false} tickLine={false} dy={12} />
             <YAxis tick={{ fontSize: 12, fill: "#94A3B8", fontWeight: 500 }} axisLine={false} tickLine={false} />
-            <Tooltip content={<ChartTooltip />} cursor={{ fill: "#F8FAFC" }} />
+            <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(148,163,184,0.12)" }} />
             <Bar dataKey="total" name="Total" fill="#F1F5F9" radius={[6, 6, 0, 0]} maxBarSize={28} />
             <Bar dataKey="done" name="Completed" fill="#3B82F6" radius={[6, 6, 0, 0]} maxBarSize={28} />
           </BarChart>

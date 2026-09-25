@@ -215,7 +215,7 @@ export default function AttendancePage() {
             <CartesianGrid strokeDasharray="0" vertical={false} stroke="#E2E8F0" />
             <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#94A3B8", fontWeight: 500 }} axisLine={false} tickLine={false} dy={12} />
             <YAxis tick={{ fontSize: 12, fill: "#94A3B8", fontWeight: 500 }} axisLine={false} tickLine={false} />
-            <Tooltip content={<ChartTooltip />} cursor={{ fill: "#F8FAFC" }} />
+            <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(148,163,184,0.12)" }} />
             <Bar dataKey="present" name="Present" fill="#3B82F6" radius={[6, 6, 0, 0]} maxBarSize={28} />
             <Bar dataKey="absent" name="Absent" fill="#EF4444" radius={[6, 6, 0, 0]} maxBarSize={28} />
           </BarChart>

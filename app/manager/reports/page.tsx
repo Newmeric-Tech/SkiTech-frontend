@@ -139,7 +139,7 @@ export default function ManagerReportsPage() {
                   <CartesianGrid strokeDasharray="0" vertical={false} stroke="#E2E8F0" />
                   <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#94A3B8", fontWeight: 500 }} axisLine={false} tickLine={false} dy={12} />
                   <YAxis tick={{ fontSize: 12, fill: "#94A3B8", fontWeight: 500 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<BarTooltip />} cursor={{ fill: "#F8FAFC" }} />
+                  <Tooltip content={<BarTooltip />} cursor={{ fill: "rgba(148,163,184,0.12)" }} />
                   <Bar dataKey="value" name="Rooms" radius={[6, 6, 0, 0]} maxBarSize={40}
                     fill="#3B82F6" />
                 </BarChart>
