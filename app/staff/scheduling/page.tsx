@@ -1,18 +1,22 @@
 "use client";
 
 import { useScheduling, SchedulingProvider } from "@/store/SchedulingStore";
-import { CheckCircle2, XCircle, Info, Building2, Clock, User, Zap, DollarSign, Calendar, ChevronRight } from "lucide-react";
+import { mapBackendShift } from "@/lib/api/scheduling";
+import { CheckCircle2, XCircle, Info, Building2, Clock, Zap, DollarSign, Calendar, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 
 function StaffSchedulingContent() {
   const {
-    employees,
     replacementRequests,
     acceptReplacementRequest,
     rejectReplacementRequest,
     staffTimeline,
+    currentWeekSchedule,
   } = useScheduling();
+
+  const weekShifts = (currentWeekSchedule?.shift_assignments ?? []).map((s) => mapBackendShift(s));
+  const todayName = new Date().toLocaleDateString("en-US", { weekday: "short" });
 
   const pendingRequests = replacementRequests.filter((r) => r.status === "pending");
   const acceptedRequests = replacementRequests.filter((r) => r.status === "accepted");
@@ -25,8 +29,6 @@ function StaffSchedulingContent() {
   const handleReject = (requestId: string) => {
     rejectReplacementRequest(requestId);
   };
-
-  const currentUser = employees.find((e) => e.id === "e1");
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -162,12 +164,6 @@ function StaffSchedulingContent() {
                     </div>
                     <span className="font-medium text-gray-900">{pendingRequests[0]?.shiftTime || "14:00 - 22:00"}</span>
                   </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <User className="w-4 h-4" /> Manager
-                    </div>
-                    <span className="font-medium text-gray-900">Sarah Jenkins</span>
-                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2 mt-6">
@@ -266,50 +262,40 @@ function StaffSchedulingContent() {
 
         {/* Right Sidebar: Existing Schedule */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-fit">
-          <div className="px-5 py-4 flex items-center justify-between border-b border-gray-50">
+          <div className="px-5 py-4 border-b border-gray-50">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Existing Schedule</span>
-            <button className="text-[10px] font-bold text-gray-900 uppercase tracking-widest hover:underline">View All</button>
           </div>
           
           <div className="p-2 space-y-1">
-            <div className="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors group">
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-sm font-bold text-gray-900 group-hover:text-black">Operations</p>
-                <span className="bg-black text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Today</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
-                <Clock className="w-3.5 h-3.5" /> 08:00 - 16:00
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <Building2 className="w-3.5 h-3.5" /> Main Office, HQ
-              </div>
-            </div>
-
-            <div className="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors group border-t border-gray-50">
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-sm font-bold text-gray-900 group-hover:text-black">Logistics</p>
-                <span className="bg-gray-100 text-gray-600 border border-gray-200 text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Mon</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
-                <Clock className="w-3.5 h-3.5" /> 09:00 - 17:00
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <Building2 className="w-3.5 h-3.5" /> Warehouse B
-              </div>
-            </div>
-
-            <div className="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors group border-t border-gray-50">
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-sm font-bold text-gray-900 group-hover:text-black">Safety Audit</p>
-                <span className="bg-gray-100 text-gray-600 border border-gray-200 text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Thu</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
-                <Clock className="w-3.5 h-3.5" /> 10:00 - 14:00
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <Building2 className="w-3.5 h-3.5" /> Level 2 Facilities
-              </div>
-            </div>
+            {weekShifts.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-6">No shifts scheduled this week</p>
+            ) : (
+              weekShifts.map((shift, i) => {
+                const isToday = shift.day === todayName;
+                return (
+                  <div
+                    key={shift.id}
+                    className={`p-3 hover:bg-gray-50 rounded-lg transition-colors group ${i > 0 ? "border-t border-gray-50" : ""}`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="text-sm font-bold text-gray-900 group-hover:text-black">{shift.department}</p>
+                      <span
+                        className={
+                          isToday
+                            ? "bg-black text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider"
+                            : "bg-gray-100 text-gray-600 border border-gray-200 text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider"
+                        }
+                      >
+                        {isToday ? "Today" : shift.day}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <Clock className="w-3.5 h-3.5" /> {shift.startTime} - {shift.endTime}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 

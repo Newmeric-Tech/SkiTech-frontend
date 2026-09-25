@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useEffect } from "react";
-import { schedulingAPI, mapBackendRequest, BackendTimelineEvent } from "@/lib/api/scheduling";
+import { toast } from "sonner";
+import { schedulingAPI, mapBackendRequest, BackendTimelineEvent, BackendWeeklySchedule } from "@/lib/api/scheduling";
 
 export interface Employee {
   id: string;
@@ -192,6 +193,7 @@ interface SchedulingContextType {
   replacementRequests: ReplacementRequest[];
   timeline: TimelineEvent[];
   staffTimeline: BackendTimelineEvent[];
+  currentWeekSchedule: BackendWeeklySchedule | null;
   pendingNotifications: number;
   addEmergencyAlert: (alert: Omit<EmergencyAlert, "id" | "createdAt" | "status">) => void;
   dismissEmergencyAlert: (id: string) => void;
@@ -220,6 +222,7 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
   const [replacementRequests, setReplacementRequests] = useState<ReplacementRequest[]>(INITIAL_REPLACEMENT_REQUESTS);
   const [timeline, setTimeline] = useState<TimelineEvent[]>(INITIAL_TIMELINE);
   const [staffTimeline, setStaffTimeline] = useState<BackendTimelineEvent[]>([]);
+  const [currentWeekSchedule, setCurrentWeekSchedule] = useState<BackendWeeklySchedule | null>(null);
   const [pendingNotifications, setPendingNotifications] = useState(2);
 
   // ── Load real replacement requests from API on mount ──
@@ -235,6 +238,9 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
         // valid, honest "no activity yet" state, not a reason to fall
         // back to mock data).
         setStaffTimeline(dash.timeline ?? []);
+        // Real current-week schedule — null is a valid, honest "no
+        // schedule yet" state, same reasoning as above.
+        setCurrentWeekSchedule(dash.current_week_schedule ?? null);
       })
       .catch(() => {
         // API unavailable — keep mock data
@@ -299,8 +305,13 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
       };
       setTimeline((prev) => [timelineEvent, ...prev]);
 
-      // Call real API — best effort (mock data IDs won't be valid UUIDs, that's OK)
-      schedulingAPI.acceptReplacement(id, request.toEmployeeId).catch(() => {});
+      schedulingAPI.acceptReplacement(id, request.toEmployeeId).catch((err) => {
+        // Backend rejected it — roll back the optimistic update rather
+        // than leave the UI showing a success that didn't happen.
+        setReplacementRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: "pending", respondedAt: undefined } : r));
+        setPendingNotifications((prev) => prev + 1);
+        toast.error(err?.response?.data?.detail || "Failed to accept the shift. Please try again.");
+      });
     }
   }, [replacementRequests]);
 
@@ -323,8 +334,13 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
       };
       setTimeline((prev) => [timelineEvent, ...prev]);
 
-      // Call real API — best effort
-      schedulingAPI.rejectReplacement(id, request.toEmployeeId).catch(() => {});
+      schedulingAPI.rejectReplacement(id, request.toEmployeeId).catch((err) => {
+        // Backend rejected it — roll back the optimistic update rather
+        // than leave the UI showing a success that didn't happen.
+        setReplacementRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: "pending", respondedAt: undefined } : r));
+        setPendingNotifications((prev) => prev + 1);
+        toast.error(err?.response?.data?.detail || "Failed to reject the request. Please try again.");
+      });
     }
   }, [replacementRequests]);
 
@@ -375,6 +391,7 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
     replacementRequests,
     timeline,
     staffTimeline,
+    currentWeekSchedule,
     pendingNotifications,
     addEmergencyAlert,
     dismissEmergencyAlert,
@@ -399,6 +416,7 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
     replacementRequests,
     timeline,
     staffTimeline,
+    currentWeekSchedule,
     pendingNotifications,
     addEmergencyAlert,
     assignShift,
