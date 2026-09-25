@@ -9,17 +9,13 @@ import {
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { sopAPI } from "@/lib/api/sop";
-import { usersAPI } from "@/lib/api/users";
 
 interface SOPExecution {
   id: string; sop_id: string; user_id: string;
   status: string; completed_at?: string;
   rejection_reason?: string; created_at: string;
-}
-
-interface SOPItem {
-  id: string; title: string; description?: string;
-  priority: "low" | "medium" | "high"; status: string; due_date?: string;
+  sop_title?: string; sop_description?: string;
+  sop_priority?: "low" | "medium" | "high"; sop_due_date?: string;
 }
 
 interface Task {
@@ -51,31 +47,19 @@ export default function StaffTasksPage() {
 
   const load = useCallback(async () => {
     try {
-      const meRes = await usersAPI.me();
-      const propId = meRes.data.property_id;
-
-      const [execRes, sopRes] = await Promise.all([
-        sopAPI.myTasks(),
-        propId ? sopAPI.listSOPs(propId) : Promise.resolve({ data: [] }),
-      ]);
-
+      const execRes = await sopAPI.myTasks();
       const executions = execRes.data as SOPExecution[];
-      const sopList = sopRes.data as SOPItem[];
-      const sopMap = new Map(sopList.map(s => [s.id, s]));
 
-      const mapped: Task[] = executions.map(exec => {
-        const sop = sopMap.get(exec.sop_id);
-        return {
-          executionId: exec.id,
-          sopId: exec.sop_id,
-          title: sop?.title ?? "Unknown Task",
-          description: sop?.description,
-          priority: sop?.priority ?? "medium",
-          status: exec.status,
-          due_date: sop?.due_date,
-          rejection_reason: exec.rejection_reason,
-        };
-      });
+      const mapped: Task[] = executions.map(exec => ({
+        executionId: exec.id,
+        sopId: exec.sop_id,
+        title: exec.sop_title ?? "Unknown Task",
+        description: exec.sop_description,
+        priority: exec.sop_priority ?? "medium",
+        status: exec.status,
+        due_date: exec.sop_due_date,
+        rejection_reason: exec.rejection_reason,
+      }));
 
       setTasks(mapped);
     } catch {

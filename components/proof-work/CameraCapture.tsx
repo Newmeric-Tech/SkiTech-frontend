@@ -13,17 +13,19 @@ interface CameraCaptureProps {
   timestamp?: Date | null;
   deviceLabel?: string;
   onRetake?: () => void;
+  onClose?: () => void;
 }
 
-export function CameraCapture({ 
-  onCapture, 
+export function CameraCapture({
+  onCapture,
   disabled,
   locationName = "Getting location...",
   isCaptured,
   capturedImage,
   timestamp,
   deviceLabel,
-  onRetake
+  onRetake,
+  onClose
 }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,6 +34,7 @@ export function CameraCapture({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
+  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
 
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
@@ -58,11 +61,11 @@ export function CameraCapture({
 
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: "environment",
+        video: {
+          facingMode,
         }
       });
-      
+
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -75,14 +78,25 @@ export function CameraCapture({
     } finally {
       setIsLoading(false);
     }
-  }, [stream, isCaptured]);
+  }, [stream, isCaptured, facingMode]);
 
   const stopCamera = useCallback(() => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
+    setIsCameraReady(false);
   }, [stream]);
+
+  const switchCamera = useCallback(() => {
+    stopCamera();
+    setFacingMode(prev => (prev === "environment" ? "user" : "environment"));
+  }, [stopCamera]);
+
+  const handleClose = useCallback(() => {
+    stopCamera();
+    onClose?.();
+  }, [stopCamera, onClose]);
 
   const capturePhoto = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -190,7 +204,9 @@ export function CameraCapture({
 
           {/* Top Bar */}
           <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-10">
-            <button className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition-colors">
+            <button
+              onClick={handleClose}
+              className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition-colors">
               <X className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-2">
@@ -198,7 +214,9 @@ export function CameraCapture({
                 <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                 <span className="text-white text-xs font-bold tracking-wide">LIVE</span>
               </div>
-              <button className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition-colors">
+              <button
+                onClick={switchCamera}
+                className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition-colors">
                 <RefreshCw className="w-5 h-5" />
               </button>
             </div>

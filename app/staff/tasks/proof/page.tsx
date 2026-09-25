@@ -117,12 +117,18 @@ function ProofPageInner() {
               <CameraCapture
                 onCapture={handleCapture}
                 disabled={isUploading}
-                locationName={location?.name || "Locating..."}
+                locationName={
+                  location?.name ||
+                  (location
+                    ? `${location.latitude.toFixed(4)}°, ${location.longitude.toFixed(4)}°`
+                    : "Locating...")
+                }
                 isCaptured={!!capturedImage}
                 capturedImage={capturedImage}
                 timestamp={timestamp}
                 deviceLabel={deviceLabel}
                 onRetake={handleRetake}
+                onClose={() => router.push("/staff/tasks")}
               />
             </div>
 

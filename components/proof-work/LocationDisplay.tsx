@@ -19,6 +19,24 @@ export function LocationDisplay({ onLocationCapture, disabled }: LocationDisplay
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const reverseGeocode = async (lat: number, lon: number): Promise<string | undefined> => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=14&addressdetails=1`,
+        { headers: { Accept: "application/json" } }
+      );
+      if (!res.ok) return undefined;
+      const data = await res.json();
+      const addr = data?.address;
+      if (!addr) return data?.display_name || undefined;
+      const locality = addr.city || addr.town || addr.village || addr.suburb || addr.county;
+      const region = addr.state;
+      return [locality, region].filter(Boolean).join(", ") || data?.display_name || undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
   const fetchLocation = useCallback(async () => {
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser");
@@ -30,13 +48,11 @@ export function LocationDisplay({ onLocationCapture, disabled }: LocationDisplay
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        // Here we could add reverse geocoding to get "Ahmedabad, Gujarat"
-        // For now using placeholder or just passing coords
-        const newLocation = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          name: "Ahmedabad, Gujarat" // Mock reverse geocode
-        };
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        const name = await reverseGeocode(latitude, longitude);
+
+        const newLocation = { latitude, longitude, name };
         setLocation(newLocation);
         onLocationCapture(newLocation);
         setIsLoading(false);
@@ -80,9 +96,14 @@ export function LocationDisplay({ onLocationCapture, disabled }: LocationDisplay
           ) : error ? (
             <p className="text-xs text-red-500 mt-1">{error}</p>
           ) : location ? (
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              Coord: {location.latitude.toFixed(4)}° N, {location.longitude.toFixed(4)}° E
-            </p>
+            <>
+              {location.name && (
+                <p className="text-xs text-slate-700 mt-0.5">{location.name}</p>
+              )}
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Coord: {location.latitude.toFixed(4)}° N, {location.longitude.toFixed(4)}° E
+              </p>
+            </>
           ) : null}
         </div>
       </div>

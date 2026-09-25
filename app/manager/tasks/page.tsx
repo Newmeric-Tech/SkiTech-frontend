@@ -24,6 +24,7 @@ interface SOPExecution {
   proof_location_lat?: number; proof_location_lng?: number;
   proof_location_name?: string; rejection_reason?: string;
   created_at: string; updated_at: string;
+  sop_title?: string;
 }
 
 const statusConfig: Record<string, { color: string; bg: string; label: string; icon: typeof CheckCircle2 }> = {
@@ -88,7 +89,7 @@ function ProofCard({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-slate-900 font-semibold text-sm truncate">
-            {sop?.title ?? "Unknown Task"}
+            {execution.sop_title ?? sop?.title ?? "Unknown Task"}
           </p>
           <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
             <span className="flex items-center gap-1">
