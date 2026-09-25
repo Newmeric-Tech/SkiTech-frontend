@@ -11,6 +11,7 @@ function StaffSchedulingContent() {
     replacementRequests,
     acceptReplacementRequest,
     rejectReplacementRequest,
+    staffTimeline,
   } = useScheduling();
 
   const pendingRequests = replacementRequests.filter((r) => r.status === "pending");
@@ -222,33 +223,42 @@ function StaffSchedulingContent() {
           {/* Live Activity Timeline */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-50">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Live Activity Timeline</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Activity Timeline</span>
             </div>
             <div className="p-6">
-              <div className="relative space-y-6">
-                {/* Timeline Line */}
-                <div className="absolute left-[9px] top-2 bottom-2 w-px bg-gray-200" />
+              {staffTimeline.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">No activity yet</p>
+              ) : (
+                <div className="relative space-y-6">
+                  {/* Timeline Line */}
+                  <div className="absolute left-[9px] top-2 bottom-2 w-px bg-gray-200" />
 
-                <div className="relative flex items-start gap-4">
-                  <div className="w-5 h-5 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center z-10">
-                    <div className="w-2 h-2 rounded-full bg-gray-400" />
-                  </div>
-                  <div className="flex-1 flex justify-between items-center mt-0.5">
-                    <p className="text-sm font-semibold text-gray-900">Request received</p>
-                    <span className="text-xs font-medium text-gray-400">02:10 PM</span>
-                  </div>
-                </div>
+                  {staffTimeline.map((event) => {
+                    const isAccepted = event.type === "responded" && event.response_type === "accepted";
+                    const isRejected = event.type === "responded" && event.response_type === "rejected";
+                    const dotColor = isAccepted ? "border-emerald-500" : isRejected ? "border-red-500" : "border-gray-300";
+                    const dotFill = isAccepted ? "bg-emerald-500" : isRejected ? "bg-red-500" : "bg-gray-400";
+                    const label = isAccepted
+                      ? "You accepted the shift"
+                      : isRejected
+                      ? "You declined the shift"
+                      : "Request received";
+                    const timestamp = new Date(event.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 
-                <div className="relative flex items-start gap-4">
-                  <div className="w-5 h-5 rounded-full border-2 border-emerald-500 bg-white flex items-center justify-center z-10">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                  </div>
-                  <div className="flex-1 flex justify-between items-center mt-0.5">
-                    <p className="text-sm font-semibold text-gray-900">Viewed by you</p>
-                    <span className="text-xs font-medium text-gray-400">02:12 PM</span>
-                  </div>
+                    return (
+                      <div key={`${event.replacement_request_id}-${event.type}`} className="relative flex items-start gap-4">
+                        <div className={`w-5 h-5 rounded-full border-2 ${dotColor} bg-white flex items-center justify-center z-10`}>
+                          <div className={`w-2 h-2 rounded-full ${dotFill}`} />
+                        </div>
+                        <div className="flex-1 flex justify-between items-center mt-0.5">
+                          <p className="text-sm font-semibold text-gray-900">{label}</p>
+                          <span className="text-xs font-medium text-gray-400">{timestamp}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
+              )}
             </div>
           </div>
 

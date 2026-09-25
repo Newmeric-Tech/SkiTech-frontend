@@ -58,12 +58,23 @@ export interface BackendCriticalAction {
   urgency: string;
 }
 
+export interface BackendTimelineEvent {
+  type: "request_received" | "responded";
+  replacement_request_id: string;
+  timestamp: string;
+  response_type: "accepted" | "rejected" | null;
+  shift_date: string;
+  shift_start_time: string;
+  shift_end_time: string;
+}
+
 export interface BackendStaffDashboard {
   emergency_shift_requests: BackendReplacementRequest[];
   pending_requests_count: number;
   accepted_requests_count: number;
   rejected_requests_count: number;
   current_week_schedule: BackendWeeklySchedule | null;
+  timeline: BackendTimelineEvent[];
 }
 
 export interface BackendManagerDashboard {

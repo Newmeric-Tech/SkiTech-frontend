@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useEffect } from "react";
-import { schedulingAPI, mapBackendRequest } from "@/lib/api/scheduling";
+import { schedulingAPI, mapBackendRequest, BackendTimelineEvent } from "@/lib/api/scheduling";
 
 export interface Employee {
   id: string;
@@ -191,6 +191,7 @@ interface SchedulingContextType {
   emergencyAlerts: EmergencyAlert[];
   replacementRequests: ReplacementRequest[];
   timeline: TimelineEvent[];
+  staffTimeline: BackendTimelineEvent[];
   pendingNotifications: number;
   addEmergencyAlert: (alert: Omit<EmergencyAlert, "id" | "createdAt" | "status">) => void;
   dismissEmergencyAlert: (id: string) => void;
@@ -218,6 +219,7 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
   const [emergencyAlerts, setEmergencyAlerts] = useState<EmergencyAlert[]>(INITIAL_EMERGENCY_ALERTS);
   const [replacementRequests, setReplacementRequests] = useState<ReplacementRequest[]>(INITIAL_REPLACEMENT_REQUESTS);
   const [timeline, setTimeline] = useState<TimelineEvent[]>(INITIAL_TIMELINE);
+  const [staffTimeline, setStaffTimeline] = useState<BackendTimelineEvent[]>([]);
   const [pendingNotifications, setPendingNotifications] = useState(2);
 
   // ── Load real replacement requests from API on mount ──
@@ -229,6 +231,10 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
           setReplacementRequests(mapped);
           setPendingNotifications(dash.pending_requests_count);
         }
+        // Real activity timeline — set unconditionally (empty array is a
+        // valid, honest "no activity yet" state, not a reason to fall
+        // back to mock data).
+        setStaffTimeline(dash.timeline ?? []);
       })
       .catch(() => {
         // API unavailable — keep mock data
@@ -368,6 +374,7 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
     emergencyAlerts,
     replacementRequests,
     timeline,
+    staffTimeline,
     pendingNotifications,
     addEmergencyAlert,
     dismissEmergencyAlert,
@@ -391,6 +398,7 @@ export function SchedulingProvider({ children }: { children: ReactNode }) {
     emergencyAlerts,
     replacementRequests,
     timeline,
+    staffTimeline,
     pendingNotifications,
     addEmergencyAlert,
     assignShift,
