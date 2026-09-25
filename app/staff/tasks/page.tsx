@@ -53,7 +53,7 @@ export default function StaffTasksPage() {
       const mapped: Task[] = executions.map(exec => ({
         executionId: exec.id,
         sopId: exec.sop_id,
-        title: exec.sop_title ?? "Unknown Task",
+        title: exec.sop_title ?? "Deleted Task",
         description: exec.sop_description,
         priority: exec.sop_priority ?? "medium",
         status: exec.status,

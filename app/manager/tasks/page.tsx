@@ -89,7 +89,7 @@ function ProofCard({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-slate-900 font-semibold text-sm truncate">
-            {execution.sop_title ?? sop?.title ?? "Unknown Task"}
+            {execution.sop_title ?? sop?.title ?? "Deleted Task"}
           </p>
           <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
             <span className="flex items-center gap-1">
