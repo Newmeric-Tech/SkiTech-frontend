@@ -215,11 +215,18 @@ html {
    utility classes are overridden — translucent variants like bg-black/5 or
    border-black/10 already use plain rgba(0,0,0,x), which matches the
    landing page's own translucent-black tokens (--mk-tile-glass-bg etc.),
-   so they're left alone. */
-.text-black { color: #0d0d0d !important; }
-.bg-black { background-color: #0d0d0d !important; }
-.border-black { border-color: #0d0d0d !important; }
-.accent-black { accent-color: #0d0d0d !important; }
+   so they're left alone.
+
+   Scoped to :not(.dark): components like the sidebar use a
+   "bg-black dark:bg-white" flip pattern (active nav pill, logo mark) to
+   go light-on-dark in dark mode. Without this scoping, !important here
+   always wins over the non-!important dark: variant regardless of
+   specificity, so the flip never visually happens and those elements
+   stay black in dark mode too. */
+html:not(.dark) .text-black { color: #0d0d0d !important; }
+html:not(.dark) .bg-black { background-color: #0d0d0d !important; }
+html:not(.dark) .border-black { border-color: #0d0d0d !important; }
+html:not(.dark) .accent-black { accent-color: #0d0d0d !important; }
 
 /* ── Dark mode global overrides ─────────────────────────────────────────────
    These target Tailwind utility classes so we don't have to add dark: to
