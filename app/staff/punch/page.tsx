@@ -198,6 +198,7 @@ export default function PunchPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState(false);
 
   // Clock
   useEffect(() => {
@@ -228,8 +229,12 @@ export default function PunchPage() {
       setCurrentStatus(statusRes.current_status ?? null);
       setHistory(histRes.records);
       setTotalHoursWeek(histRes.records.reduce((acc, r) => acc + (r.hours_worked ?? 0), 0));
+      setStatusError(false);
     } catch {
-      // user may not have punched in yet
+      // Could not verify punch status — do NOT assume "not punched in".
+      // Leave punchedIn untouched and block the punch button entirely
+      // until a real status check succeeds.
+      setStatusError(true);
     } finally {
       setIsFetching(false);
     }
@@ -363,32 +368,46 @@ export default function PunchPage() {
             </div>
 
             {/* Punch + Status row */}
-            <div className="flex gap-3 items-stretch">
-              {/* Punch button */}
-              <button
-                onClick={handlePunch}
-                disabled={isLoading || isFetching}
-                className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl text-white font-semibold text-lg transition-all shadow-lg hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed ${
-                  punchedIn ? "bg-red-500 hover:bg-red-600" : "bg-emerald-500 hover:bg-emerald-600"
-                }`}
-              >
-                {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                ) : punchedIn ? (
-                  <><LogOut className="w-5 h-5" /> Punch Out</>
-                ) : (
-                  <><LogIn className="w-5 h-5" /> Punch In</>
-                )}
-              </button>
+            {statusError ? (
+              <div className="flex flex-col items-center gap-3 py-4 rounded-2xl border border-red-200 bg-red-50 px-4">
+                <p className="text-sm text-red-700 text-center font-medium flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" /> Couldn&apos;t verify your punch status — refresh or contact support
+                </p>
+                <button
+                  onClick={() => loadStatus()}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-3 items-stretch">
+                {/* Punch button */}
+                <button
+                  onClick={handlePunch}
+                  disabled={isLoading || isFetching}
+                  className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl text-white font-semibold text-lg transition-all shadow-lg hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed ${
+                    punchedIn ? "bg-red-500 hover:bg-red-600" : "bg-emerald-500 hover:bg-emerald-600"
+                  }`}
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  ) : punchedIn ? (
+                    <><LogOut className="w-5 h-5" /> Punch Out</>
+                  ) : (
+                    <><LogIn className="w-5 h-5" /> Punch In</>
+                  )}
+                </button>
 
-              {/* Status picker */}
-              <StatusPicker
-                propertyId={propertyId}
-                currentStatus={currentStatus}
-                onStatusChange={setCurrentStatus}
-                disabled={!punchedIn || isFetching}
-              />
-            </div>
+                {/* Status picker */}
+                <StatusPicker
+                  propertyId={propertyId}
+                  currentStatus={currentStatus}
+                  onStatusChange={setCurrentStatus}
+                  disabled={!punchedIn || isFetching}
+                />
+              </div>
+            )}
 
             <p className="text-center text-xs text-slate-400 mt-3 flex items-center justify-center gap-1">
               <MapPin className="w-3 h-3" /> Location required for punch
