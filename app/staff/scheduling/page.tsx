@@ -2,7 +2,7 @@
 
 import { useScheduling, SchedulingProvider } from "@/store/SchedulingStore";
 import { mapBackendShift } from "@/lib/api/scheduling";
-import { CheckCircle2, XCircle, Info, Building2, Clock, Zap, DollarSign, Calendar, ChevronRight } from "lucide-react";
+import { CheckCircle2, XCircle, Building2, Clock, Zap, DollarSign, Calendar, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 
@@ -143,9 +143,8 @@ function StaffSchedulingContent() {
             )}
           </AnimatePresence>
 
-          {/* Details & AI Insights Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Shift Details */}
+          {/* Shift Details */}
+          <div className="grid grid-cols-1 gap-6">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
               <div className="px-5 py-4 border-b border-gray-50">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Shift Details</span>
@@ -176,42 +175,6 @@ function StaffSchedulingContent() {
                     <DollarSign className="w-3 h-3" /> +${pendingRequests[0]?.incentive || "50"} Incentive
                   </span>
                 </div>
-              </div>
-            </div>
-
-            {/* AI Smart Insight */}
-            <div className="bg-[#0F172A] rounded-xl shadow-sm overflow-hidden text-white p-6 relative">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-purple-400" />
-                  <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">AI Smart Insight</span>
-                </div>
-              </div>
-
-              <div className="space-y-5">
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">No shift conflicts</p>
-                    <p className="text-xs text-slate-400 mt-1">Schedule is clear for Tuesday.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Info className="w-3.5 h-3.5 text-blue-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">Moderate workload</p>
-                    <p className="text-xs text-slate-400 mt-1">Expected foot traffic: 65%.</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="absolute bottom-6 right-6 opacity-10 pointer-events-none">
-                <Zap className="w-24 h-24" />
               </div>
             </div>
           </div>
