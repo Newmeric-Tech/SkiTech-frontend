@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Shield } from "lucide-react";
 import api from "@/lib/config/app";
+import { useAuthStore } from "@/store/authStore";
 
 export default function SuperAdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -37,6 +38,7 @@ export default function SuperAdminLoginPage() {
       const user = {
         user_id: decoded.user_id,
         tenant_id: decoded.tenant_id || "",
+        property_id: decoded.property_id ?? null,
         email: decoded.email,
         role: decoded.role,
       };
@@ -46,14 +48,14 @@ export default function SuperAdminLoginPage() {
       sessionStorage.setItem("skitech_refresh_token", refresh_token);
       sessionStorage.setItem("skitech_role", "superadmin");
 
-      // Set cookie for middleware
-      const cookieValue = JSON.stringify({
-        state: {
-          user,
-          isAuthenticated: true,
-        },
+      // Populate the tab-scoped auth store (read by RoleGuard)
+      useAuthStore.setState({
+        user,
+        access_token,
+        refresh_token,
+        isAuthenticated: true,
+        error: null,
       });
-      document.cookie = `skitech_auth=${encodeURIComponent(cookieValue)}; path=/; max-age=86400; SameSite=Lax`;
 
       // Navigate to superadmin dashboard
       router.push("/superadmin");

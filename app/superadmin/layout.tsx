@@ -1,14 +1,15 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, LayoutDashboard, Building2, Users, Shield, BarChart3,
   Settings, LogOut, ChevronLeft, ChevronRight, Menu, X,
   Eye, AlertTriangle, Bell, Search, FileText, Sun, Moon, CreditCard, ShieldCheck,
 } from "lucide-react";
+import { RoleGuard } from "@/components/auth/RoleGuard";
 
 const superadminNav = [
   { icon: LayoutDashboard, label: "Overview", href: "/superadmin" },
@@ -30,10 +31,8 @@ const configNav = [
 export default function SuperadminLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [authorized, setAuthorized] = useState(false);
   const [dark, setDark] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -52,18 +51,8 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
     });
   };
 
-  useEffect(() => {
-    const role = sessionStorage.getItem("skitech_role");
-    if (role !== "superadmin") {
-      router.push("/auth/login");
-    } else {
-      setAuthorized(true);
-    }
-  }, [router]);
-
-  if (!authorized) return null;
-
   return (
+    <RoleGuard>
     <div className="flex h-screen bg-[#f8f7f4] dark:bg-[#111111] overflow-hidden">
       {/* Mobile Overlay */}
       <AnimatePresence>
@@ -230,5 +219,6 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
         </main>
       </div>
     </div>
+    </RoleGuard>
   );
 }

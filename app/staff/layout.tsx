@@ -1,9 +1,14 @@
 import { DashboardLayoutClient } from "@/components/dashboard/DashboardLayoutClient";
+import { RoleGuard } from "@/components/auth/RoleGuard";
 
 export default function StaffLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <DashboardLayoutClient>{children}</DashboardLayoutClient>;
+  return (
+    <RoleGuard>
+      <DashboardLayoutClient>{children}</DashboardLayoutClient>
+    </RoleGuard>
+  );
 }

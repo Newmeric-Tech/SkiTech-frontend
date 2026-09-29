@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { DashboardLayoutClient } from "@/components/dashboard/DashboardLayoutClient";
+import { RoleGuard } from "@/components/auth/RoleGuard";
 import OwnerOnboardingModal from "@/components/onboarding/OwnerOnboardingModal";
 import PlanSelectionModal, { PLAN_SELECTED_KEY } from "@/components/onboarding/PlanSelectionModal";
 import { useAuthStore } from "@/store/authStore";
@@ -64,7 +65,7 @@ export default function OwnerLayout({
   }
 
   return (
-    <>
+    <RoleGuard>
       <DashboardLayoutClient>{children}</DashboardLayoutClient>
       <AnimatePresence>
         {showOnboarding && (
@@ -79,6 +80,6 @@ export default function OwnerLayout({
           />
         )}
       </AnimatePresence>
-    </>
+    </RoleGuard>
   );
 }

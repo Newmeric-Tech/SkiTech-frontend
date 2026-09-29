@@ -107,20 +107,6 @@ function getRoleStorageKey(jwtRole: string): string {
   return roleMap[jwtRole] || jwtRole?.toLowerCase() || "staff";
 }
 
-// ── Cookie setter helper ──────────────────────────────────────────────────────
-function setAuthCookie(user: User) {
-  const cookieValue = JSON.stringify({
-    state: {
-      user,
-      isAuthenticated: true,
-    },
-  });
-
-  document.cookie = `skitech_auth=${encodeURIComponent(
-    cookieValue
-  )}; path=/; max-age=86400; SameSite=Lax`;
-}
-
 // ── Auth Store ────────────────────────────────────────────────────────────────
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -156,9 +142,6 @@ export const useAuthStore = create<AuthState>()(
 
           // Store role for layout checks
           sessionStorage.setItem("skitech_role", getRoleStorageKey(user.role));
-
-          // Set cookie for middleware
-          setAuthCookie(user);
 
           set({
             user,
@@ -225,7 +208,6 @@ export const useAuthStore = create<AuthState>()(
           if (!user) throw new Error("Invalid token received");
 
           sessionStorage.setItem("skitech_role", getRoleStorageKey(user.role));
-          setAuthCookie(user);
 
           set({ user, access_token, refresh_token, isAuthenticated: true, isLoading: false, error: null });
 
@@ -280,8 +262,6 @@ export const useAuthStore = create<AuthState>()(
         sessionStorage.removeItem("skitech_access_token");
         sessionStorage.removeItem("skitech_refresh_token");
         sessionStorage.removeItem("skitech_role");
-
-        document.cookie = "skitech_auth=; path=/; max-age=0";
 
         set({
           user: null,
