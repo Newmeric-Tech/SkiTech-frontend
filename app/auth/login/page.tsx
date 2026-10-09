@@ -23,7 +23,6 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export default function LoginPage() {
-  const [role, setRole] = useState<"owner" | "co-admin" | "manager" | "staff" | "">("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -60,22 +59,15 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!role || !email || !password) return;
+    if (!email || !password) return;
     clearError();
     try {
-      const redirectPath = await login(email, password, role);
+      const redirectPath = await login(email, password);
       router.push(redirectPath);
     } catch {
       // error is already set in store
     }
   };
-
-  const roleConfig = [
-    { id: "owner" as const,     label: "Owner",     desc: "Full property control" },
-    { id: "co-admin" as const,  label: "Co Admin",  desc: "Property partner access" },
-    { id: "manager" as const,   label: "Manager",   desc: "Daily operations" },
-    { id: "staff" as const,     label: "Staff",     desc: "Assigned tasks" },
-  ];
 
   return (
     <div className={`${playfairDisplay.variable} ${plusJakartaSans.variable} st-page ${dark ? "dark" : ""}`}>
@@ -387,58 +379,6 @@ export default function LoginPage() {
         }
         .st-signin-sub { font-size: 12.5px; color: var(--st-text-2); }
 
-        .st-role-label {
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.12em;
-          color: var(--st-text-3);
-          text-transform: uppercase;
-        }
-        .st-role-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        .st-role-btn {
-          padding: 10px 12px;
-          border-radius: 12px;
-          border: 1px solid var(--st-border-input);
-          background: transparent;
-          color: var(--st-text-1);
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          cursor: pointer;
-          text-align: left;
-          font-family: inherit;
-          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .st-role-btn:hover { border-color: var(--st-accent); background: var(--st-accent-soft); }
-        .st-role-btn.is-selected {
-          border-color: var(--st-accent);
-          background: var(--st-accent-soft);
-          box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-        }
-        .st-role-radio-circle {
-          width: 14px;
-          height: 14px;
-          border-radius: 50%;
-          border: 2px solid var(--st-border-hover);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          transition: all 0.25s ease;
-        }
-        .st-role-btn.is-selected .st-role-radio-circle { border-color: var(--st-accent); }
-        .st-role-radio-inner-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: var(--st-accent);
-          transform: scale(0);
-          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .st-role-btn.is-selected .st-role-radio-inner-dot { transform: scale(1); }
-        .st-role-card-name { font-size: 12px; font-weight: 700; color: var(--st-text-1); }
-        .st-role-card-desc { font-size: 9px; font-weight: 500; color: var(--st-text-3); }
-
         .st-input-group { position: relative; width: 100%; }
         .st-input-group input {
           width: 100%;
@@ -536,7 +476,6 @@ export default function LoginPage() {
         .st-divider-text { font-size: 9px; font-weight: 700; color: var(--st-text-3); letter-spacing: 0.1em; }
 
         .st-sso-section { display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; }
-        .st-sso-desc { font-size: 11.5px; font-weight: 500; color: var(--st-text-3); }
         .st-sso-wrap {
           width: 100%;
           padding: 8px;
@@ -649,7 +588,7 @@ export default function LoginPage() {
           <div className="flex flex-col gap-1">
             <span className="st-signin-eyebrow">Sign In</span>
             <h2 className="st-signin-title">Welcome back</h2>
-            <p className="st-signin-sub">Select your role and sign in to continue</p>
+            <p className="st-signin-sub">Sign in with your email and password to continue</p>
           </div>
 
           {error && (
@@ -666,30 +605,6 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            {/* Role Selection */}
-            <div className="flex flex-col gap-2">
-              <span className="st-role-label">I am a</span>
-              <div className="st-role-grid">
-                {roleConfig.map(({ id, label, desc }) => (
-                  <motion.button
-                    key={id}
-                    type="button"
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => setRole(id)}
-                    className={`st-role-btn ${role === id ? "is-selected" : ""}`}
-                  >
-                    <span className="st-role-radio-circle">
-                      <span className="st-role-radio-inner-dot" />
-                    </span>
-                    <span className="flex flex-col gap-0.5">
-                      <span className="st-role-card-name">{label}</span>
-                      <span className="st-role-card-desc">{desc}</span>
-                    </span>
-                  </motion.button>
-                ))}
-              </div>
-            </div>
-
             <div className="flex flex-col gap-4">
               {/* Email */}
               <div className="st-input-group">
@@ -734,7 +649,7 @@ export default function LoginPage() {
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.97 }}
               type="submit"
-              disabled={!role || !email || !password || isLoading}
+              disabled={!email || !password || isLoading}
               className="st-btn-signin-submit"
             >
               {isLoading ? (
@@ -755,17 +670,13 @@ export default function LoginPage() {
           </div>
 
           <div className="st-sso-section">
-            {!role && <span className="st-sso-desc">Select a role above to sign in with Google</span>}
-            <div className={`st-sso-wrap transition-opacity duration-200 ${!role ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
+            <div className="st-sso-wrap">
               <GoogleLogin
                 onSuccess={async (credentialResponse) => {
                   if (!credentialResponse.credential) return;
                   clearError();
                   try {
-                    const redirectPath = await googleLogin(
-                      credentialResponse.credential,
-                      role || undefined
-                    );
+                    const redirectPath = await googleLogin(credentialResponse.credential);
                     router.push(redirectPath);
                   } catch {
                     // error is set in store
