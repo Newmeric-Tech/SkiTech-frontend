@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, BedDouble, Plus, Pencil, Trash2,
-  Loader2, X, Search, Filter, RefreshCw, AlertTriangle,
+  Loader2, X, Search, Filter, RefreshCw, AlertTriangle, Radio,
 } from "lucide-react";
 import { toast } from "sonner";
 import { roomsAPI } from "@/lib/api/rooms";
 import { propertiesAPI, Property } from "@/lib/api/properties";
+import { channelManagerAPI, providerLabel, RoomSyncStatus } from "@/lib/api/channel-manager";
 
 interface Room {
   id: string;
@@ -17,7 +19,13 @@ interface Room {
   room_type: string | null;
   price_per_night: number | null;
   status: "available" | "occupied" | "maintenance";
+  integration_id?: string | null;
 }
+
+const SYNC_POLL_MS = 2000;
+const SYNC_POLL_MAX = 60; // ~2 minutes
+
+const formatTime = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString() : "never");
 
 const ROOM_TYPES = ["Standard", "Deluxe", "Suite", "Executive"];
 const STATUSES = ["available", "occupied", "maintenance"] as const;
@@ -54,6 +62,10 @@ export default function RoomsPage() {
 
   const [regenerating, setRegenerating] = useState(false);
 
+  const [syncStatus, setSyncStatus] = useState<RoomSyncStatus | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const unmounted = useRef(false);
+
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
@@ -72,6 +84,60 @@ export default function RoomsPage() {
   }, [id]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // Loaded separately so a failure here never blocks the rooms list.
+  const loadSyncStatus = useCallback(async () => {
+    try {
+      const res = await channelManagerAPI.roomSyncStatus(id);
+      setSyncStatus(res.data);
+      return res.data;
+    } catch {
+      return null;
+    }
+  }, [id]);
+
+  useEffect(() => { loadSyncStatus(); }, [loadSyncStatus]);
+
+  useEffect(() => {
+    unmounted.current = false;
+    return () => { unmounted.current = true; };
+  }, []);
+
+  const handleSyncNow = async () => {
+    const integration = syncStatus?.integration;
+    if (!integration) return;
+    const previousRunId = syncStatus?.latest_sync?.id;
+    try {
+      setSyncing(true);
+      await channelManagerAPI.syncNow(integration.id);
+      // The sync runs in the background; wait for a new run to finish.
+      for (let i = 0; i < SYNC_POLL_MAX && !unmounted.current; i++) {
+        await new Promise(resolve => setTimeout(resolve, SYNC_POLL_MS));
+        const status = await loadSyncStatus();
+        const run = status?.latest_sync;
+        if (run && run.id !== previousRunId && run.status !== "syncing") {
+          const roomsRes = await roomsAPI.list(id);
+          setRooms(Array.isArray(roomsRes.data) ? roomsRes.data : []);
+          if (run.status === "success") toast.success("Room sync finished");
+          else toast.error(run.error_message || "Sync failed");
+          return;
+        }
+      }
+      if (!unmounted.current) toast.info("Sync is still running. Check back in a minute.");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to start sync");
+    } finally {
+      if (!unmounted.current) setSyncing(false);
+    }
+  };
+
+  const managedBy = syncStatus?.connected && syncStatus.integration?.supports_room_sync
+    ? syncStatus.integration
+    : undefined;
+  const isSynced = (room: Room) => !!managedBy && room.integration_id === managedBy.id;
+  const syncedTooltip = managedBy
+    ? `Managed by ${providerLabel(managedBy.provider_name)}. Change room number and type in the channel manager; rooms synced from it can't be deleted here.`
+    : "";
 
   const handleAdd = async () => {
     if (!addForm.room_number.trim()) return;
@@ -296,6 +362,76 @@ export default function RoomsPage() {
         </div>
       </div>
 
+      {/* Channel manager room sync */}
+      {syncStatus && !syncStatus.connected && (
+        <p className="text-slate-500 text-sm">
+          No channel manager connected.{" "}
+          <Link href="/owner/settings?tab=channel-manager" className="text-indigo-600 font-medium hover:text-indigo-700">
+            Connect one in Settings
+          </Link>{" "}
+          to import rooms automatically.
+        </p>
+      )}
+
+      {syncStatus?.connected && syncStatus.integration && !syncStatus.integration.supports_room_sync && (
+        <div className="flex items-start gap-4 p-4 bg-white border border-slate-200/60 rounded-2xl shadow-sm">
+          <Radio className="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" />
+          <p className="text-slate-600 text-sm">
+            Connected to <strong className="text-slate-950">{providerLabel(syncStatus.integration.provider_name)}</strong>.
+            {" "}This provider does not supply room lists, so rooms here stay manual and only reservations sync.
+          </p>
+        </div>
+      )}
+
+      {managedBy && (() => {
+        const run = syncStatus?.latest_sync;
+        const summary = run?.rooms_summary;
+        const running = syncing || run?.status === "syncing";
+        return (
+          <div className="p-4 bg-white border border-slate-200/60 rounded-2xl shadow-sm space-y-3">
+            <div className="flex items-start gap-4">
+              <Radio className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-slate-950 text-sm font-semibold">Connected to {providerLabel(managedBy.provider_name)}</p>
+                <p className="text-slate-500 text-xs mt-0.5">
+                  Last synced: {formatTime(run?.finished_at ?? managedBy.last_sync_at)}
+                  {run?.status === "error" && <span className="text-red-600"> · Last sync failed{run.error_message ? `: ${run.error_message}` : ""}</span>}
+                </p>
+              </div>
+              <button
+                onClick={handleSyncNow}
+                disabled={running}
+                className="flex items-center gap-2 bg-slate-950 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm hover:bg-slate-800 transition-colors disabled:opacity-50 flex-shrink-0"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${running ? "animate-spin" : ""}`} />
+                {running ? "Syncing…" : "Sync rooms now"}
+              </button>
+            </div>
+            {summary && (
+              <div className="pl-9 space-y-1.5">
+                {summary.error ? (
+                  <p className="text-red-600 text-xs">Room import failed: {summary.error}</p>
+                ) : summary.skipped ? (
+                  <p className="text-amber-700 text-xs">Room import skipped: {summary.skipped}</p>
+                ) : (
+                  <p className="text-slate-600 text-xs">
+                    Last result: {summary.insert ?? 0} imported · {summary.adopt ?? 0} linked to existing rooms ·{" "}
+                    {summary.update ?? 0} updated · {summary.conflict ?? 0} conflict{summary.conflict === 1 ? "" : "s"}
+                  </p>
+                )}
+                {!!summary.conflicts?.length && (
+                  <ul className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 space-y-0.5">
+                    {summary.conflicts.map((c, i) => (
+                      <li key={i}><strong>Room {c.room_number || "(no name)"}</strong>: {c.reason}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Status summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
@@ -477,6 +613,12 @@ export default function RoomsPage() {
                             <BedDouble className="w-4 h-4 text-slate-500" />
                           </div>
                           <span className="text-slate-950 text-sm font-bold">{room.room_number}</span>
+                          {isSynced(room) && (
+                            <span title={syncedTooltip}
+                              className="text-[10px] px-1.5 py-0.5 rounded-md border font-semibold bg-indigo-50 text-indigo-700 border-indigo-200/60">
+                              Synced
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-slate-600 text-sm">{room.room_type ?? "—"}</td>
@@ -489,16 +631,19 @@ export default function RoomsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
+                        {/* Disabled buttons don't show a title, so the wrapper carries the tooltip. */}
+                        <div className="flex items-center gap-2" title={isSynced(room) ? syncedTooltip : undefined}>
                           <button
                             onClick={() => openEdit(room)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                            disabled={isSynced(room)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDelete(room)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            disabled={isSynced(room)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>

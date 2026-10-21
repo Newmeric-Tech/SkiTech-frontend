@@ -14,6 +14,47 @@ export interface Integration {
   error_message: string | null;
 }
 
+export const PROVIDER_LABELS: Record<string, string> = {
+  channex: "Channex",
+  mews: "Mews",
+  cloudbeds: "Cloudbeds",
+  siteminder: "SiteMinder",
+  little_hotelier: "Little Hotelier",
+};
+
+export const providerLabel = (name: string) => PROVIDER_LABELS[name] ?? name;
+
+export interface RoomsSummary {
+  insert?: number;
+  adopt?: number;
+  update?: number;
+  conflict?: number;
+  conflicts?: { room_number: string; reason: string }[];
+  skipped?: string;
+  error?: string;
+}
+
+export interface RoomSyncRun {
+  id: string;
+  started_at: string | null;
+  finished_at: string | null;
+  status: "syncing" | "success" | "error" | string | null;
+  error_message: string | null;
+  rooms_summary: RoomsSummary | null;
+}
+
+export interface RoomSyncStatus {
+  connected: boolean;
+  integration?: {
+    id: string;
+    provider_name: ChannelManagerProvider | string;
+    connection_status: ConnectionStatus;
+    supports_room_sync: boolean;
+    last_sync_at: string | null;
+  };
+  latest_sync?: RoomSyncRun | null;
+}
+
 export interface TestConnectionPayload {
   provider_name: string;
   credentials: Record<string, unknown>;
@@ -39,4 +80,7 @@ export const channelManagerAPI = {
 
   syncNow: (id: string) =>
     api.post<{ success: boolean; message: string }>(`/v1/channel-manager/integrations/${id}/sync`),
+
+  roomSyncStatus: (propertyId: string) =>
+    api.get<RoomSyncStatus>(`/v1/properties/${propertyId}/room-sync-status`),
 };
