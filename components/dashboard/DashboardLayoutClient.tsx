@@ -21,7 +21,7 @@ import {
   Bell, Search, Briefcase, Menu, ClipboardList, Clock, Package,
   ShieldCheck, Layers, X, Sun, Moon, BedDouble,
   Folder, AlertCircle, Activity, Trophy, CalendarClock, CalendarDays,
-  Inbox,
+  Inbox, MapPin,
 } from "lucide-react";
 import NotificationPanel from "@/components/dashboard/NotificationPanel";
 import { useDarkMode } from "@/hooks/useDarkMode";
@@ -45,6 +45,7 @@ const ownerNav: NavItem[] = [
   { icon: FileText,        label: "SOP Management",     href: "/owner/sop",                          feature: "sop" },
   { icon: CalendarClock,   label: "Employee Scheduling",href: "/owner/scheduling",                   feature: "employee_scheduling" },
   { icon: AlertCircle,     label: "Error & Complaints", href: "/owner/complaints" },
+  { icon: MapPin,          label: "Punch Locations",    href: "/owner/punch-locations",             feature: "attendance" },
   { icon: Folder,          label: "Documents",          href: "/owner/document-management" },
   { icon: Activity,        label: "Activity Log",       href: "/owner/master-activity-log",          feature: "master_log" },
   { icon: Trophy,          label: "Employee Ranking",   href: "/owner/employee-ranking/dashboard",   feature: "employee_ranking" },

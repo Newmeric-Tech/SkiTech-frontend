@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldAlert, Package, Clock, Loader2, Inbox as InboxIcon,
-  CheckCircle2, X, Eye,
+  CheckCircle2, X, Eye, MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 import { inboxAPI, InboxItem, InboxStatus, resolveInboxLink } from "@/lib/api/inbox";
@@ -13,6 +13,7 @@ import { inboxAPI, InboxItem, InboxStatus, resolveInboxLink } from "@/lib/api/in
 const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
   complaint_escalated: { icon: ShieldAlert, color: "#EF4444", bg: "bg-red-50" },
   low_stock:           { icon: Package,     color: "#F59E0B", bg: "bg-amber-50" },
+  geofence_change_request: { icon: MapPin,  color: "#6366F1", bg: "bg-indigo-50" },
 };
 
 const TABS: { key: InboxStatus | "all"; label: string }[] = [
@@ -109,7 +110,7 @@ function EmptyState() {
       </div>
       <h3 className="text-slate-900 font-semibold text-lg mb-1">You're all caught up</h3>
       <p className="text-slate-500 text-center max-w-sm text-sm">
-        Nothing needs your attention right now. Escalated complaints and low-stock alerts will show up here.
+        Nothing needs your attention right now. Escalated complaints, low-stock alerts and punch location requests will show up here.
       </p>
     </div>
   );
@@ -166,7 +167,7 @@ export default function OwnerInboxPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-950 tracking-tight">Inbox</h1>
-        <p className="text-slate-500 text-sm mt-1">Escalated complaints and low-stock alerts that need your attention.</p>
+        <p className="text-slate-500 text-sm mt-1">Escalated complaints, low-stock alerts and punch location requests that need your attention.</p>
       </div>
 
       <div className="flex items-center gap-1 bg-white rounded-xl p-1.5 border border-slate-200/60 shadow-sm w-fit">

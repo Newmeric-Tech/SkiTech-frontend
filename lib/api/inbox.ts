@@ -9,8 +9,8 @@
 import api from "@/lib/config/app";
 
 export type InboxStatus = "unread" | "read" | "actioned" | "dismissed";
-export type InboxSourceModule = "complaints" | "inventory";
-export type InboxItemType = "complaint_escalated" | "low_stock";
+export type InboxSourceModule = "complaints" | "inventory" | "attendance";
+export type InboxItemType = "complaint_escalated" | "low_stock" | "geofence_change_request";
 
 export interface InboxItem {
   id: string;
@@ -74,6 +74,9 @@ export const inboxAPI = {
 export function resolveInboxLink(item: InboxItem): string {
   if (item.source_module === "complaints") {
     return `/owner/complaints?highlight=${item.source_record_id}`;
+  }
+  if (item.item_type === "geofence_change_request") {
+    return `/owner/punch-locations?highlight=${item.source_record_id}`;
   }
   if (item.source_module === "inventory") {
     const propertyParam = item.property_id ? `property=${item.property_id}&` : "";
