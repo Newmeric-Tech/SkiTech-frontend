@@ -78,6 +78,68 @@ export interface AttendanceTotals {
 /** Completed records above this many hours are data errors (backend MAX_PLAUSIBLE_HOURS). */
 export const MAX_PLAUSIBLE_HOURS = 24;
 
+// ── Shared display helpers (staff + manager punch pages) ───
+
+/** A record whose hours can't be trusted: auto-closed, or an absurd completed duration. */
+export function needsReview(r: Pick<AttendanceRecord, "status" | "hours_worked">) {
+  return r.status === "auto_closed" || (r.hours_worked != null && r.hours_worked > MAX_PLAUSIBLE_HOURS);
+}
+
+export function fmtHours(h: number | null | undefined) {
+  if (!h) return "—";
+  const hrs = Math.floor(h);
+  const mins = Math.round((h - hrs) * 60);
+  return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+}
+
+/** Local midnight today and local Monday 00:00 this week (the user's own day, not UTC). */
+export function localDayAndWeekStart() {
+  const day = new Date();
+  day.setHours(0, 0, 0, 0);
+  const week = new Date(day);
+  week.setDate(week.getDate() - ((week.getDay() + 6) % 7));
+  return { day, week };
+}
+
+const RECORD_STATUS: Record<string, { label: string; className: string }> = {
+  completed:   { label: "Complete",    className: "bg-emerald-50 text-emerald-700 border border-emerald-200/60" },
+  auto_closed: { label: "Auto-closed", className: "bg-slate-100 text-slate-600 border border-slate-200/60" },
+};
+const ACTIVE_STATUS = { label: "Active", className: "bg-blue-50 text-blue-700 border border-blue-200/60" };
+export const recordStatus = (status: string) => RECORD_STATUS[status] ?? ACTIVE_STATUS;
+
+/** The API's error detail, else the fallback. */
+export function apiErrorDetail(err: unknown, fallback: string): string {
+  const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  return typeof detail === "string" && detail ? detail : fallback;
+}
+
+export type PunchOutcome =
+  | { ok: true; punchedOut: boolean; hoursWorked: number | null; warning: string | null }
+  // "location": the browser could not give a usable position, nothing was sent.
+  // "rejected": the server refused the punch, nothing was recorded.
+  | { ok: false; kind: "location" | "rejected"; message: string };
+
+/** Get the position and punch in (or out). Never throws. */
+export async function submitPunch(propertyId: string, punchOut: boolean): Promise<PunchOutcome> {
+  let coords: GeolocationPayload;
+  try {
+    coords = await getCurrentPosition();
+  } catch (err) {
+    return { ok: false, kind: "location", message: err instanceof Error ? err.message : "Location unavailable" };
+  }
+  try {
+    if (punchOut) {
+      const res = await attendanceAPI.punchOut(propertyId, coords);
+      return { ok: true, punchedOut: true, hoursWorked: res.hours_worked, warning: res.warning };
+    }
+    const res = await attendanceAPI.punchIn(propertyId, coords);
+    return { ok: true, punchedOut: false, hoursWorked: null, warning: res.warning };
+  } catch (err) {
+    return { ok: false, kind: "rejected", message: apiErrorDetail(err, "Punch failed. Please try again.") };
+  }
+}
+
 export interface DailySummaryResponse {
   date: string;
   total_records: number;

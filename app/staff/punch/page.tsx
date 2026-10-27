@@ -9,9 +9,16 @@ import {
 } from "lucide-react";
 import {
   attendanceAPI,
-  getCurrentPosition,
   AttendanceRecord,
+  AttendanceTotals,
+  PunchStatusResponse,
+  fmtHours,
+  localDayAndWeekStart,
+  submitPunch,
 } from "@/lib/api/attendance";
+import {
+  PunchError, PunchErrorBox, RecordHours, RecordStatusBadge, StaleShiftNotice, STILL_ON_SHIFT_ERROR,
+} from "@/components/attendance/PunchFeedback";
 import { usersAPI } from "@/lib/api/users";
 
 // ── Status presets ──────────────────────────────────────────
@@ -39,13 +46,6 @@ function fmt(iso: string | null | undefined, opts?: Intl.DateTimeFormatOptions) 
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-}
-
-function fmtHours(h: number | null) {
-  if (!h) return "—";
-  const hrs = Math.floor(h);
-  const mins = Math.round((h - hrs) * 60);
-  return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
 }
 
 // ── Status Picker ────────────────────────────────────────────
@@ -190,15 +190,17 @@ export default function PunchPage() {
   const [propertyId, setPropertyId] = useState<string>("");
   const [punchedIn, setPunchedIn] = useState(false);
   const [punchInTime, setPunchInTime] = useState<string | null>(null);
-  const [hoursSoFar, setHoursSoFar] = useState<number>(0);
   const [currentStatus, setCurrentStatus] = useState<string | null>(null);
   const [history, setHistory] = useState<AttendanceRecord[]>([]);
-  const [totalHoursWeek, setTotalHoursWeek] = useState<number>(0);
+  const [totals, setTotals] = useState<AttendanceTotals | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [statusError, setStatusError] = useState(false);
+  // A punch the server refused, or a punch-out the status check contradicts.
+  const [punchError, setPunchError] = useState<PunchError | null>(null);
+  const [staleShift, setStaleShift] = useState<PunchStatusResponse["stale_shift"] | null>(null);
 
   // Clock
   useEffect(() => {
@@ -215,20 +217,21 @@ export default function PunchPage() {
     }).catch(() => setIsFetching(false));
   }, []);
 
-  const loadStatus = useCallback(async () => {
-    if (!propertyId) return;
+  const loadStatus = useCallback(async (): Promise<PunchStatusResponse | null> => {
+    if (!propertyId) return null;
     setIsFetching(true);
+    let status: PunchStatusResponse | null = null;
     try {
       const [statusRes, histRes] = await Promise.all([
         attendanceAPI.getStatus(propertyId),
         attendanceAPI.getHistory({ property_id: propertyId, limit: 10 }),
       ]);
+      status = statusRes;
       setPunchedIn(statusRes.punched_in);
+      setStaleShift(statusRes.stale_shift ?? null);
       setPunchInTime(statusRes.punch_in_time ?? null);
-      setHoursSoFar(statusRes.hours_so_far ?? 0);
       setCurrentStatus(statusRes.current_status ?? null);
       setHistory(histRes.records);
-      setTotalHoursWeek(histRes.records.reduce((acc, r) => acc + (r.hours_worked ?? 0), 0));
       setStatusError(false);
     } catch {
       // Could not verify punch status — do NOT assume "not punched in".
@@ -238,6 +241,10 @@ export default function PunchPage() {
     } finally {
       setIsFetching(false);
     }
+    // Totals never block the punch button
+    const { day, week } = localDayAndWeekStart();
+    attendanceAPI.getTotals(propertyId, day, week).then(setTotals).catch(() => setTotals(null));
+    return status;
   }, [propertyId]);
 
   useEffect(() => { loadStatus(); }, [loadStatus]);
@@ -245,32 +252,27 @@ export default function PunchPage() {
   const handlePunch = async () => {
     if (!propertyId) { toast.error("No property assigned to your account"); return; }
     setLocationError(null);
+    setPunchError(null);
     setIsLoading(true);
     try {
-      const coords = await getCurrentPosition();
-      if (punchedIn) {
-        const res = await attendanceAPI.punchOut(propertyId, coords);
-        setPunchedIn(false);
-        setPunchInTime(null);
-        setCurrentStatus(null);
-        toast.success("Punched out successfully", { description: `Hours worked: ${fmtHours(res.hours_worked)}` });
-        if (res.warning) toast.warning(res.warning);
-      } else {
-        const res = await attendanceAPI.punchIn(propertyId, coords);
-        setPunchedIn(true);
-        setPunchInTime(new Date().toISOString());
-        setHoursSoFar(0);
-        toast.success("Punched in successfully");
-        if (res.warning) toast.warning(res.warning);
+      const wasPunchedIn = punchedIn;
+      const outcome = await submitPunch(propertyId, wasPunchedIn);
+      if (!outcome.ok) {
+        // Nothing was recorded: keep the button and history as they are.
+        if (outcome.kind === "location") setLocationError(outcome.message);
+        else {
+          setPunchError({ title: "Punch not recorded", message: outcome.message });
+          toast.error(outcome.message);
+        }
+        return;
       }
-      await loadStatus();
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail ?? err?.message ?? "Action failed";
-      if (msg.toLowerCase().includes("location") || msg.toLowerCase().includes("permission")) {
-        setLocationError(msg);
-      } else {
-        toast.error(msg);
-      }
+      if (outcome.warning) toast.warning(outcome.warning);
+      else if (outcome.punchedOut) toast.success("Punched out successfully", { description: `Hours worked: ${fmtHours(outcome.hoursWorked)}` });
+      else toast.success("Punched in successfully");
+
+      // The server is the source of truth for the button state.
+      const status = await loadStatus();
+      if (wasPunchedIn && status?.punched_in) setPunchError(STILL_ON_SHIFT_ERROR);
     } finally {
       setIsLoading(false);
     }
@@ -281,8 +283,8 @@ export default function PunchPage() {
 
   const stats = [
     { icon: Clock,     label: "Shift Start",  value: punchedIn && punchInTime ? fmt(punchInTime) : "—",   color: "#3B82F6" },
-    { icon: Clock,     label: "Hours Today",  value: fmtHours(hoursSoFar),                                  color: "#10B981" },
-    { icon: UserCheck, label: "This Week",    value: fmtHours(totalHoursWeek),                              color: "#6366F1" },
+    { icon: Clock,     label: "Hours Today",  value: totals ? fmtHours(totals.hours_today) : "—",            color: "#10B981" },
+    { icon: UserCheck, label: "This Week",    value: totals ? fmtHours(totals.hours_this_week) : "—",        color: "#6366F1" },
     { icon: UserCheck, label: "Status",       value: punchedIn ? (preset?.label ?? "Working") : "Off",
       color: punchedIn ? (preset?.color ?? "#10B981") : "#EF4444" },
   ];
@@ -325,6 +327,8 @@ export default function PunchPage() {
           </div>
         </div>
       )}
+
+      {staleShift && <StaleShiftNotice shift={staleShift} approver="your manager" />}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
@@ -409,6 +413,8 @@ export default function PunchPage() {
               </div>
             )}
 
+            {punchError && <PunchErrorBox error={punchError} onDismiss={() => setPunchError(null)} />}
+
             <p className="text-center text-xs text-slate-400 mt-3 flex items-center justify-center gap-1">
               <MapPin className="w-3 h-3" /> Location required for punch
             </p>
@@ -449,7 +455,7 @@ export default function PunchPage() {
                 <p className="text-slate-500 text-sm mt-0.5">Shift summary</p>
               </div>
               <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-3 py-1.5 rounded-full">
-                {fmtHours(totalHoursWeek)} total
+                {totals ? fmtHours(totals.hours_this_week) : "—"} this week
               </span>
             </div>
           </div>
@@ -476,14 +482,8 @@ export default function PunchPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-slate-950">{fmtHours(r.hours_worked)}</p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      r.status === "completed"
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
-                        : "bg-amber-50 text-amber-700 border border-amber-200/60"
-                    }`}>
-                      {r.status === "completed" ? "Complete" : "Active"}
-                    </span>
+                    <p className="text-sm font-semibold text-slate-950"><RecordHours r={r} /></p>
+                    <RecordStatusBadge status={r.status} />
                   </div>
                 </div>
               ))
@@ -519,7 +519,7 @@ export default function PunchPage() {
                     <td className="px-6 py-4"><span className="text-slate-950 text-sm font-medium">{fmtDate(r.punch_in_time)}</span></td>
                     <td className="px-6 py-4"><span className="text-sm font-medium text-slate-700">{fmt(r.punch_in_time)}</span></td>
                     <td className="px-6 py-4"><span className="text-sm text-slate-500">{fmt(r.punch_out_time)}</span></td>
-                    <td className="px-6 py-4"><span className="text-sm font-semibold text-slate-950">{fmtHours(r.hours_worked)}</span></td>
+                    <td className="px-6 py-4"><span className="text-sm font-semibold text-slate-950"><RecordHours r={r} /></span></td>
                     <td className="px-6 py-4">
                       <span className={`text-xs px-2 py-1 rounded-full ${
                         r.is_within_fence
@@ -530,13 +530,7 @@ export default function PunchPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`text-xs px-3 py-1.5 rounded-full font-semibold ${
-                        r.status === "completed"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
-                          : "bg-blue-50 text-blue-700 border border-blue-200/60"
-                      }`}>
-                        {r.status === "completed" ? "Complete" : "Active"}
-                      </span>
+                      <RecordStatusBadge status={r.status} className="px-3 py-1.5 font-semibold" />
                     </td>
                   </motion.tr>
                 ))
