@@ -17,6 +17,9 @@ const STATUS_MAP: Record<string, { emoji: string; label: string; color: string }
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { attendanceAPI, PropertyAttendanceEntry, isPresentStatus, needsReview } from "@/lib/api/attendance";
 import { RecordHours } from "@/components/attendance/PunchFeedback";
+import { PunchLocationSection } from "@/components/attendance/PunchLocation";
+import { isGeofenceAdmin } from "@/lib/api/geofence";
+import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/config/app";
 import { usersAPI } from "@/lib/api/users";
 import { downloadCSV, todayStr } from "@/lib/utils/export";
@@ -83,6 +86,8 @@ export default function AttendancePage() {
   const [records, setRecords] = useState<PropertyAttendanceEntry[]>([]);
   const [totalStaff, setTotalStaff] = useState(0);
   const [isFetching, setIsFetching] = useState(true);
+  const role = useAuthStore((s) => s.user?.role);
+  const currentUserId = useAuthStore((s) => s.user?.user_id);
   const [weeklyAttendance, setWeeklyAttendance] = useState(
     DAY_LABELS.map((day) => ({ day, present: 0, absent: 0 }))
   );
@@ -315,6 +320,28 @@ export default function AttendancePage() {
           </table>
         </div>
       </div>
+
+      {/* Punch location: managers propose, the owner approves */}
+      {propertyId && (
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <MapPin className="w-5 h-5 text-indigo-500 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-slate-950 text-lg">Punch location</h3>
+              <p className="text-slate-500 text-sm mt-0.5">
+                Where your team may punch in and out. {isGeofenceAdmin(role)
+                  ? "Changes you save apply immediately."
+                  : "Your owner must approve a change before it takes effect."}
+              </p>
+            </div>
+          </div>
+          <PunchLocationSection
+            propertyId={propertyId}
+            mode={isGeofenceAdmin(role) ? "direct" : "request"}
+            currentUserId={currentUserId}
+          />
+        </div>
+      )}
     </div>
   );
 }
