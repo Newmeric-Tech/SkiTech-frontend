@@ -17,6 +17,8 @@ import { useAuthStore } from "@/store/authStore";
 import { canManageRooms, useLiveSummary } from "@/components/rooms/roomLive";
 import { RoomBookingInfo } from "@/components/rooms/RoomBookingInfo";
 import { RoomDetailDrawer, RoomStatus } from "@/components/rooms/RoomDetailDrawer";
+import { SourceBreakdownPanel } from "@/components/rooms/SourceBreakdownPanel";
+import { ChannelActivityPanel } from "@/components/rooms/ChannelActivityPanel";
 
 interface Room {
   id: string;
@@ -73,7 +75,7 @@ export default function RoomsPage() {
 
   const role = useAuthStore(s => s.user?.role);
   const canManage = canManageRooms(role);
-  const { reload: reloadLive, bookingByRoom } = useLiveSummary(id);
+  const { summary: liveSummary, failed: liveFailed, reload: reloadLive, bookingByRoom } = useLiveSummary(id);
   const [drawerRoomId, setDrawerRoomId] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
@@ -484,6 +486,12 @@ export default function RoomsPage() {
             <div className="absolute bottom-0 left-0 right-0 h-1" style={{ background: `linear-gradient(90deg, ${s.color}, ${s.color}60)` }} />
           </motion.div>
         ))}
+      </div>
+
+      {/* Booking sources and channel manager activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <SourceBreakdownPanel summary={liveSummary} failed={liveFailed} />
+        <ChannelActivityPanel propertyId={id} />
       </div>
 
       {/* Mismatch warning */}

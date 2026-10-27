@@ -55,6 +55,27 @@ export interface RoomSyncStatus {
   latest_sync?: RoomSyncRun | null;
 }
 
+// GET /properties/{property_id}/channel-activity
+export interface ChannelActivityItem {
+  id: string;
+  timestamp: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  integration_id: string;
+  provider_name: string;
+  connection_status: ConnectionStatus | string;
+  status: "syncing" | "success" | "error" | "interrupted" | string | null;
+  records_synced: number;
+  conflicts_count: number;
+  message: string;
+  error: string | null;
+}
+
+export interface ChannelActivity {
+  connected: boolean;
+  items: ChannelActivityItem[];
+}
+
 export interface TestConnectionPayload {
   provider_name: string;
   credentials: Record<string, unknown>;
@@ -83,4 +104,7 @@ export const channelManagerAPI = {
 
   roomSyncStatus: (propertyId: string) =>
     api.get<RoomSyncStatus>(`/v1/properties/${propertyId}/room-sync-status`),
+
+  channelActivity: (propertyId: string, limit = 30) =>
+    api.get<ChannelActivity>(`/v1/properties/${propertyId}/channel-activity`, { params: { limit } }),
 };
