@@ -19,6 +19,9 @@ import { RoomBookingInfo } from "@/components/rooms/RoomBookingInfo";
 import { RoomDetailDrawer, RoomStatus } from "@/components/rooms/RoomDetailDrawer";
 import { SourceBreakdownPanel } from "@/components/rooms/SourceBreakdownPanel";
 import { ChannelActivityPanel } from "@/components/rooms/ChannelActivityPanel";
+import {
+  RoomBookingFilters, BookingFilters, EMPTY_BOOKING_FILTERS, matchesBookingFilters,
+} from "@/components/rooms/RoomBookingFilters";
 
 interface Room {
   id: string;
@@ -77,6 +80,7 @@ export default function RoomsPage() {
   const canManage = canManageRooms(role);
   const { summary: liveSummary, failed: liveFailed, reload: reloadLive, bookingByRoom } = useLiveSummary(id);
   const [drawerRoomId, setDrawerRoomId] = useState<string | null>(null);
+  const [bookingFilters, setBookingFilters] = useState<BookingFilters>(EMPTY_BOOKING_FILTERS);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -263,7 +267,7 @@ export default function RoomsPage() {
       || (r.room_type ?? "").toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || r.status === statusFilter;
     const matchType = typeFilter === "all" || (r.room_type ?? "").toLowerCase() === typeFilter.toLowerCase();
-    return matchSearch && matchStatus && matchType;
+    return matchSearch && matchStatus && matchType && matchesBookingFilters(bookingByRoom.get(r.id), bookingFilters);
   });
 
   const handleBulkStatus = async (newStatus: string) => {
@@ -569,6 +573,7 @@ export default function RoomsPage() {
             </button>
           ))}
         </div>
+        <RoomBookingFilters summary={liveSummary} value={bookingFilters} onChange={setBookingFilters} />
       </div>
 
       {/* Bulk action bar */}

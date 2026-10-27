@@ -15,6 +15,9 @@ import { RoomBookingInfo } from "@/components/rooms/RoomBookingInfo";
 import { RoomDetailDrawer, RoomStatus } from "@/components/rooms/RoomDetailDrawer";
 import { SourceBreakdownPanel } from "@/components/rooms/SourceBreakdownPanel";
 import { ChannelActivityPanel } from "@/components/rooms/ChannelActivityPanel";
+import {
+  RoomBookingFilters, BookingFilters, EMPTY_BOOKING_FILTERS, matchesBookingFilters,
+} from "@/components/rooms/RoomBookingFilters";
 
 interface Room {
   id: string;
@@ -52,6 +55,7 @@ export default function ManagerRoomsPage() {
   const { summary: liveSummary, failed: liveFailed, reload: reloadLive, bookingByRoom } = useLiveSummary(propertyId);
   const [syncStatus, setSyncStatus] = useState<RoomSyncStatus | null>(null);
   const [drawerRoomId, setDrawerRoomId] = useState<string | null>(null);
+  const [bookingFilters, setBookingFilters] = useState<BookingFilters>(EMPTY_BOOKING_FILTERS);
 
   const loadRooms = useCallback(async (propId: string) => {
     try {
@@ -99,7 +103,7 @@ export default function ManagerRoomsPage() {
       || (r.room_type ?? "").toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || r.status === statusFilter;
     const matchType = typeFilter === "all" || (r.room_type ?? "").toLowerCase() === typeFilter.toLowerCase();
-    return matchSearch && matchStatus && matchType;
+    return matchSearch && matchStatus && matchType && matchesBookingFilters(bookingByRoom.get(r.id), bookingFilters);
   });
 
   const counts = {
@@ -252,6 +256,7 @@ export default function ManagerRoomsPage() {
             </button>
           ))}
         </div>
+        <RoomBookingFilters summary={liveSummary} value={bookingFilters} onChange={setBookingFilters} />
       </div>
 
       {/* Bulk action bar */}
