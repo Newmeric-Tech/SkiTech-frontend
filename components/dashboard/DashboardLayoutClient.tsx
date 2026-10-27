@@ -24,6 +24,7 @@ import {
   Inbox, MapPin,
 } from "lucide-react";
 import NotificationPanel from "@/components/dashboard/NotificationPanel";
+import { inboxAPI } from "@/lib/api/inbox";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
 type NavItem = {
@@ -31,6 +32,8 @@ type NavItem = {
   label: string;
   href: string;
   feature?: string;
+  /** Show the inbox unread count next to this item. */
+  inboxBadge?: boolean;
 };
 
 const ownerNav: NavItem[] = [
@@ -60,6 +63,7 @@ const ownerConfigNav: NavItem[] = [
 
 const managerNav: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard",          href: "/manager" },
+  { icon: Inbox,           label: "Inbox",              href: "/manager/inbox",                      inboxBadge: true },
   { icon: Clock,           label: "Punch In/Out",       href: "/manager/punch",                      feature: "attendance" },
   { icon: BedDouble,       label: "Room Management",    href: "/manager/rooms" },
   { icon: ClipboardList,   label: "Tasks",              href: "/manager/tasks" },
@@ -104,6 +108,17 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
   }, []);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const [inboxUnread, setInboxUnread] = useState(0);
+  const onManagerPortal = pathname.startsWith("/manager");
+
+  // Unread inbox count for the manager sidebar badge; one cheap count query
+  // per navigation (GET /inbox/unread-count), only on manager pages.
+  useEffect(() => {
+    if (!onManagerPortal) return;
+    let cancelled = false;
+    inboxAPI.unreadCount().then((n) => { if (!cancelled) setInboxUnread(n); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [onManagerPortal, pathname]);
   const router = useRouter();
   const { user, features, refreshFeatures, isAuthenticated, logout } = useAuthStore();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -231,6 +246,15 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                 >
                   <item.icon className={`w-[22px] h-[22px] shrink-0 ${isActive ? "text-white dark:text-black" : "text-neutral-500 dark:text-[#a0a0a0] group-hover:text-black dark:group-hover:text-white"}`} />
                   {!collapsed && <span className="font-medium whitespace-nowrap flex-1">{item.label}</span>}
+                  {item.inboxBadge && inboxUnread > 0 && (
+                    collapsed ? (
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blue-500" aria-label={`${inboxUnread} unread`} />
+                    ) : (
+                      <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-500 text-white" aria-label={`${inboxUnread} unread`}>
+                        {inboxUnread > 99 ? "99+" : inboxUnread}
+                      </span>
+                    )
+                  )}
                   {collapsed && (
                     <div className="absolute left-full ml-3 bg-black text-white text-xs px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none shadow-lg">
                       {item.label}

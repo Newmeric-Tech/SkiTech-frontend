@@ -71,8 +71,23 @@ export const inboxAPI = {
   },
 };
 
+export type InboxPortal = "owner" | "manager";
+
+/** Manager pages for each item type; managers can't open /owner/* pages. */
+function managerInboxLink(item: InboxItem): string {
+  if (item.source_module === "complaints") return "/manager/complaints";
+  if (item.source_module === "inventory") return "/manager/inventory";
+  // Staff punch-out corrections are reviewed on the manager Attendance page;
+  // location requests (owner-only items) are shown there too.
+  if (item.item_type === "attendance_correction_request" || item.item_type === "geofence_change_request") {
+    return "/manager/attendance";
+  }
+  return "/manager";
+}
+
 /** Resolves an inbox item to the real page that shows the underlying record. */
-export function resolveInboxLink(item: InboxItem): string {
+export function resolveInboxLink(item: InboxItem, portal: InboxPortal = "owner"): string {
+  if (portal === "manager") return managerInboxLink(item);
   if (item.source_module === "complaints") {
     return `/owner/complaints?highlight=${item.source_record_id}`;
   }
