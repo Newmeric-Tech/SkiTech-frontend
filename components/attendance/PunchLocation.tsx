@@ -8,6 +8,7 @@ import {
   Geofence, GeofenceRequest, GeofenceRequestStatus, geofenceAPI, RADIUS_MAX, RADIUS_MIN,
 } from "@/lib/api/geofence";
 import { fmtCoord, mapsLink } from "./GeofenceRequestReviewList";
+import { LocationPicker } from "./LocationPicker";
 
 /** The property's live punch location, or a "not set" notice. */
 export function CurrentPunchLocation({ geofence }: { geofence: Geofence | null }) {
@@ -80,6 +81,14 @@ function PunchLocationFormInner({ propertyId, current, mode, onSaved }: FormProp
 
   const latNum = Number(lat);
   const lngNum = Number(lng);
+  const latOk = lat.trim() !== "" && Number.isFinite(latNum) && latNum >= -90 && latNum <= 90;
+  const lngOk = lng.trim() !== "" && Number.isFinite(lngNum) && lngNum >= -180 && lngNum <= 180;
+  const radiusOk = radius >= RADIUS_MIN && radius <= RADIUS_MAX;
+  const pickOnMap = useCallback((pickedLat: number, pickedLng: number) => {
+    setLat(pickedLat.toFixed(6));
+    setLng(pickedLng.toFixed(6));
+    setAccuracy(null);  // picked by hand, not from the device
+  }, []);
   const valid = lat.trim() !== "" && lng.trim() !== "" && Number.isFinite(latNum) && Number.isFinite(lngNum)
     && latNum >= -90 && latNum <= 90 && lngNum >= -180 && lngNum <= 180
     && radius >= RADIUS_MIN && radius <= RADIUS_MAX;
@@ -119,6 +128,13 @@ function PunchLocationFormInner({ propertyId, current, mode, onSaved }: FormProp
           {accuracy > MAX_GPS_ACCURACY_METERS && " That is too imprecise to mark the property: stand at the property with a phone and try again, or type the coordinates."}
         </p>
       )}
+
+      <LocationPicker
+        lat={latOk && lngOk ? latNum : null}
+        lng={latOk && lngOk ? lngNum : null}
+        radius={radiusOk ? radius : RADIUS_MIN}
+        onPick={pickOnMap}
+      />
 
       <div className="grid grid-cols-2 gap-3">
         <label className="text-xs font-medium text-slate-600 space-y-1">
