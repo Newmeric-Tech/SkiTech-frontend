@@ -125,6 +125,12 @@ export function apiErrorDetail(err: unknown, fallback: string): string {
   return typeof detail === "string" && detail ? detail : fallback;
 }
 
+/** Same limit as the server's GPS accuracy check (get_accuracy_warning, 100 m). */
+export const MAX_GPS_ACCURACY_METERS = 100;
+
+export const IMPRECISE_DEVICE_MESSAGE =
+  "Your device can't give a precise location. Open this page on your phone at the property to punch.";
+
 export type PunchOutcome =
   | { ok: true; punchedOut: boolean; hoursWorked: number | null; warning: string | null }
   // "location": the browser could not give a usable position, nothing was sent.
@@ -138,6 +144,11 @@ export async function submitPunch(propertyId: string, punchOut: boolean): Promis
     coords = await getCurrentPosition();
   } catch (err) {
     return { ok: false, kind: "location", message: err instanceof Error ? err.message : "Location unavailable" };
+  }
+  // Desktop/laptop browsers have no GPS and report accuracy in kilometres;
+  // the server would refuse the punch anyway, so don't send it.
+  if (coords.accuracy != null && coords.accuracy > MAX_GPS_ACCURACY_METERS) {
+    return { ok: false, kind: "location", message: IMPRECISE_DEVICE_MESSAGE };
   }
   try {
     if (punchOut) {
