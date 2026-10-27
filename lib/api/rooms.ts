@@ -9,6 +9,8 @@ export interface LiveBooking {
   check_in: string;
   check_out: string;
   stay_progress_pct: number;
+  /** Checked in and past check_out (late check-out); progress is then 100. */
+  overstay?: boolean;
   special_requests: string | null;
   total_amount: number | null;
   currency: string | null;

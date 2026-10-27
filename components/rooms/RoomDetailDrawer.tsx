@@ -5,7 +5,7 @@ import { Loader2, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { LiveBooking } from "@/lib/api/rooms";
 import { formatMoney, formatStayDate } from "./roomLive";
-import { SourceBadge } from "./RoomBookingInfo";
+import { OverstayTag, SourceBadge } from "./RoomBookingInfo";
 
 export type RoomStatus = "available" | "occupied" | "maintenance";
 
@@ -75,6 +75,7 @@ export function RoomDetailDrawer({ room, booking, syncedWith, canManage, onClose
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="font-semibold text-slate-950 truncate">{booking.guest_name || "Guest"}</span>
                       <SourceBadge source={booking.booking_source} />
+                      {booking.overstay && <OverstayTag />}
                     </div>
                     <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                       <dt className="text-slate-500">Check-in</dt>
@@ -96,7 +97,7 @@ export function RoomDetailDrawer({ room, booking, syncedWith, canManage, onClose
                         <span>{Math.round(booking.stay_progress_pct)}%</span>
                       </div>
                       <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                        <div className="h-full rounded-full bg-blue-500" style={{ width: `${booking.stay_progress_pct}%` }} />
+                        <div className={`h-full rounded-full ${booking.overstay ? "bg-amber-500" : "bg-blue-500"}`} style={{ width: `${booking.stay_progress_pct}%` }} />
                       </div>
                     </div>
                   </div>
