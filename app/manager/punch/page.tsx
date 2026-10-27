@@ -13,6 +13,7 @@ import {
   AttendanceTotals,
   PunchStatusResponse,
   fmtHours,
+  fmtShiftHours,
   localDayAndWeekStart,
   submitPunch,
 } from "@/lib/api/attendance";
@@ -268,7 +269,7 @@ export default function PunchPage() {
         return;
       }
       if (outcome.warning) toast.warning(outcome.warning);
-      else if (outcome.punchedOut) toast.success("Punched out successfully", { description: `Hours worked: ${fmtHours(outcome.hoursWorked)}` });
+      else if (outcome.punchedOut) toast.success("Punched out successfully", { description: `Hours worked: ${fmtShiftHours(outcome.hoursWorked)}` });
       else toast.success("Punched in successfully");
 
       // The server is the source of truth for the button state.

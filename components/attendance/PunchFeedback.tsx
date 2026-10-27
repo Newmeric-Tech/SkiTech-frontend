@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, X } from "lucide-react";
-import { AttendanceRecord, PunchStatusResponse, fmtHours, needsReview, recordStatus } from "@/lib/api/attendance";
+import { AttendanceRecord, PunchStatusResponse, fmtShiftHours, needsReview, recordStatus } from "@/lib/api/attendance";
 
 export function NeedsReviewTag() {
   return (
@@ -14,7 +14,7 @@ export function NeedsReviewTag() {
 /** Hours of a record; "—" with a needs-review tag when they can't be trusted. */
 export function RecordHours({ r }: { r: Pick<AttendanceRecord, "status" | "hours_worked"> }) {
   if (needsReview(r)) return <>—<NeedsReviewTag /></>;
-  return <>{fmtHours(r.hours_worked)}</>;
+  return <>{fmtShiftHours(r.hours_worked)}</>;
 }
 
 export function RecordStatusBadge({ status, className = "px-2 py-1" }: { status: string; className?: string }) {

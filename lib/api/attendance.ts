@@ -88,11 +88,19 @@ export function needsReview(r: Pick<AttendanceRecord, "status" | "hours_worked">
   return r.status === "auto_closed" || (r.hours_worked != null && r.hours_worked > MAX_PLAUSIBLE_HOURS);
 }
 
+/** Hours as "Xh Ym"; "—" only when unknown, "<1m" for a positive amount under a minute. */
 export function fmtHours(h: number | null | undefined) {
-  if (!h) return "—";
-  const hrs = Math.floor(h);
-  const mins = Math.round((h - hrs) * 60);
+  if (h == null) return "—";
+  const total = Math.round(h * 60);
+  if (total < 1) return h > 0 ? "<1m" : "0m";
+  const hrs = Math.floor(total / 60);
+  const mins = total % 60;
   return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+}
+
+/** A finished shift's hours: the server rounds to 0.01 h, so 0 means under a minute. */
+export function fmtShiftHours(h: number | null | undefined) {
+  return h === 0 ? "<1m" : fmtHours(h);
 }
 
 /** Local midnight today and local Monday 00:00 this week (the user's own day, not UTC). */
