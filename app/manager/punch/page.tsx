@@ -11,6 +11,8 @@ import {
   attendanceAPI,
   getCurrentPosition,
   AttendanceRecord,
+  AttendanceTotals,
+  MAX_PLAUSIBLE_HOURS,
 } from "@/lib/api/attendance";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/config/app";
@@ -47,6 +49,40 @@ function fmtHours(h: number | null) {
   const hrs = Math.floor(h);
   const mins = Math.round((h - hrs) * 60);
   return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+}
+
+/** Local midnight today and local Monday 00:00 this week (the user's own day, not UTC). */
+function localDayAndWeekStart() {
+  const day = new Date();
+  day.setHours(0, 0, 0, 0);
+  const week = new Date(day);
+  week.setDate(week.getDate() - ((week.getDay() + 6) % 7));
+  return { day, week };
+}
+
+/** A record whose hours can't be trusted: auto-closed, or an absurd completed duration. */
+function needsReview(r: AttendanceRecord) {
+  return r.status === "auto_closed" || (r.hours_worked != null && r.hours_worked > MAX_PLAUSIBLE_HOURS);
+}
+
+function NeedsReviewTag() {
+  return (
+    <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md border font-medium bg-amber-50 text-amber-700 border-amber-200/60">
+      needs review
+    </span>
+  );
+}
+
+const RECORD_STATUS: Record<string, { label: string; className: string }> = {
+  completed:   { label: "Complete",    className: "bg-emerald-50 text-emerald-700 border border-emerald-200/60" },
+  auto_closed: { label: "Auto-closed", className: "bg-slate-100 text-slate-600 border border-slate-200/60" },
+};
+const ACTIVE_STATUS = { label: "Active", className: "bg-blue-50 text-blue-700 border border-blue-200/60" };
+const recordStatus = (status: string) => RECORD_STATUS[status] ?? ACTIVE_STATUS;
+
+function RecordHours({ r }: { r: AttendanceRecord }) {
+  if (needsReview(r)) return <>—<NeedsReviewTag /></>;
+  return <>{fmtHours(r.hours_worked)}</>;
 }
 
 // ── Status Picker ────────────────────────────────────────────
@@ -184,10 +220,9 @@ export default function PunchPage() {
   const [propertyName, setPropertyName] = useState<string>("");
   const [punchedIn, setPunchedIn] = useState(false);
   const [punchInTime, setPunchInTime] = useState<string | null>(null);
-  const [hoursSoFar, setHoursSoFar] = useState<number>(0);
   const [currentStatus, setCurrentStatus] = useState<string | null>(null);
   const [history, setHistory] = useState<AttendanceRecord[]>([]);
-  const [totalHoursWeek, setTotalHoursWeek] = useState<number>(0);
+  const [totals, setTotals] = useState<AttendanceTotals | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -226,10 +261,8 @@ export default function PunchPage() {
       ]);
       setPunchedIn(statusRes.punched_in);
       setPunchInTime(statusRes.punch_in_time ?? null);
-      setHoursSoFar(statusRes.hours_so_far ?? 0);
       setCurrentStatus(statusRes.current_status ?? null);
       setHistory(histRes.records);
-      setTotalHoursWeek(histRes.records.reduce((acc, r) => acc + (r.hours_worked ?? 0), 0));
       setStatusError(false);
     } catch {
       // Could not verify punch status — do NOT assume "not punched in".
@@ -239,6 +272,9 @@ export default function PunchPage() {
     } finally {
       setIsFetching(false);
     }
+    // Totals never block the punch button
+    const { day, week } = localDayAndWeekStart();
+    attendanceAPI.getTotals(propertyId, day, week).then(setTotals).catch(() => setTotals(null));
   }, [propertyId]);
 
   useEffect(() => { loadStatus(); }, [loadStatus]);
@@ -261,7 +297,6 @@ export default function PunchPage() {
         const res = await attendanceAPI.punchIn(propertyId, coords);
         setPunchedIn(true);
         setPunchInTime(new Date().toISOString());
-        setHoursSoFar(0);
         toast.success("Punched in successfully");
         if (res.warning) setGeofenceWarning(res.warning);
       }
@@ -285,8 +320,8 @@ export default function PunchPage() {
 
   const stats = [
     { icon: Clock,     label: "Shift Start",  value: punchedIn && punchInTime ? fmt(punchInTime) : "—", color: "#3B82F6" },
-    { icon: Clock,     label: "Hours Today",  value: fmtHours(hoursSoFar),                               color: "#10B981" },
-    { icon: UserCheck, label: "This Week",    value: fmtHours(totalHoursWeek),                            color: "#6366F1" },
+    { icon: Clock,     label: "Hours Today",  value: totals ? fmtHours(totals.hours_today) : "—",          color: "#10B981" },
+    { icon: UserCheck, label: "This Week",    value: totals ? fmtHours(totals.hours_this_week) : "—",      color: "#6366F1" },
     {
       icon: UserCheck, label: "Status",
       value: punchedIn ? (preset?.label ?? "Working") : "Off",
@@ -490,7 +525,7 @@ export default function PunchPage() {
                 <p className="text-slate-500 text-sm mt-0.5">Shift summary</p>
               </div>
               <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-3 py-1.5 rounded-full">
-                {fmtHours(totalHoursWeek)} total
+                {totals ? fmtHours(totals.hours_this_week) : "—"} this week
               </span>
             </div>
           </div>
@@ -513,13 +548,9 @@ export default function PunchPage() {
                     <p className="text-slate-400 text-xs mt-0.5">{fmt(r.punch_in_time)} → {fmt(r.punch_out_time)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-slate-950">{fmtHours(r.hours_worked)}</p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      r.status === "completed"
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
-                        : "bg-amber-50 text-amber-700 border border-amber-200/60"
-                    }`}>
-                      {r.status === "completed" ? "Complete" : "Active"}
+                    <p className="text-sm font-semibold text-slate-950"><RecordHours r={r} /></p>
+                    <span className={`text-xs px-2 py-1 rounded-full ${recordStatus(r.status).className}`}>
+                      {recordStatus(r.status).label}
                     </span>
                   </div>
                 </div>
@@ -556,7 +587,7 @@ export default function PunchPage() {
                     <td className="px-6 py-4 text-slate-950 text-sm font-medium">{fmtDate(r.punch_in_time)}</td>
                     <td className="px-6 py-4 text-sm font-medium text-slate-700">{fmt(r.punch_in_time)}</td>
                     <td className="px-6 py-4 text-sm text-slate-500">{fmt(r.punch_out_time)}</td>
-                    <td className="px-6 py-4 text-sm font-semibold text-slate-950">{fmtHours(r.hours_worked)}</td>
+                    <td className="px-6 py-4 text-sm font-semibold text-slate-950"><RecordHours r={r} /></td>
                     <td className="px-6 py-4">
                       <span className={`text-xs px-2 py-1 rounded-full ${
                         r.is_within_fence
@@ -567,12 +598,8 @@ export default function PunchPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`text-xs px-3 py-1.5 rounded-full font-semibold ${
-                        r.status === "completed"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
-                          : "bg-blue-50 text-blue-700 border border-blue-200/60"
-                      }`}>
-                        {r.status === "completed" ? "Complete" : "Active"}
+                      <span className={`text-xs px-3 py-1.5 rounded-full font-semibold ${recordStatus(r.status).className}`}>
+                        {recordStatus(r.status).label}
                       </span>
                     </td>
                   </motion.tr>

@@ -42,6 +42,9 @@ export interface AttendanceRecord {
   punch_out_time: string | null;
   punch_out_lat: number | null;
   punch_out_lon: number | null;
+  punch_out_acc?: number | null;
+  punch_out_within_fence?: boolean | null;
+  punch_out_distance_meters?: number | null;
   hours_worked: number | null;
   status: string;
   notes: string | null;
@@ -58,7 +61,22 @@ export interface PunchStatusResponse {
   is_within_fence?: boolean;
   current_status?: string | null;
   punch_in_location?: { latitude: number; longitude: number };
+  /** An open record older than 16 h: not a running shift; closed without hours on the next punch. */
+  stale_shift?: { attendance_id: string; punch_in_time: string };
 }
+
+// GET /attendance/totals
+export interface AttendanceTotals {
+  day_start: string;
+  week_start: string;
+  hours_today: number;
+  hours_this_week: number;
+  open_shift_hours: number;
+  needs_review_this_week: number;
+}
+
+/** Completed records above this many hours are data errors (backend MAX_PLAUSIBLE_HOURS). */
+export const MAX_PLAUSIBLE_HOURS = 24;
 
 export interface DailySummaryResponse {
   date: string;
@@ -156,6 +174,18 @@ export const attendanceAPI = {
   getStatus: async (propertyId: string): Promise<PunchStatusResponse> => {
     const { data } = await api.get<PunchStatusResponse>("/v1/attendance/status", {
       params: { property_id: propertyId },
+    });
+    return data;
+  },
+
+  /** Hours since the browser's local midnight and since its local Monday 00:00. */
+  getTotals: async (propertyId: string, dayStart: Date, weekStart: Date): Promise<AttendanceTotals> => {
+    const { data } = await api.get<AttendanceTotals>("/v1/attendance/totals", {
+      params: {
+        property_id: propertyId,
+        day_start: dayStart.toISOString(),
+        week_start: weekStart.toISOString(),
+      },
     });
     return data;
   },
