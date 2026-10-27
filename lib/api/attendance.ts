@@ -80,6 +80,9 @@ export const MAX_PLAUSIBLE_HOURS = 24;
 
 // ── Shared display helpers (staff + manager punch pages) ───
 
+/** At work: a running or completed shift. auto_closed (no punch-out) needs review instead. */
+export const isPresentStatus = (status: string) => status === "active" || status === "completed";
+
 /** A record whose hours can't be trusted: auto-closed, or an absurd completed duration. */
 export function needsReview(r: Pick<AttendanceRecord, "status" | "hours_worked">) {
   return r.status === "auto_closed" || (r.hours_worked != null && r.hours_worked > MAX_PLAUSIBLE_HOURS);

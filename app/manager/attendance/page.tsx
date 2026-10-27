@@ -15,7 +15,8 @@ const STATUS_MAP: Record<string, { emoji: string; label: string; color: string }
   maintenance: { emoji: "🔨", label: "Maintenance", color: "#94A3B8" },
 };
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { attendanceAPI, PropertyAttendanceEntry } from "@/lib/api/attendance";
+import { attendanceAPI, PropertyAttendanceEntry, isPresentStatus, needsReview } from "@/lib/api/attendance";
+import { RecordHours } from "@/components/attendance/PunchFeedback";
 import api from "@/lib/config/app";
 import { usersAPI } from "@/lib/api/users";
 import { downloadCSV, todayStr } from "@/lib/utils/export";
@@ -28,13 +29,6 @@ interface Property {
 function fmt(iso: string | null | undefined) {
   if (!iso) return "—";
   return new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-}
-
-function fmtHours(h: number | null) {
-  if (!h) return "—";
-  const hrs = Math.floor(h);
-  const mins = Math.round((h - hrs) * 60);
-  return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
 }
 
 const ChartTooltip = ({ active, payload, label }: any) => {
@@ -58,7 +52,7 @@ const ChartTooltip = ({ active, payload, label }: any) => {
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function buildWeeklyTrend(
-  records: Array<{ punch_in_time: string | null; user_id: string }>,
+  records: Array<{ punch_in_time: string | null; user_id: string; status: string }>,
   staffTotal: number,
 ) {
   const today = new Date();
@@ -69,7 +63,7 @@ function buildWeeklyTrend(
     buckets[d.toDateString()] = new Set();
   }
   for (const r of records) {
-    if (!r.punch_in_time) continue;
+    if (!r.punch_in_time || !isPresentStatus(r.status)) continue;
     const key = new Date(r.punch_in_time).toDateString();
     if (key in buckets) buckets[key].add(r.user_id);
   }
@@ -138,7 +132,7 @@ export default function AttendancePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId]);
 
-  const presentCount = records.filter((r) => r.status === "active" || r.status === "completed").length;
+  const presentCount = records.filter((r) => isPresentStatus(r.status)).length;
   const absentCount = totalStaff - presentCount;
   const attendanceRate = totalStaff > 0 ? Math.round((presentCount / totalStaff) * 100) : 0;
 
@@ -148,7 +142,7 @@ export default function AttendancePage() {
       Name: r.user_name,
       "Check In": r.punch_in_time ? new Date(r.punch_in_time).toLocaleTimeString() : "—",
       "Check Out": r.punch_out_time ? new Date(r.punch_out_time).toLocaleTimeString() : "—",
-      "Hours Worked": r.hours_worked ?? "",
+      "Hours Worked": needsReview(r) ? "needs review" : r.hours_worked ?? "",
       "Within Fence": r.is_within_fence ? "Yes" : "No",
       Status: r.status,
     })));
@@ -272,7 +266,7 @@ export default function AttendancePage() {
                       <span className="text-slate-400 text-sm">{fmt(r.punch_out_time)}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-slate-700 text-sm font-medium">{fmtHours(r.hours_worked)}</span>
+                      <span className="text-slate-700 text-sm font-medium"><RecordHours r={r} /></span>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`text-xs px-2 py-1 rounded-full ${
@@ -306,9 +300,12 @@ export default function AttendancePage() {
                           ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
                           : r.status === "completed"
                           ? "bg-blue-50 text-blue-700 border border-blue-200/60"
+                          : r.status === "auto_closed"
+                          ? "bg-amber-50 text-amber-700 border border-amber-200/60"
                           : "bg-red-50 text-red-700 border border-red-200/60"
                       }`}>
-                        {r.status === "active" ? "Present" : r.status === "completed" ? "Completed" : "Absent"}
+                        {r.status === "active" ? "Present" : r.status === "completed" ? "Completed"
+                          : r.status === "auto_closed" ? "Needs review" : "Absent"}
                       </span>
                     </td>
                   </motion.tr>

@@ -12,7 +12,7 @@ export function NeedsReviewTag() {
 }
 
 /** Hours of a record; "—" with a needs-review tag when they can't be trusted. */
-export function RecordHours({ r }: { r: AttendanceRecord }) {
+export function RecordHours({ r }: { r: Pick<AttendanceRecord, "status" | "hours_worked"> }) {
   if (needsReview(r)) return <>—<NeedsReviewTag /></>;
   return <>{fmtHours(r.hours_worked)}</>;
 }

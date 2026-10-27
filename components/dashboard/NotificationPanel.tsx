@@ -8,7 +8,7 @@ import {
   Loader2, Users, Building2, CalendarCheck,
   UserX, RefreshCw, TrendingUp,
 } from "lucide-react";
-import { attendanceAPI } from "@/lib/api/attendance";
+import { attendanceAPI, isPresentStatus } from "@/lib/api/attendance";
 import { roomsAPI } from "@/lib/api/rooms";
 import { usersAPI } from "@/lib/api/users";
 import { propertiesAPI } from "@/lib/api/properties";
@@ -126,7 +126,7 @@ export default function NotificationPanel({ open, onClose }: NotificationPanelPr
       if (attRes.status === "fulfilled") {
         const today = attRes.value;
         const present = today.records.filter(
-          (r: any) => r.status === "active" || r.status === "completed"
+          (r: any) => isPresentStatus(r.status)
         );
         snap.present = present.length;
         snap.totalStaff = today.total_staff;
