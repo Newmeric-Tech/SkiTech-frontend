@@ -12,6 +12,11 @@ import { toast } from "sonner";
 import { roomsAPI } from "@/lib/api/rooms";
 import { propertiesAPI, Property } from "@/lib/api/properties";
 import { channelManagerAPI, providerLabel, RoomSyncStatus } from "@/lib/api/channel-manager";
+import { LiveBooking } from "@/lib/api/rooms";
+import { useAuthStore } from "@/store/authStore";
+import { canManageRooms, useLiveSummary } from "@/components/rooms/roomLive";
+import { RoomBookingInfo } from "@/components/rooms/RoomBookingInfo";
+import { RoomDetailDrawer, RoomStatus } from "@/components/rooms/RoomDetailDrawer";
 
 interface Room {
   id: string;
@@ -66,6 +71,11 @@ export default function RoomsPage() {
   const [syncing, setSyncing] = useState(false);
   const unmounted = useRef(false);
 
+  const role = useAuthStore(s => s.user?.role);
+  const canManage = canManageRooms(role);
+  const { reload: reloadLive, bookingByRoom } = useLiveSummary(id);
+  const [drawerRoomId, setDrawerRoomId] = useState<string | null>(null);
+
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
@@ -118,6 +128,7 @@ export default function RoomsPage() {
         if (run && run.id !== previousRunId && run.status !== "syncing") {
           const roomsRes = await roomsAPI.list(id);
           setRooms(Array.isArray(roomsRes.data) ? roomsRes.data : []);
+          reloadLive();
           if (run.status === "success") toast.success("Room sync finished");
           else toast.error(run.error_message || "Sync failed");
           return;
@@ -138,6 +149,31 @@ export default function RoomsPage() {
   const syncedTooltip = managedBy
     ? `Managed by ${providerLabel(managedBy.provider_name)}. Change room number and type in the channel manager; rooms synced from it can't be deleted here.`
     : "";
+
+  const drawerRoom = rooms.find(r => r.id === drawerRoomId) ?? null;
+
+  const handleDrawerStatus = async (room: { id: string; room_number: string }, newStatus: RoomStatus) => {
+    try {
+      const res = await roomsAPI.update(room.id, { status: newStatus });
+      setRooms(prev => prev.map(r => r.id === room.id ? res.data : r));
+      toast.success(`Room #${room.room_number} marked ${newStatus}`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to update room");
+    }
+  };
+
+  const handleCheckout = async (booking: LiveBooking) => {
+    try {
+      await roomsAPI.checkout(booking.booking_id);
+      // Check-out frees the room on the server
+      const roomsRes = await roomsAPI.list(id);
+      setRooms(Array.isArray(roomsRes.data) ? roomsRes.data : []);
+      await reloadLive();
+      toast.success("Guest checked out");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to check out");
+    }
+  };
 
   const handleAdd = async () => {
     if (!addForm.room_number.trim()) return;
@@ -589,7 +625,7 @@ export default function RoomsPage() {
                         className="w-4 h-4 rounded accent-indigo-600"
                       />
                     </th>
-                    {["Room #", "Type", "Price / Night", "Status", "Actions"].map(h => (
+                    {["Room #", "Type", "Price / Night", "Status", "Guest", "Actions"].map(h => (
                       <th key={h} className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
@@ -598,8 +634,9 @@ export default function RoomsPage() {
                   {filtered.map((room, i) => (
                     <motion.tr key={room.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.02 }}
-                      className={`hover:bg-slate-50/60 transition-colors ${selectedRooms.has(room.id) ? "bg-indigo-50/40" : ""}`}>
-                      <td className="px-4 py-4">
+                      onClick={() => setDrawerRoomId(room.id)}
+                      className={`cursor-pointer hover:bg-slate-50/60 transition-colors ${selectedRooms.has(room.id) ? "bg-indigo-50/40" : ""}`}>
+                      <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selectedRooms.has(room.id)}
@@ -630,7 +667,12 @@ export default function RoomsPage() {
                           {room.status.charAt(0).toUpperCase() + room.status.slice(1)}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 min-w-[12rem] max-w-[16rem]">
+                        {bookingByRoom.get(room.id)
+                          ? <RoomBookingInfo booking={bookingByRoom.get(room.id)!} occupied={room.status === "occupied"} />
+                          : <span className="text-slate-300 text-sm">—</span>}
+                      </td>
+                      <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
                         {/* Disabled buttons don't show a title, so the wrapper carries the tooltip. */}
                         <div className="flex items-center gap-2" title={isSynced(room) ? syncedTooltip : undefined}>
                           <button
@@ -657,6 +699,16 @@ export default function RoomsPage() {
           )}
         </div>
       )}
+
+      <RoomDetailDrawer
+        room={drawerRoom}
+        booking={drawerRoom ? bookingByRoom.get(drawerRoom.id) ?? null : null}
+        syncedWith={drawerRoom && isSynced(drawerRoom) && managedBy ? providerLabel(managedBy.provider_name) : null}
+        canManage={canManage}
+        onClose={() => setDrawerRoomId(null)}
+        onStatusChange={handleDrawerStatus}
+        onCheckout={handleCheckout}
+      />
 
       {/* Add Room Modal */}
       <AnimatePresence>

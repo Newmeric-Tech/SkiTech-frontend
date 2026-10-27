@@ -6,8 +6,13 @@ import {
   BedDouble, Loader2, Search, Filter, CheckSquare, Square,
 } from "lucide-react";
 import { toast } from "sonner";
-import { roomsAPI } from "@/lib/api/rooms";
+import { roomsAPI, LiveBooking } from "@/lib/api/rooms";
 import { usersAPI } from "@/lib/api/users";
+import { channelManagerAPI, providerLabel, RoomSyncStatus } from "@/lib/api/channel-manager";
+import { useAuthStore } from "@/store/authStore";
+import { canManageRooms, useLiveSummary } from "@/components/rooms/roomLive";
+import { RoomBookingInfo } from "@/components/rooms/RoomBookingInfo";
+import { RoomDetailDrawer, RoomStatus } from "@/components/rooms/RoomDetailDrawer";
 
 interface Room {
   id: string;
@@ -15,6 +20,7 @@ interface Room {
   room_type: string | null;
   price_per_night: number | null;
   status: "available" | "occupied" | "maintenance";
+  integration_id?: string | null;
 }
 
 const ROOM_TYPES = ["Standard", "Deluxe", "Suite", "Executive"];
@@ -38,6 +44,12 @@ export default function ManagerRoomsPage() {
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
+
+  const role = useAuthStore(s => s.user?.role);
+  const canManage = canManageRooms(role);
+  const { reload: reloadLive, bookingByRoom } = useLiveSummary(propertyId);
+  const [syncStatus, setSyncStatus] = useState<RoomSyncStatus | null>(null);
+  const [drawerRoomId, setDrawerRoomId] = useState<string | null>(null);
 
   const loadRooms = useCallback(async (propId: string) => {
     try {
@@ -68,6 +80,9 @@ export default function ManagerRoomsPage() {
           const propRes = await propertiesAPI.get(propId);
           setPropertyName(propRes.data.name);
         } catch {}
+
+        // Loaded separately so a failure here never blocks the rooms list.
+        channelManagerAPI.roomSyncStatus(propId).then(res => setSyncStatus(res.data)).catch(() => {});
 
         await loadRooms(propId);
       } finally {
@@ -126,6 +141,34 @@ export default function ManagerRoomsPage() {
       toast.success(`Room #${room.room_number} → ${newStatus}`);
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Failed to update room");
+    }
+  };
+
+  const managedBy = syncStatus?.connected && syncStatus.integration?.supports_room_sync
+    ? syncStatus.integration
+    : undefined;
+  const drawerRoom = rooms.find(r => r.id === drawerRoomId) ?? null;
+
+  const handleDrawerStatus = async (room: { id: string; room_number: string }, newStatus: RoomStatus) => {
+    try {
+      await roomsAPI.update(room.id, { status: newStatus });
+      setRooms(prev => prev.map(r => r.id === room.id ? { ...r, status: newStatus } : r));
+      toast.success(`Room #${room.room_number} → ${newStatus}`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to update room");
+    }
+  };
+
+  const handleCheckout = async (booking: LiveBooking) => {
+    if (!propertyId) return;
+    try {
+      await roomsAPI.checkout(booking.booking_id);
+      // Check-out frees the room on the server
+      await loadRooms(propertyId);
+      await reloadLive();
+      toast.success("Guest checked out");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to check out");
     }
   };
 
@@ -251,7 +294,7 @@ export default function ManagerRoomsPage() {
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.015 }}
-                onClick={() => toggleSelect(room.id)}
+                onClick={() => setDrawerRoomId(room.id)}
                 className={`relative bg-white rounded-2xl p-4 border cursor-pointer transition-all duration-200 ${
                   selected.has(room.id)
                     ? "border-indigo-400 shadow-md shadow-indigo-100 ring-2 ring-indigo-200"
@@ -263,14 +306,26 @@ export default function ManagerRoomsPage() {
                     <div className={`w-2 h-2 rounded-full ${STATUS_STYLES[room.status].dot}`} />
                     <span className="text-slate-950 text-sm font-bold">#{room.room_number}</span>
                   </div>
-                  {selected.has(room.id) && (
-                    <CheckSquare className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                  )}
+                  <button
+                    onClick={e => { e.stopPropagation(); toggleSelect(room.id); }}
+                    aria-label={selected.has(room.id) ? "Deselect room" : "Select room"}
+                    className="flex-shrink-0"
+                  >
+                    {selected.has(room.id)
+                      ? <CheckSquare className="w-4 h-4 text-indigo-600" />
+                      : <Square className="w-4 h-4 text-slate-300 hover:text-slate-500" />}
+                  </button>
                 </div>
                 <p className="text-slate-500 text-xs mb-3">{room.room_type ?? "Standard"}</p>
                 <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${STATUS_STYLES[room.status].badge}`}>
                   {room.status.charAt(0).toUpperCase() + room.status.slice(1)}
                 </span>
+
+                {bookingByRoom.get(room.id) && (
+                  <div className="mt-3">
+                    <RoomBookingInfo booking={bookingByRoom.get(room.id)!} occupied={room.status === "occupied"} />
+                  </div>
+                )}
 
                 {/* Quick status buttons */}
                 <div
@@ -296,6 +351,16 @@ export default function ManagerRoomsPage() {
           </div>
         </>
       )}
+
+      <RoomDetailDrawer
+        room={drawerRoom}
+        booking={drawerRoom ? bookingByRoom.get(drawerRoom.id) ?? null : null}
+        syncedWith={drawerRoom && managedBy && drawerRoom.integration_id === managedBy.id ? providerLabel(managedBy.provider_name) : null}
+        canManage={canManage}
+        onClose={() => setDrawerRoomId(null)}
+        onStatusChange={handleDrawerStatus}
+        onCheckout={handleCheckout}
+      />
     </div>
   );
 }
