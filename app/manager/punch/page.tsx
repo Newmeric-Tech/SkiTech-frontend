@@ -13,6 +13,7 @@ import {
   AttendanceRecord,
   AttendanceTotals,
   MAX_PLAUSIBLE_HOURS,
+  PunchStatusResponse,
 } from "@/lib/api/attendance";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/config/app";
@@ -227,7 +228,10 @@ export default function PunchPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [geofenceWarning, setGeofenceWarning] = useState<string | null>(null);
+  // A punch the server refused (outside the property, low accuracy, no
+  // geofence, ...) or a punch-out the status check contradicts.
+  const [punchError, setPunchError] = useState<{ title: string; message: string } | null>(null);
+  const [staleShift, setStaleShift] = useState<PunchStatusResponse["stale_shift"] | null>(null);
   const [statusError, setStatusError] = useState(false);
 
   // Clock tick
@@ -251,15 +255,18 @@ export default function PunchPage() {
   }, [propertyId]);
 
   // Load punch status + history — runs as soon as propertyId is known
-  const loadStatus = useCallback(async () => {
-    if (!propertyId) return;
+  const loadStatus = useCallback(async (): Promise<PunchStatusResponse | null> => {
+    if (!propertyId) return null;
     setIsFetching(true);
+    let status: PunchStatusResponse | null = null;
     try {
       const [statusRes, histRes] = await Promise.all([
         attendanceAPI.getStatus(propertyId),
         attendanceAPI.getHistory({ property_id: propertyId, limit: 10 }),
       ]);
+      status = statusRes;
       setPunchedIn(statusRes.punched_in);
+      setStaleShift(statusRes.stale_shift ?? null);
       setPunchInTime(statusRes.punch_in_time ?? null);
       setCurrentStatus(statusRes.current_status ?? null);
       setHistory(histRes.records);
@@ -275,6 +282,7 @@ export default function PunchPage() {
     // Totals never block the punch button
     const { day, week } = localDayAndWeekStart();
     attendanceAPI.getTotals(propertyId, day, week).then(setTotals).catch(() => setTotals(null));
+    return status;
   }, [propertyId]);
 
   useEffect(() => { loadStatus(); }, [loadStatus]);
@@ -282,31 +290,44 @@ export default function PunchPage() {
   const handlePunch = async () => {
     if (!propertyId) { toast.error("No property assigned to your account"); return; }
     setLocationError(null);
-    setGeofenceWarning(null);
+    setPunchError(null);
     setIsLoading(true);
     try {
-      const coords = await getCurrentPosition();
-      if (punchedIn) {
-        const res = await attendanceAPI.punchOut(propertyId, coords);
-        setPunchedIn(false);
-        setPunchInTime(null);
-        setCurrentStatus(null);
-        toast.success("Punched out successfully", { description: `Hours worked: ${fmtHours(res.hours_worked)}` });
-        if (res.warning) setGeofenceWarning(res.warning);
-      } else {
-        const res = await attendanceAPI.punchIn(propertyId, coords);
-        setPunchedIn(true);
-        setPunchInTime(new Date().toISOString());
-        toast.success("Punched in successfully");
-        if (res.warning) setGeofenceWarning(res.warning);
+      let coords;
+      try {
+        coords = await getCurrentPosition();
+      } catch (err) {
+        // Browser could not get a position (permission, GPS off, timeout)
+        setLocationError(err instanceof Error ? err.message : "Location unavailable");
+        return;
       }
-      await loadStatus();
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail ?? err?.message ?? "Action failed";
-      if (msg.toLowerCase().includes("location") || msg.toLowerCase().includes("permission")) {
-        setLocationError(msg);
-      } else {
+
+      const wasPunchedIn = punchedIn;
+      try {
+        if (wasPunchedIn) {
+          const res = await attendanceAPI.punchOut(propertyId, coords);
+          if (res.warning) toast.warning(res.warning);
+          else toast.success("Punched out successfully", { description: `Hours worked: ${fmtHours(res.hours_worked)}` });
+        } else {
+          await attendanceAPI.punchIn(propertyId, coords);
+          toast.success("Punched in successfully");
+        }
+      } catch (err) {
+        // Rejected punches are not recorded: keep the button and history as they are.
+        const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+        const msg = typeof detail === "string" && detail ? detail : "Punch failed. Please try again.";
+        setPunchError({ title: "Punch not recorded", message: msg });
         toast.error(msg);
+        return;
+      }
+
+      // The server is the source of truth for the button state.
+      const status = await loadStatus();
+      if (wasPunchedIn && status?.punched_in) {
+        setPunchError({
+          title: "Still shown as on shift",
+          message: "Your punch-out went through, but the server still shows you on shift. Refresh the page; if it persists, ask your manager to check your attendance.",
+        });
       }
     } finally {
       setIsLoading(false);
@@ -376,31 +397,19 @@ export default function PunchPage() {
         </div>
       )}
 
-      {/* Outside geofence warning */}
-      <AnimatePresence>
-        {geofenceWarning && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="flex items-start gap-3 bg-orange-50 border border-orange-200 rounded-xl p-4"
-          >
-            <AlertTriangle className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-orange-800">Outside Property Area</p>
-              <p className="text-xs text-orange-600 mt-0.5">{geofenceWarning}</p>
-              <p className="text-xs text-orange-500 mt-1">Your punch was recorded, but you appear to be outside the property geofence. Please ensure you are on-site.</p>
-            </div>
-            <button
-              onClick={() => setGeofenceWarning(null)}
-              className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-orange-100 transition-colors shrink-0"
-            >
-              <X className="w-3.5 h-3.5 text-orange-500" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Open shift that was never punched out */}
+      {staleShift && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200/60 rounded-xl p-4">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">Open shift needs review</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Your shift from {fmtDate(staleShift.punch_in_time)} {fmt(staleShift.punch_in_time)} was never punched out.
+              It will be closed without hours when you punch in. Ask your manager to correct it.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
@@ -482,6 +491,20 @@ export default function PunchPage() {
                   onStatusChange={setCurrentStatus}
                   disabled={!punchedIn || isFetching}
                 />
+              </div>
+            )}
+
+            {punchError && (
+              <div role="alert" className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-red-800">{punchError.title}</p>
+                  <p className="text-xs text-red-700 mt-0.5">{punchError.message}</p>
+                </div>
+                <button onClick={() => setPunchError(null)} aria-label="Dismiss"
+                  className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-red-100 transition-colors shrink-0">
+                  <X className="w-3.5 h-3.5 text-red-500" />
+                </button>
               </div>
             )}
 
