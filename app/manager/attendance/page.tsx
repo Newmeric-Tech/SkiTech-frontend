@@ -18,6 +18,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { attendanceAPI, PropertyAttendanceEntry, isPresentStatus, needsReview } from "@/lib/api/attendance";
 import { RecordHours } from "@/components/attendance/PunchFeedback";
 import { PunchLocationSection } from "@/components/attendance/PunchLocation";
+import { CorrectionReviewList } from "@/components/attendance/Corrections";
+import { CorrectionRequest, correctionsAPI } from "@/lib/api/attendance-corrections";
 import { isGeofenceAdmin } from "@/lib/api/geofence";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/config/app";
@@ -88,6 +90,18 @@ export default function AttendancePage() {
   const [isFetching, setIsFetching] = useState(true);
   const role = useAuthStore((s) => s.user?.role);
   const currentUserId = useAuthStore((s) => s.user?.user_id);
+  // Staff punch-out corrections this manager may review
+  const [corrections, setCorrections] = useState<CorrectionRequest[] | null>(null);
+  const loadCorrections = () => {
+    correctionsAPI.list({ status: "pending" }).then(setCorrections).catch(() => setCorrections([]));
+  };
+  useEffect(() => {
+    let cancelled = false;
+    correctionsAPI.list({ status: "pending" })
+      .then((rows) => { if (!cancelled) setCorrections(rows); })
+      .catch(() => { if (!cancelled) setCorrections([]); });
+    return () => { cancelled = true; };
+  }, []);
   const [weeklyAttendance, setWeeklyAttendance] = useState(
     DAY_LABELS.map((day) => ({ day, present: 0, absent: 0 }))
   );
@@ -319,6 +333,21 @@ export default function AttendancePage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Missed punch-out corrections to review */}
+      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6 space-y-4">
+        <div>
+          <h3 className="font-bold text-slate-950 text-lg">Punch-out corrections</h3>
+          <p className="text-slate-500 text-sm mt-0.5">
+            Shifts closed without a punch-out, with the time the person says they left. Approving completes the shift.
+          </p>
+        </div>
+        {corrections === null ? (
+          <p className="text-slate-400 text-sm">Loading…</p>
+        ) : (
+          <CorrectionReviewList requests={corrections} currentUserId={currentUserId} onChanged={loadCorrections} />
+        )}
       </div>
 
       {/* Punch location: managers propose, the owner approves */}

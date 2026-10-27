@@ -20,6 +20,8 @@ import {
 import {
   PunchError, PunchErrorBox, RecordHours, RecordStatusBadge, StaleShiftNotice, STILL_ON_SHIFT_ERROR,
 } from "@/components/attendance/PunchFeedback";
+import { CorrectionAction } from "@/components/attendance/Corrections";
+import { CorrectionRequest, correctionsAPI } from "@/lib/api/attendance-corrections";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/config/app";
 
@@ -196,6 +198,8 @@ export default function PunchPage() {
   // geofence, ...) or a punch-out the status check contradicts.
   const [punchError, setPunchError] = useState<PunchError | null>(null);
   const [staleShift, setStaleShift] = useState<PunchStatusResponse["stale_shift"] | null>(null);
+  // The user's own pending missed-punch-out corrections, by attendance record
+  const [pendingCorrections, setPendingCorrections] = useState<CorrectionRequest[]>([]);
   const [statusError, setStatusError] = useState(false);
 
   // Clock tick
@@ -246,6 +250,7 @@ export default function PunchPage() {
     // Totals never block the punch button
     const { day, week } = localDayAndWeekStart();
     attendanceAPI.getTotals(propertyId, day, week).then(setTotals).catch(() => setTotals(null));
+    correctionsAPI.list({ mine: true, status: "pending" }).then(setPendingCorrections).catch(() => {});
     return status;
   }, [propertyId]);
 
@@ -531,7 +536,7 @@ export default function PunchPage() {
                     <td className="px-6 py-4 text-slate-950 text-sm font-medium">{fmtDate(r.punch_in_time)}</td>
                     <td className="px-6 py-4 text-sm font-medium text-slate-700">{fmt(r.punch_in_time)}</td>
                     <td className="px-6 py-4 text-sm text-slate-500">{fmt(r.punch_out_time)}</td>
-                    <td className="px-6 py-4 text-sm font-semibold text-slate-950"><RecordHours r={r} /></td>
+                    <td className="px-6 py-4 text-sm font-semibold text-slate-950"><RecordHours r={r} /><CorrectionAction record={r} pending={pendingCorrections.find((c) => c.attendance_id === r.id)} onChanged={() => { loadStatus(); }} /></td>
                     <td className="px-6 py-4">
                       <span className={`text-xs px-2 py-1 rounded-full ${
                         r.is_within_fence

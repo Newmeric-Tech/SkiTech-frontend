@@ -2,12 +2,14 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Building2, MapPin } from "lucide-react";
+import { Building2, ClockAlert, MapPin } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { GeofenceRequest, geofenceAPI } from "@/lib/api/geofence";
 import { propertiesAPI } from "@/lib/api/properties";
 import { GeofenceRequestReviewList } from "@/components/attendance/GeofenceRequestReviewList";
 import { PunchLocationSection } from "@/components/attendance/PunchLocation";
+import { CorrectionReviewList } from "@/components/attendance/Corrections";
+import { CorrectionRequest, correctionsAPI } from "@/lib/api/attendance-corrections";
 
 export default function OwnerPunchLocationsPage() {
   return (
@@ -19,7 +21,10 @@ export default function OwnerPunchLocationsPage() {
 
 function PunchLocations() {
   const { user } = useAuthStore();
-  const highlightId = useSearchParams().get("highlight");
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+  const correctionId = searchParams.get("correction");
+  const [corrections, setCorrections] = useState<CorrectionRequest[] | null>(null);
   const [pending, setPending] = useState<GeofenceRequest[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [properties, setProperties] = useState<{ id: string; name: string }[]>([]);
@@ -34,6 +39,18 @@ function PunchLocations() {
     } catch {
       setFailed(true);
     }
+  }, []);
+
+  const loadCorrections = useCallback(() => {
+    correctionsAPI.list({ status: "pending" }).then(setCorrections).catch(() => setCorrections([]));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    correctionsAPI.list({ status: "pending" })
+      .then((rows) => { if (!cancelled) setCorrections(rows); })
+      .catch(() => { if (!cancelled) setCorrections([]); });
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -90,6 +107,20 @@ function PunchLocations() {
             highlightId={highlightId}
             onChanged={afterReview}
           />
+        )}
+      </section>
+
+      <section className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <ClockAlert className="w-4 h-4 text-slate-400" />
+          <h2 className="text-slate-950 text-sm font-semibold">Punch-out corrections</h2>
+          <span className="text-slate-400 text-xs">Shifts closed without a punch-out, with the time the person says they left</span>
+        </div>
+        {corrections === null ? (
+          <p className="text-slate-400 text-sm">Loading…</p>
+        ) : (
+          <CorrectionReviewList requests={corrections} currentUserId={user?.user_id}
+            highlightId={correctionId} onChanged={loadCorrections} />
         )}
       </section>
 

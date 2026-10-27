@@ -20,6 +20,8 @@ import {
 import {
   PunchError, PunchErrorBox, RecordHours, RecordStatusBadge, StaleShiftNotice, STILL_ON_SHIFT_ERROR,
 } from "@/components/attendance/PunchFeedback";
+import { CorrectionAction } from "@/components/attendance/Corrections";
+import { CorrectionRequest, correctionsAPI } from "@/lib/api/attendance-corrections";
 import { usersAPI } from "@/lib/api/users";
 
 // ── Status presets ──────────────────────────────────────────
@@ -202,6 +204,8 @@ export default function PunchPage() {
   // A punch the server refused, or a punch-out the status check contradicts.
   const [punchError, setPunchError] = useState<PunchError | null>(null);
   const [staleShift, setStaleShift] = useState<PunchStatusResponse["stale_shift"] | null>(null);
+  // The user's own pending missed-punch-out corrections, by attendance record
+  const [pendingCorrections, setPendingCorrections] = useState<CorrectionRequest[]>([]);
 
   // Clock
   useEffect(() => {
@@ -245,6 +249,7 @@ export default function PunchPage() {
     // Totals never block the punch button
     const { day, week } = localDayAndWeekStart();
     attendanceAPI.getTotals(propertyId, day, week).then(setTotals).catch(() => setTotals(null));
+    correctionsAPI.list({ mine: true, status: "pending" }).then(setPendingCorrections).catch(() => {});
     return status;
   }, [propertyId]);
 
@@ -520,7 +525,7 @@ export default function PunchPage() {
                     <td className="px-6 py-4"><span className="text-slate-950 text-sm font-medium">{fmtDate(r.punch_in_time)}</span></td>
                     <td className="px-6 py-4"><span className="text-sm font-medium text-slate-700">{fmt(r.punch_in_time)}</span></td>
                     <td className="px-6 py-4"><span className="text-sm text-slate-500">{fmt(r.punch_out_time)}</span></td>
-                    <td className="px-6 py-4"><span className="text-sm font-semibold text-slate-950"><RecordHours r={r} /></span></td>
+                    <td className="px-6 py-4"><span className="text-sm font-semibold text-slate-950"><RecordHours r={r} /><CorrectionAction record={r} pending={pendingCorrections.find((c) => c.attendance_id === r.id)} onChanged={() => { loadStatus(); }} /></span></td>
                     <td className="px-6 py-4">
                       <span className={`text-xs px-2 py-1 rounded-full ${
                         r.is_within_fence

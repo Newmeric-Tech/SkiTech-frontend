@@ -10,7 +10,8 @@ import api from "@/lib/config/app";
 
 export type InboxStatus = "unread" | "read" | "actioned" | "dismissed";
 export type InboxSourceModule = "complaints" | "inventory" | "attendance";
-export type InboxItemType = "complaint_escalated" | "low_stock" | "geofence_change_request";
+export type InboxItemType =
+  "complaint_escalated" | "low_stock" | "geofence_change_request" | "attendance_correction_request";
 
 export interface InboxItem {
   id: string;
@@ -77,6 +78,9 @@ export function resolveInboxLink(item: InboxItem): string {
   }
   if (item.item_type === "geofence_change_request") {
     return `/owner/punch-locations?highlight=${item.source_record_id}`;
+  }
+  if (item.item_type === "attendance_correction_request") {
+    return `/owner/punch-locations?correction=${item.source_record_id}`;
   }
   if (item.source_module === "inventory") {
     const propertyParam = item.property_id ? `property=${item.property_id}&` : "";
