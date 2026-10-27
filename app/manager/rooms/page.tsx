@@ -10,7 +10,7 @@ import { roomsAPI, LiveBooking } from "@/lib/api/rooms";
 import { usersAPI } from "@/lib/api/users";
 import { channelManagerAPI, providerLabel, RoomSyncStatus } from "@/lib/api/channel-manager";
 import { useAuthStore } from "@/store/authStore";
-import { canManageRooms, useLiveSummary } from "@/components/rooms/roomLive";
+import { apiErrorDetail, canManageRooms, useLiveSummary } from "@/components/rooms/roomLive";
 import { RoomBookingInfo } from "@/components/rooms/RoomBookingInfo";
 import { RoomDetailDrawer, RoomStatus } from "@/components/rooms/RoomDetailDrawer";
 import { SourceBreakdownPanel } from "@/components/rooms/SourceBreakdownPanel";
@@ -160,8 +160,8 @@ export default function ManagerRoomsPage() {
       await roomsAPI.update(room.id, { status: newStatus });
       setRooms(prev => prev.map(r => r.id === room.id ? { ...r, status: newStatus } : r));
       toast.success(`Room #${room.room_number} → ${newStatus}`);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to update room");
+    } catch (err) {
+      toast.error(apiErrorDetail(err, "Failed to update room"));
     }
   };
 
@@ -173,8 +173,8 @@ export default function ManagerRoomsPage() {
       await loadRooms(propertyId);
       await reloadLive();
       toast.success("Guest checked out");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to check out");
+    } catch (err) {
+      toast.error(apiErrorDetail(err, "Failed to check out"));
     }
   };
 

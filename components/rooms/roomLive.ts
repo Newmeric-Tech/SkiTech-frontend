@@ -9,6 +9,12 @@ const ROOM_MANAGER_ROLES = ["Super Admin", "Tenant Admin", "Co Admin", "Manager"
 
 export const canManageRooms = (role: string | undefined) => !!role && ROOM_MANAGER_ROLES.includes(role);
 
+/** The API's error detail, else the fallback message. */
+export function apiErrorDetail(err: unknown, fallback: string): string {
+  const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  return typeof detail === "string" && detail ? detail : fallback;
+}
+
 export const NO_SOURCE_LABEL = "No source";
 
 export const sourceLabel = (source: string | null | undefined) => source?.trim() || NO_SOURCE_LABEL;
@@ -49,7 +55,14 @@ export function useLiveSummary(propertyId: string | null | undefined) {
     }
   }, [propertyId]);
 
-  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => {
+    if (!propertyId) return;
+    let cancelled = false;
+    roomsAPI.liveSummary(propertyId)
+      .then(res => { if (!cancelled) { setSummary(res.data); setFailed(false); } })
+      .catch(() => { if (!cancelled) setFailed(true); });
+    return () => { cancelled = true; };
+  }, [propertyId]);
 
   const bookingByRoom = useMemo(() => {
     const map = new Map<string, LiveBooking>();
