@@ -32,10 +32,10 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-// Compares by UTC calendar date, not by Date-object-in-local-time. shift_date
-// from the backend and the iso we send when creating a shift are both built
-// as "<local-calendar-date>T00:00:00.000Z" (see getWeekDays), so comparing on
-// UTC Y-M-D keeps this correct regardless of the viewer's own timezone offset.
+// shift_date from the backend and the iso we send when creating a shift are both
+// "<local-calendar-date>T00:00:00" with no timezone (the backend rejects a UTC
+// suffix on these columns), so both parse the same way and compare correctly
+// regardless of the viewer's own timezone offset.
 function dateKey(iso: string): string {
   const d = new Date(iso);
   return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
@@ -60,7 +60,7 @@ function getWeekDays(): WeekDay[] {
     const day2 = String(d.getDate()).padStart(2, "0");
     return {
       date: d,
-      iso: `${y}-${m}-${day2}T00:00:00.000Z`,
+      iso: `${y}-${m}-${day2}T00:00:00`,
       label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       dayName: d.toLocaleDateString("en-US", { weekday: "short" }),
     };
