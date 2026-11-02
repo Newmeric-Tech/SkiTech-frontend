@@ -78,6 +78,10 @@ const managerNav: NavItem[] = [
   { icon: Trophy,          label: "Employee Ranking",   href: "/manager/employee-ranking/dashboard", feature: "employee_ranking" },
 ];
 
+const managerConfigNav: NavItem[] = [
+  { icon: Settings, label: "Settings", href: "/manager/settings" },
+];
+
 const staffNav: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard",    href: "/staff" },
   { icon: Clock,           label: "Punch In/Out", href: "/staff/punch",                              feature: "attendance" },
@@ -88,6 +92,10 @@ const staffNav: NavItem[] = [
   { icon: AlertCircle,     label: "My Complaints",href: "/staff/complaints" },
   { icon: Folder,          label: "Documents",    href: "/staff/document-management" },
   { icon: Trophy,          label: "My Ranking",   href: "/staff/employee-ranking/staff-dashboard",   feature: "employee_ranking" },
+];
+
+const staffConfigNav: NavItem[] = [
+  { icon: Settings, label: "Settings", href: "/staff/settings" },
 ];
 
 
@@ -161,11 +169,11 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
     }
   } else if (pathname.startsWith("/manager")) {
     navItems = managerNav;
-    configNavItems = []; // No config for managers as per example
+    configNavItems = managerConfigNav;
     roleLabel = "Manager";
   } else if (pathname.startsWith("/staff")) {
     navItems = staffNav;
-    configNavItems = [];
+    configNavItems = staffConfigNav;
     roleLabel = "Staff";
   }
 
@@ -265,7 +273,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
             })}
           </div>
 
-          {/* Configuration Nav (only owner) */}
+          {/* Configuration Nav (owner; Settings only for manager and staff) */}
           {configNavItems.filter(hasAccess).length > 0 && (
             <div className="space-y-1">
               {!collapsed && <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">Configuration</p>}
