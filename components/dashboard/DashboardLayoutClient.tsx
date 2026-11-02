@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import NotificationPanel from "@/components/dashboard/NotificationPanel";
 import { ProfileMenu } from "@/components/dashboard/ProfileMenu";
+import { SidebarTooltip } from "@/components/dashboard/SidebarTooltip";
 import { inboxAPI } from "@/lib/api/inbox";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
@@ -219,7 +220,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto py-6 space-y-8 px-4 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden py-6 space-y-8 px-4 custom-scrollbar">
           {/* Main Nav */}
           <div className="space-y-1">
             {!collapsed && <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">Main Menu</p>}
@@ -246,11 +247,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                       </span>
                     )
                   )}
-                  {collapsed && (
-                    <div className="absolute left-full ml-3 bg-black text-white text-xs px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none shadow-lg">
-                      {item.label}
-                    </div>
-                  )}
+                  {collapsed && <SidebarTooltip label={item.label} />}
                 </Link>
               );
             })}
@@ -274,11 +271,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                   >
                     <item.icon className={`w-[22px] h-[22px] shrink-0 ${isActive ? "text-white dark:text-black" : "text-neutral-500 dark:text-[#a0a0a0] group-hover:text-black dark:group-hover:text-white"}`} />
                     {!collapsed && <span className="font-medium whitespace-nowrap">{item.label}</span>}
-                    {collapsed && (
-                      <div className="absolute left-full ml-3 bg-black text-white text-xs px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none shadow-lg">
-                        {item.label}
-                      </div>
-                    )}
+                    {collapsed && <SidebarTooltip label={item.label} />}
                   </Link>
                 );
               })}

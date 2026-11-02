@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { ProfileMenu } from "@/components/dashboard/ProfileMenu";
+import { SidebarTooltip } from "@/components/dashboard/SidebarTooltip";
 import { useAuthStore } from "@/store/authStore";
 
 const superadminNav = [
@@ -105,7 +106,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto py-6 space-y-8 px-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden py-6 space-y-8 px-4">
           <div className="space-y-1">
             {!collapsed && <p className="text-xs font-semibold text-white/30 uppercase tracking-wider px-2 mb-2">Platform</p>}
             {superadminNav.map((item) => {
@@ -122,11 +123,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
                 >
                   <item.icon className="w-5 h-5" />
                   {!collapsed && <span className="font-medium whitespace-nowrap">{item.label}</span>}
-                  {collapsed && (
-                    <div className="absolute left-full ml-4 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
-                      {item.label}
-                    </div>
-                  )}
+                  {collapsed && <SidebarTooltip label={item.label} />}
                 </Link>
               );
             })}
@@ -149,6 +146,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
                   >
                     <item.icon className="w-5 h-5" />
                     {!collapsed && <span className="font-medium whitespace-nowrap">{item.label}</span>}
+                    {collapsed && <SidebarTooltip label={item.label} />}
                   </Link>
                 );
               })}
