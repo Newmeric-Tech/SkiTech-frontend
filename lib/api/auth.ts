@@ -1,4 +1,13 @@
+import axios from "axios";
 import api from "@/lib/config/app";
+
+export const SERVER_WAKING_MESSAGE = "Server is waking up, please try again in a moment.";
+
+/** No answer at all (network error or timeout), as when the backend is cold-starting */
+export const isNoResponse = (err: unknown) => axios.isAxiosError(err) && !err.response;
+
+/** HTTP status of a failed request, if the server answered */
+export const errorStatus = (err: unknown) => (axios.isAxiosError(err) ? err.response?.status : undefined);
 
 export const authAPI = {
   login: (email: string, password: string) =>
