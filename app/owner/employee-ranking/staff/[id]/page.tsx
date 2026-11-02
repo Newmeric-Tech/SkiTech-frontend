@@ -13,6 +13,7 @@ import { rankingAPI, BackendEmployeeRanking } from "@/lib/api/ranking";
 const CRITERION_META: Record<string, { label: string; color: string }> = {
   "Attendance & Functionality":     { label: "Attendance",        color: "#3B82F6" },
   "Task Completion":                { label: "Task Completion",   color: "#10B981" },
+  "KRA Completion":                 { label: "KRA Completion",    color: "#14B8A6" },
   "Task Quality & Cleanliness":     { label: "Task Quality",      color: "#8B5CF6" },
   "Manager Review & Behaviour":     { label: "Manager Review",    color: "#F59E0B" },
   "Customer Feedback / Complaints": { label: "Guest Satisfaction",color: "#EC4899" },

@@ -3,6 +3,7 @@
  * Wraps all /v1/rankings/* endpoints
  */
 import api from "@/lib/config/app";
+import { localDateString, localWeekStart } from "@/lib/utils/localDate";
 
 // ─── Enums ────────────────────────────────────────────────
 export type RankingPeriodType = "weekly" | "monthly" | "yearly";
@@ -162,29 +163,26 @@ export const rankingAPI = {
 
 // ─── Period helpers ────────────────────────────────────────
 
-/** Returns ISO start/end strings for the current weekly/monthly/yearly period */
+/**
+ * Returns the current weekly/monthly/yearly period's local boundaries, with no
+ * UTC suffix: toISOString() would start an Indian week on Sunday 18:30 UTC.
+ */
 export function getPeriodDates(type: RankingPeriodType): { start: string; end: string } {
   const now = new Date();
   let start: Date, end: Date;
 
   if (type === "weekly") {
-    const day = now.getDay();
-    const diffToMon = day === 0 ? -6 : 1 - day;
-    start = new Date(now);
-    start.setDate(now.getDate() + diffToMon);
-    start.setHours(0, 0, 0, 0);
-    end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
+    start = localWeekStart(now);
+    end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
   } else if (type === "monthly") {
     start = new Date(now.getFullYear(), now.getMonth(), 1);
-    end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   } else {
     start = new Date(now.getFullYear(), 0, 1);
-    end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+    end = new Date(now.getFullYear(), 11, 31);
   }
 
-  return { start: start.toISOString(), end: end.toISOString() };
+  return { start: `${localDateString(start)}T00:00:00`, end: `${localDateString(end)}T23:59:59` };
 }
 
 // ─── Mappers ──────────────────────────────────────────────
