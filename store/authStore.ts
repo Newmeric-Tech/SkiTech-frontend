@@ -56,7 +56,8 @@ interface AuthState {
 
   login: (email: string, password: string, selectedRole?: string) => Promise<string>;
   googleLogin: (credential: string, selectedRole?: string) => Promise<string>;
-  logout: () => void;
+  /** Clears the session, then loads redirectTo (default /auth/login). */
+  logout: (redirectTo?: string) => void;
   clearError: () => void;
   refreshFeatures: () => Promise<void>;
 }
@@ -258,7 +259,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      logout: () => {
+      logout: (redirectTo = "/auth/login") => {
         sessionStorage.removeItem("skitech_access_token");
         sessionStorage.removeItem("skitech_refresh_token");
         sessionStorage.removeItem("skitech_role");
@@ -272,7 +273,7 @@ export const useAuthStore = create<AuthState>()(
           features: DEFAULT_FEATURES,
         });
 
-        window.location.href = "/auth/login";
+        window.location.href = redirectTo;
       },
 
       clearError: () => set({ error: null }),

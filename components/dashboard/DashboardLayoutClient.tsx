@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Playfair_Display } from "next/font/google";
@@ -17,13 +16,14 @@ const playfairDisplay = Playfair_Display({
 });
 import {
   Zap, LayoutDashboard, Building2, Users, UserCheck, BarChart3,
-  Shield, Truck, FileText, Settings, LogOut, ChevronLeft, ChevronRight,
+  Shield, Truck, FileText, Settings, ChevronLeft, ChevronRight,
   Bell, Search, Briefcase, Menu, ClipboardList, Clock, Package,
   ShieldCheck, Layers, X, Sun, Moon, BedDouble,
   Folder, AlertCircle, Activity, Trophy, CalendarClock, CalendarDays,
   Inbox, MapPin,
 } from "lucide-react";
 import NotificationPanel from "@/components/dashboard/NotificationPanel";
+import { ProfileMenu } from "@/components/dashboard/ProfileMenu";
 import { inboxAPI } from "@/lib/api/inbox";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
@@ -121,12 +121,6 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
   }, [onManagerPortal, pathname]);
   const router = useRouter();
   const { user, features, refreshFeatures, isAuthenticated, logout } = useAuthStore();
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [domReady, setDomReady] = useState(false);
-  const profileRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setDomReady(true); }, []);
-
   // Refresh features from server on every mount so stale localStorage never persists
   useEffect(() => {
     if (isAuthenticated) refreshFeatures();
@@ -170,11 +164,6 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
     roleLabel = "Staff";
     settingsHref = "/staff/settings";
   }
-
-  const handleLogout = () => {
-    setProfileOpen(false);
-    logout();
-  };
 
   if (!mounted) return <div className="h-screen bg-[#f4f3ef] dark:bg-[#0a0a0a]" />;
   return (
@@ -372,80 +361,14 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
 
             <div className="h-8 w-[1px] bg-black/10 dark:bg-white/10 hidden sm:block" />
 
-            {/* Profile trigger */}
-            <div ref={profileRef}>
-              <button
-                onClick={() => setProfileOpen(o => !o)}
-                className="flex items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-black/5 dark:hover:bg-white/8 transition-colors"
-              >
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-semibold text-black dark:text-white leading-tight">
-                    {user?.first_name} {user?.last_name}
-                  </p>
-                  <p className="text-xs text-neutral-500 dark:text-[#a0a0a0] leading-tight">
-                    {user?.role || roleLabel}
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-black/5 dark:bg-white/10 backdrop-blur rounded-xl border border-black/10 dark:border-white/15 flex items-center justify-center text-black dark:text-white font-bold shadow-sm shrink-0">
-                  {user?.first_name?.[0]}{user?.last_name?.[0]}
-                </div>
-              </button>
-            </div>
-
-            {/* Profile dropdown — portal so it escapes stacking contexts */}
-            {domReady && createPortal(
-              <AnimatePresence>
-                {profileOpen && (
-                  <>
-                    <div className="fixed inset-0 z-[9998]" onClick={() => setProfileOpen(false)} />
-                    <motion.div
-                      initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                      transition={{ duration: 0.15, ease: "easeOut" }}
-                      className="fixed top-[88px] right-4 w-72 bg-white dark:bg-[#111111] rounded-2xl shadow-xl border border-black/10 dark:border-white/10 overflow-hidden z-[9999]"
-                    >
-                      {/* User info */}
-                      <div className="px-4 py-3.5 border-b border-black/8 dark:border-white/8 flex items-center gap-3">
-                        <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-black font-bold text-sm shrink-0">
-                          {user?.first_name?.[0]}{user?.last_name?.[0]}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-black dark:text-white truncate">
-                            {user?.first_name} {user?.last_name}
-                          </p>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                            {user?.email || (user?.role || roleLabel)}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Settings (manager, staff) and sign out */}
-                      <div className="p-2">
-                        {settingsHref && (
-                          <Link
-                            href={settingsHref}
-                            onClick={() => setProfileOpen(false)}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-neutral-700 dark:text-[#c8c8c8] hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-sm font-medium"
-                          >
-                            <Settings className="w-4 h-4" />
-                            Settings
-                          </Link>
-                        )}
-                        <button
-                          onClick={handleLogout}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors text-sm font-medium"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Sign Out
-                        </button>
-                      </div>
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>,
-              document.body
-            )}
+            <ProfileMenu
+              name={`${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim()}
+              roleLabel={user?.role || roleLabel}
+              detail={user?.email}
+              initials={`${user?.first_name?.[0] ?? ""}${user?.last_name?.[0] ?? ""}`}
+              items={settingsHref ? [{ icon: Settings, label: "Settings", href: settingsHref }] : []}
+              onSignOut={() => logout()}
+            />
           </div>
         </header>
 

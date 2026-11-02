@@ -6,10 +6,12 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, LayoutDashboard, Building2, Users, Shield, BarChart3,
-  Settings, LogOut, ChevronLeft, ChevronRight, Menu, X,
+  Settings, ChevronLeft, ChevronRight, Menu, X,
   Eye, AlertTriangle, Bell, Search, FileText, Sun, Moon, CreditCard, ShieldCheck,
 } from "lucide-react";
 import { RoleGuard } from "@/components/auth/RoleGuard";
+import { ProfileMenu } from "@/components/dashboard/ProfileMenu";
+import { useAuthStore } from "@/store/authStore";
 
 const superadminNav = [
   { icon: LayoutDashboard, label: "Overview", href: "/superadmin" },
@@ -33,6 +35,11 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const pathname = usePathname();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  // The superadmin login page doesn't store a name; a sign-in through the
+  // normal login page does
+  const fullName = `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim();
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -157,12 +164,6 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
           >
             {collapsed ? <ChevronRight className="w-5 h-5 mx-auto" /> : <><ChevronLeft className="w-5 h-5" /> <span className="font-medium text-sm">Collapse</span></>}
           </button>
-          <button
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/50 hover:bg-white/10 hover:text-white transition-colors ${collapsed ? "justify-center" : ""}`}
-          >
-            <LogOut className="w-5 h-5" />
-            {!collapsed && <span className="font-medium text-sm">Sign Out</span>}
-          </button>
         </div>
       </motion.aside>
 
@@ -202,15 +203,13 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
               <span className="absolute top-0 right-0 w-2 h-2 bg-black dark:bg-white rounded-full border-2 border-white dark:border-[#1c1c1c]" />
             </button>
             <div className="h-8 w-[1px] bg-black/10 dark:bg-white/10 hidden sm:block" />
-            <div className="flex items-center gap-3">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold text-black dark:text-white">Super Admin</p>
-                <p className="text-xs text-neutral-500 dark:text-[#707070]">Platform Owner</p>
-              </div>
-              <div className="w-10 h-10 bg-black dark:bg-[#2a2a2a] rounded-full flex items-center justify-center text-white font-bold shadow-sm">
-                SA
-              </div>
-            </div>
+            <ProfileMenu
+              name={fullName || "Super Admin"}
+              roleLabel="Platform Owner"
+              detail={user?.email}
+              initials={fullName ? `${user?.first_name?.[0] ?? ""}${user?.last_name?.[0] ?? ""}` : "SA"}
+              onSignOut={() => logout("/auth/superadmin-login")}
+            />
           </div>
         </header>
 
