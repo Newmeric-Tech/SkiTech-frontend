@@ -17,7 +17,7 @@ const playfairDisplay = Playfair_Display({
 import {
   Zap, LayoutDashboard, Building2, Users, UserCheck, BarChart3,
   Shield, Truck, FileText, Settings, ChevronLeft, ChevronRight,
-  Bell, Search, Briefcase, Menu, ClipboardList, Clock, Package,
+  Bell, Briefcase, Menu, ClipboardList, Clock, Package,
   ShieldCheck, Layers, X, Sun, Moon, BedDouble,
   Folder, AlertCircle, Activity, Trophy, CalendarClock, CalendarDays,
   Inbox, MapPin,
@@ -96,8 +96,6 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
   const [mounted, setMounted] = useState(false);
   const { dark, toggle: toggleDark } = useDarkMode();
   const [notifOpen, setNotifOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   useEffect(() => {
     setMounted(true);
   }, [])
@@ -321,35 +319,6 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                 <span className="absolute top-0 right-0 w-2 h-2 bg-amber-500 rounded-full border-2 border-white dark:border-[#111111]" />
               </button>
               <NotificationPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
-            </div>
-
-            {/* Search */}
-            <div className="relative hidden sm:block">
-              {searchOpen ? (
-                <div className="flex items-center gap-2 bg-black/5 dark:bg-white/8 rounded-lg px-3 py-1.5 border border-black/10 dark:border-white/15">
-                  <Search className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                  <input
-                    autoFocus
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onBlur={() => { if (!searchQuery) setSearchOpen(false); }}
-                    placeholder="Search..."
-                    className="bg-transparent w-36 text-sm text-black dark:text-white placeholder:text-neutral-400 focus:outline-none"
-                  />
-                  <button onClick={() => { setSearchOpen(false); setSearchQuery(""); }} className="text-neutral-400 hover:text-black dark:hover:text-white transition-colors">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setSearchOpen(true)}
-                  className="flex items-center justify-center w-9 h-9 rounded-lg border border-black/10 dark:border-white/15 bg-white/60 dark:bg-white/5 text-neutral-600 dark:text-[#c0c0c0] hover:bg-black/5 dark:hover:bg-white/10 transition-all"
-                  title="Search"
-                >
-                  <Search className="w-4 h-4" />
-                </button>
-              )}
             </div>
 
             <div className="h-8 w-[1px] bg-black/10 dark:bg-white/10 hidden sm:block" />

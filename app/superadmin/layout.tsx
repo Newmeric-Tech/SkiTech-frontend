@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, LayoutDashboard, Building2, Users, Shield, BarChart3,
   Settings, ChevronLeft, ChevronRight, Menu, X,
-  Eye, AlertTriangle, Bell, Search, FileText, Sun, Moon, CreditCard, ShieldCheck,
+  Eye, AlertTriangle, Bell, FileText, Sun, Moon, CreditCard, ShieldCheck,
 } from "lucide-react";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { ProfileMenu } from "@/components/dashboard/ProfileMenu";
@@ -179,15 +179,6 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="relative hidden md:block w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-              <input
-                type="text"
-                placeholder="Search platform..."
-                className="w-full pl-10 pr-4 py-2 bg-white/50 dark:bg-[#252525]/50 border border-black/10 dark:border-white/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 transition-all backdrop-blur"
-              />
-            </div>
-
             <button
               onClick={toggleDark}
               className="flex items-center justify-center w-9 h-9 rounded-lg border border-black/10 dark:border-white/15 bg-white/60 dark:bg-white/5 text-neutral-600 dark:text-[#c0c0c0] hover:bg-black/5 dark:hover:bg-white/10 transition-all"
