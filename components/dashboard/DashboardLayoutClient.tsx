@@ -78,10 +78,6 @@ const managerNav: NavItem[] = [
   { icon: Trophy,          label: "Employee Ranking",   href: "/manager/employee-ranking/dashboard", feature: "employee_ranking" },
 ];
 
-const managerConfigNav: NavItem[] = [
-  { icon: Settings, label: "Settings", href: "/manager/settings" },
-];
-
 const staffNav: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard",    href: "/staff" },
   { icon: Clock,           label: "Punch In/Out", href: "/staff/punch",                              feature: "attendance" },
@@ -92,10 +88,6 @@ const staffNav: NavItem[] = [
   { icon: AlertCircle,     label: "My Complaints",href: "/staff/complaints" },
   { icon: Folder,          label: "Documents",    href: "/staff/document-management" },
   { icon: Trophy,          label: "My Ranking",   href: "/staff/employee-ranking/staff-dashboard",   feature: "employee_ranking" },
-];
-
-const staffConfigNav: NavItem[] = [
-  { icon: Settings, label: "Settings", href: "/staff/settings" },
 ];
 
 
@@ -152,6 +144,8 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
   let navItems: NavItem[] = [];
   let configNavItems: NavItem[] = [];
   let roleLabel = "";
+  // Manager and Staff reach their Settings page from the profile menu
+  let settingsHref: string | null = null;
 
   if (pathname.startsWith("/owner")) {
     navItems = ownerNav;
@@ -169,12 +163,12 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
     }
   } else if (pathname.startsWith("/manager")) {
     navItems = managerNav;
-    configNavItems = managerConfigNav;
     roleLabel = "Manager";
+    settingsHref = "/manager/settings";
   } else if (pathname.startsWith("/staff")) {
     navItems = staffNav;
-    configNavItems = staffConfigNav;
     roleLabel = "Staff";
+    settingsHref = "/staff/settings";
   }
 
   const handleLogout = () => {
@@ -273,7 +267,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
             })}
           </div>
 
-          {/* Configuration Nav (owner; Settings only for manager and staff) */}
+          {/* Configuration Nav (owner only) */}
           {configNavItems.filter(hasAccess).length > 0 && (
             <div className="space-y-1">
               {!collapsed && <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">Configuration</p>}
@@ -426,8 +420,18 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
                         </div>
                       </div>
 
-                      {/* Sign out */}
+                      {/* Settings (manager, staff) and sign out */}
                       <div className="p-2">
+                        {settingsHref && (
+                          <Link
+                            href={settingsHref}
+                            onClick={() => setProfileOpen(false)}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-neutral-700 dark:text-[#c8c8c8] hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-sm font-medium"
+                          >
+                            <Settings className="w-4 h-4" />
+                            Settings
+                          </Link>
+                        )}
                         <button
                           onClick={handleLogout}
                           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors text-sm font-medium"
