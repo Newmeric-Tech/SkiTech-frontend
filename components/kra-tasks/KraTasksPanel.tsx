@@ -321,7 +321,6 @@ export default function KraTasksPanel({ propertyId, canAssignManagers }: {
   const hasLoaded = useRef(false);
 
   const load = useCallback(async () => {
-    setError("");
     try {
       // One assignments call for all, grouped below, rather than one per definition
       const [definitionRows, assignmentRows] = await Promise.all([
@@ -330,6 +329,7 @@ export default function KraTasksPanel({ propertyId, canAssignManagers }: {
       ]);
       setDefinitions(definitionRows);
       setAssignments(assignmentRows);
+      setError("");
       hasLoaded.current = true;
     } catch (err) {
       if (hasLoaded.current) toast.error(kraErrorMessage(err));
@@ -346,7 +346,7 @@ export default function KraTasksPanel({ propertyId, canAssignManagers }: {
 
   const closeAndReload = () => { setDialog(null); load(); };
 
-  if (error) return <KraErrorState message={error} onRetry={load} />;
+  if (error) return <KraErrorState message={error} onRetry={() => { setError(""); load(); }} />;
   if (definitions === null) return <KraLoading />;
 
   return (

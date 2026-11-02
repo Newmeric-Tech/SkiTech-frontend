@@ -26,8 +26,6 @@ export function useKraPeople(propertyId: string) {
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    setPeople(null);
-    setError("");
     try {
       const [staff, managers] = await Promise.all([
         usersAPI.list(propertyId, "Staff"),
@@ -37,6 +35,7 @@ export function useKraPeople(propertyId: string) {
         ...staff.data.map((user) => toPerson(user, "Staff")),
         ...managers.data.map((user) => toPerson(user, "Manager")),
       ].sort((a, b) => a.name.localeCompare(b.name)));
+      setError("");
     } catch (err) {
       setError(kraErrorMessage(err));
     }
@@ -44,5 +43,7 @@ export function useKraPeople(propertyId: string) {
 
   useEffect(() => { load(); }, [load]);
 
-  return { people, error, reload: load };
+  const reload = () => { setPeople(null); setError(""); load(); };
+
+  return { people, error, reload };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import {
   KRA_FREQUENCIES, KraDisplayStatus, KraFrequency, KraOccurrencePage, KraSummary,
@@ -66,14 +66,11 @@ export default function KraProgressPanel({ propertyId }: { propertyId: string })
   const [status, setStatus] = useState<KraDisplayStatus | "">("");
   const [skip, setSkip] = useState(0);
 
-  const [summary, setSummary] = useState<KraSummary | null>(null);
-  const [summaryError, setSummaryError] = useState("");
-  const [page, setPage] = useState<KraOccurrencePage | null>(null);
-  const [pageError, setPageError] = useState("");
-  const [loadingPage, setLoadingPage] = useState(true);
+  // Each answer keeps the key of its request, so one for older filters is never shown as current
+  const [summaryResult, setSummaryResult] = useState<{ key: string; data?: KraSummary; error?: string } | null>(null);
+  const [pageResult, setPageResult] = useState<{ key: string; error?: string } | null>(null);
+  const [page, setPage] = useState<KraOccurrencePage | null>(null); // stays visible while the next one loads
   const [retry, setRetry] = useState(0);
-  const summaryRequest = useRef(0);
-  const pageRequest = useRef(0);
 
   const { people } = useKraPeople(propertyId);
 
@@ -85,21 +82,21 @@ export default function KraProgressPanel({ propertyId }: { propertyId: string })
     ? "Choose both dates."
     : range.from > range.to ? "The start date must not be after the end date." : "";
 
-  useEffect(() => {
-    if (rangeProblem) return;
-    const request = ++summaryRequest.current;
-    setSummary(null);
-    setSummaryError("");
-    kraTasksAPI.summary({ property_id: propertyId, period_from: range.from, period_to: range.to })
-      .then((data) => { if (request === summaryRequest.current) setSummary(data); })
-      .catch((err) => { if (request === summaryRequest.current) setSummaryError(kraErrorMessage(err)); });
-  }, [propertyId, range.from, range.to, rangeProblem, retry]);
+  const summaryKey = `${range.from}|${range.to}|${retry}`;
+  const pageKey = `${summaryKey}|${userId}|${frequency}|${status}|${skip}`;
 
   useEffect(() => {
     if (rangeProblem) return;
-    const request = ++pageRequest.current;
-    setLoadingPage(true);
-    setPageError("");
+    let cancelled = false;
+    kraTasksAPI.summary({ property_id: propertyId, period_from: range.from, period_to: range.to })
+      .then((data) => { if (!cancelled) setSummaryResult({ key: summaryKey, data }); })
+      .catch((err) => { if (!cancelled) setSummaryResult({ key: summaryKey, error: kraErrorMessage(err) }); });
+    return () => { cancelled = true; };
+  }, [propertyId, range.from, range.to, rangeProblem, summaryKey]);
+
+  useEffect(() => {
+    if (rangeProblem) return;
+    let cancelled = false;
     kraTasksAPI.listOccurrences({
       property_id: propertyId,
       user_id: userId || undefined,
@@ -110,10 +107,16 @@ export default function KraProgressPanel({ propertyId }: { propertyId: string })
       skip,
       limit: PAGE_SIZE,
     })
-      .then((data) => { if (request === pageRequest.current) setPage(data); })
-      .catch((err) => { if (request === pageRequest.current) setPageError(kraErrorMessage(err)); })
-      .finally(() => { if (request === pageRequest.current) setLoadingPage(false); });
-  }, [propertyId, range.from, range.to, rangeProblem, userId, frequency, status, skip, retry]);
+      .then((data) => { if (!cancelled) { setPage(data); setPageResult({ key: pageKey }); } })
+      .catch((err) => { if (!cancelled) setPageResult({ key: pageKey, error: kraErrorMessage(err) }); });
+    return () => { cancelled = true; };
+  }, [propertyId, range.from, range.to, rangeProblem, userId, frequency, status, skip, pageKey]);
+
+  const currentSummary = summaryResult?.key === summaryKey ? summaryResult : null;
+  const summary = currentSummary?.data;
+  const summaryError = currentSummary?.error;
+  const loadingPage = pageResult?.key !== pageKey;
+  const pageError = loadingPage ? "" : pageResult?.error;
 
   const items = page?.items ?? [];
   const total = page?.total ?? 0;

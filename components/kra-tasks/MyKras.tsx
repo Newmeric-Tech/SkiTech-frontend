@@ -197,9 +197,9 @@ export default function MyKras() {
   const hasLoaded = useRef(false);
 
   const load = useCallback(async () => {
-    setError("");
     try {
       setTasks(await kraTasksAPI.myTasks(localDateString()));
+      setError("");
       hasLoaded.current = true;
     } catch (err) {
       const message = kraErrorMessage(err, LOAD_ERRORS);
@@ -224,7 +224,7 @@ export default function MyKras() {
   const openCount = (frequency: KraFrequency) =>
     byFrequency[frequency].filter((task) => task.status !== "completed").length;
 
-  if (error) return <KraErrorState message={error} onRetry={() => { setTasks(null); load(); }} />;
+  if (error) return <KraErrorState message={error} onRetry={() => { setError(""); setTasks(null); load(); }} />;
   if (tasks === null) return <KraLoading />;
   if (tasks.length === 0) {
     return (
