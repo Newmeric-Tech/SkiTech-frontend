@@ -7,7 +7,7 @@ import {
   FileText, ShieldAlert, ArrowRight, Download, MoreVertical,
   UploadCloud, Archive, Clock, Search, Filter, CheckCircle, 
   ShieldCheck, FilePlus, ChevronLeft, Calendar, User, AlignLeft,
-  X, Check, RefreshCw, Send, Undo2, Users, FileCode, Paperclip
+  X, Check, RefreshCw, Send, Undo2, Users, FileCode
 } from "lucide-react";
 import { useDocumentStore, DocumentWithExtra, ActivityLog } from "@/lib/useDocumentStore";
 import { documentApi } from "@/lib/document-api";
@@ -57,7 +57,6 @@ export default function DocumentOverviewPage() {
   const [editorAccess, setEditorAccess] = useState<any>("Private");
   const [editorTags, setEditorTags] = useState("");
   const [editorCollaborators, setEditorCollaborators] = useState<string[]>([]);
-  const [editorAttachments, setEditorAttachments] = useState<string[]>([]);
   const [staffList, setStaffList] = useState<{ id: string; name: string }[]>([]);
   const [autoSaveStatus, setAutoSaveStatus] = useState("Saved as Draft");
   const [activeTemplate, setActiveTemplate] = useState("blank");
@@ -1046,18 +1045,6 @@ export default function DocumentOverviewPage() {
                         </label>
                       );
                     })}
-                  </div>
-                </div>
-
-                {/* Attach Media files */}
-                <div>
-                  <h4 className="font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <Paperclip className="w-4 h-4 text-neutral-400" />
-                    Attached Media files
-                  </h4>
-                  <div className="border border-dashed border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/5 cursor-pointer">
-                    <Paperclip className="w-6 h-6 text-neutral-500 mb-2" />
-                    <span className="text-[10px] text-neutral-400">Click to link auxiliary assets</span>
                   </div>
                 </div>
 
