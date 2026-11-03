@@ -17,15 +17,15 @@ const playfairDisplay = Playfair_Display({
 import {
   Zap, LayoutDashboard, Building2, Users, UserCheck, BarChart3,
   Shield, Truck, FileText, Settings, ChevronLeft, ChevronRight,
-  Bell, Briefcase, Menu, ClipboardList, Clock, Package,
+  Briefcase, Menu, ClipboardList, Clock, Package,
   ShieldCheck, Layers, X, Sun, Moon, BedDouble,
   Folder, AlertCircle, Activity, Trophy, CalendarClock, CalendarDays,
   Inbox, MapPin,
 } from "lucide-react";
-import NotificationPanel from "@/components/dashboard/NotificationPanel";
+import { NotificationBell } from "@/components/dashboard/NotificationBell";
 import { ProfileMenu } from "@/components/dashboard/ProfileMenu";
+import type { InboxPortal } from "@/lib/api/inbox";
 import { SidebarTooltip } from "@/components/dashboard/SidebarTooltip";
-import { inboxAPI } from "@/lib/api/inbox";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
 type NavItem = {
@@ -95,7 +95,6 @@ const staffNav: NavItem[] = [
 export function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const { dark, toggle: toggleDark } = useDarkMode();
-  const [notifOpen, setNotifOpen] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, [])
@@ -107,17 +106,9 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
   }, []);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  // Unread inbox count for the manager sidebar badge, from the header bell
+  // (which polls it and refetches on navigation)
   const [inboxUnread, setInboxUnread] = useState(0);
-  const onManagerPortal = pathname.startsWith("/manager");
-
-  // Unread inbox count for the manager sidebar badge; one cheap count query
-  // per navigation (GET /inbox/unread-count), only on manager pages.
-  useEffect(() => {
-    if (!onManagerPortal) return;
-    let cancelled = false;
-    inboxAPI.unreadCount().then((n) => { if (!cancelled) setInboxUnread(n); }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [onManagerPortal, pathname]);
   const router = useRouter();
   const { user, features, refreshFeatures, isAuthenticated, logout } = useAuthStore();
   // Refresh features from server on every mount so stale localStorage never persists
@@ -139,6 +130,9 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
   let roleLabel = "";
   // Manager and Staff reach their Settings page from the profile menu
   let settingsHref: string | null = null;
+  // Where bell items link to, and the full inbox page (staff have none yet)
+  let portal: InboxPortal = "owner";
+  let inboxHref: string | undefined = "/owner/inbox";
 
   if (pathname.startsWith("/owner")) {
     navItems = ownerNav;
@@ -158,10 +152,14 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
     navItems = managerNav;
     roleLabel = "Manager";
     settingsHref = "/manager/settings";
+    portal = "manager";
+    inboxHref = "/manager/inbox";
   } else if (pathname.startsWith("/staff")) {
     navItems = staffNav;
     roleLabel = "Staff";
     settingsHref = "/staff/settings";
+    portal = "staff";
+    inboxHref = undefined;
   }
 
   if (!mounted) return <div className="h-screen bg-[#f4f3ef] dark:bg-[#0a0a0a]" />;
@@ -310,16 +308,13 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
               {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            <div className="relative">
-              <button
-                onClick={() => setNotifOpen(o => !o)}
-                className="relative text-neutral-500 dark:text-[#a0a0a0] hover:text-black dark:hover:text-white transition-colors"
-              >
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-0 right-0 w-2 h-2 bg-amber-500 rounded-full border-2 border-white dark:border-[#111111]" />
-              </button>
-              <NotificationPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
-            </div>
+            <NotificationBell
+              portal={portal}
+              viewAllHref={inboxHref}
+              showTodayAtAGlance
+              refreshKey={pathname}
+              onCountChange={setInboxUnread}
+            />
 
             <div className="h-8 w-[1px] bg-black/10 dark:bg-white/10 hidden sm:block" />
 

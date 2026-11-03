@@ -16,7 +16,9 @@ const typeConfig: Record<string, { icon: LucideIcon; color: string; bg: string }
 };
 
 export function fmtInboxDate(iso: string): string {
-  const d = new Date(iso);
+  // The API sends UTC without an offset (the column has no time zone);
+  // without the "Z" the browser would read it as local time.
+  const d = new Date(/[zZ]|[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`);
   const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
   if (diffMin < 1) return "just now";
   if (diffMin < 60) return `${diffMin}m ago`;

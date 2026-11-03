@@ -7,9 +7,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, LayoutDashboard, Building2, Users, Shield, BarChart3,
   Settings, ChevronLeft, ChevronRight, Menu, X,
-  Eye, AlertTriangle, Bell, FileText, Sun, Moon, CreditCard, ShieldCheck,
+  Eye, AlertTriangle, FileText, Sun, Moon, CreditCard, ShieldCheck,
 } from "lucide-react";
 import { RoleGuard } from "@/components/auth/RoleGuard";
+import { NotificationBell } from "@/components/dashboard/NotificationBell";
 import { ProfileMenu } from "@/components/dashboard/ProfileMenu";
 import { SidebarTooltip } from "@/components/dashboard/SidebarTooltip";
 import { useAuthStore } from "@/store/authStore";
@@ -191,10 +192,8 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
               {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            <button className="relative text-neutral-500 dark:text-[#a0a0a0] hover:text-black dark:hover:text-white transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-black dark:bg-white rounded-full border-2 border-white dark:border-[#1c1c1c]" />
-            </button>
+            {/* A Super Admin has items only if their account belongs to a tenant */}
+            <NotificationBell portal="owner" />
             <div className="h-8 w-[1px] bg-black/10 dark:bg-white/10 hidden sm:block" />
             <ProfileMenu
               name={fullName || "Super Admin"}

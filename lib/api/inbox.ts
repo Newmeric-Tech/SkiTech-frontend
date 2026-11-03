@@ -2,16 +2,22 @@
  * Inbox API — lib/api/inbox.ts
  * Wraps all /v1/inbox/* endpoints
  *
- * v1 sources: complaints (escalated) and inventory (low stock) only.
- * SOP approvals and shift-replacement requests are held back — see
- * DEVELOPMENT_LOG.md ("Architecture Debt") for why.
+ * Role queues: complaints (escalated), inventory (low stock), punch location
+ * requests, punch-out corrections, KRA delays. Personal items: KRA assigned,
+ * shift assigned / handed over, task assigned, outcome of your own punch
+ * location request or correction.
  */
 import api from "@/lib/config/app";
 
 export type InboxStatus = "unread" | "read" | "actioned" | "dismissed";
-export type InboxSourceModule = "complaints" | "inventory" | "attendance";
+export type InboxSourceModule = "complaints" | "inventory" | "attendance" | "kra" | "scheduling" | "sop";
 export type InboxItemType =
-  "complaint_escalated" | "low_stock" | "geofence_change_request" | "attendance_correction_request";
+  | "complaint_escalated" | "low_stock" | "geofence_change_request" | "attendance_correction_request"
+  | "kra_assigned" | "kra_delayed"
+  | "shift_assigned" | "shift_reassigned"
+  | "task_assigned"
+  | "geofence_request_approved" | "geofence_request_rejected"
+  | "attendance_correction_approved" | "attendance_correction_rejected";
 
 export interface InboxItem {
   id: string;
@@ -55,6 +61,12 @@ export const inboxAPI = {
     return data.unread_count;
   },
 
+  /** Marks every unread item you can see as read; returns how many changed. */
+  markAllRead: async (): Promise<number> => {
+    const { data } = await api.put<{ updated: number }>("/v1/inbox/read-all");
+    return data.updated;
+  },
+
   markRead: async (id: string): Promise<InboxItem> => {
     const { data } = await api.put<InboxItem>(`/v1/inbox/${id}/read`);
     return data;
@@ -71,7 +83,29 @@ export const inboxAPI = {
   },
 };
 
-export type InboxPortal = "owner" | "manager";
+export type InboxPortal = "owner" | "manager" | "staff";
+
+/** Pages for the personal item types, by portal; null for the other types. */
+function personalInboxLink(item: InboxItem, portal: InboxPortal): string | null {
+  switch (item.item_type) {
+    case "kra_assigned":
+    case "kra_delayed":
+      return `/${portal}/kra`;
+    case "shift_assigned":
+    case "shift_reassigned":
+      return `/${portal}/scheduling`;
+    case "task_assigned":
+      return portal === "owner" ? "/owner/sop" : `/${portal}/tasks`;
+    case "geofence_request_approved":
+    case "geofence_request_rejected":
+      return portal === "owner" ? "/owner/punch-locations" : "/manager/attendance";
+    case "attendance_correction_approved":
+    case "attendance_correction_rejected":
+      return portal === "owner" ? "/owner/punch-locations" : `/${portal}/punch`;
+    default:
+      return null;
+  }
+}
 
 /** Manager pages for each item type; managers can't open /owner/* pages. */
 function managerInboxLink(item: InboxItem): string {
@@ -87,6 +121,9 @@ function managerInboxLink(item: InboxItem): string {
 
 /** Resolves an inbox item to the real page that shows the underlying record. */
 export function resolveInboxLink(item: InboxItem, portal: InboxPortal = "owner"): string {
+  const personal = personalInboxLink(item, portal);
+  if (personal) return personal;
+  if (portal === "staff") return "/staff";
   if (portal === "manager") return managerInboxLink(item);
   if (item.source_module === "complaints") {
     return `/owner/complaints?highlight=${item.source_record_id}`;
