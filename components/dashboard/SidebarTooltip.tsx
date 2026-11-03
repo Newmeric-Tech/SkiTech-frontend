@@ -7,6 +7,8 @@ import { createPortal } from "react-dom";
 // hover/focus of its parent element, rendered in a portal at a fixed position
 // next to the item. A label inside the sidebar's scrolling nav would overflow
 // the 80px sidebar and give the nav a horizontal scrollbar.
+// It sits over the page, not the sidebar, so it follows the page theme:
+// black in light mode, light in dark mode (black vanished on the dark page).
 export function SidebarTooltip({ label }: { label: string }) {
   const anchorRef = useRef<HTMLSpanElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -45,7 +47,7 @@ export function SidebarTooltip({ label }: { label: string }) {
         <div
           role="tooltip"
           style={{ top: pos.top, left: pos.left }}
-          className="fixed -translate-y-1/2 bg-black text-white text-xs px-2.5 py-1 rounded-lg z-[9999] whitespace-nowrap pointer-events-none shadow-lg"
+          className="fixed -translate-y-1/2 bg-black text-white dark:bg-[#f5f5f5] dark:text-[#111111] dark:ring-1 dark:ring-black/10 text-xs px-2.5 py-1 rounded-lg z-[9999] whitespace-nowrap pointer-events-none shadow-lg"
         >
           {label}
         </div>,

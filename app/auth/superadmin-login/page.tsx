@@ -41,6 +41,10 @@ export default function SuperAdminLoginPage() {
         property_id: decoded.property_id ?? null,
         email: decoded.email,
         role: decoded.role,
+        // In the token since the backend's /auth/superadmin-login; the
+        // header falls back to "Super Admin" when both are empty
+        first_name: decoded.first_name ?? "",
+        last_name: decoded.last_name ?? "",
       };
 
       // Store tokens
