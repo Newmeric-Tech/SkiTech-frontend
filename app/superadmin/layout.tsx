@@ -80,7 +80,9 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
         initial={false}
         animate={{ width: collapsed ? 80 : 280 }}
         transition={{ duration: 0.3, ease: [0.25, 1, 0.5, 1] }}
-        className="fixed md:relative z-50 h-full bg-black text-white flex flex-col shadow-xl"
+        className={`fixed md:relative z-50 h-full bg-black text-white flex flex-col shadow-xl transition-transform duration-300 md:translate-x-0 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         {/* Logo */}
         <div className={`h-20 flex items-center ${collapsed ? "justify-center" : "px-6 justify-between"} border-b border-white/10`}>
@@ -115,6 +117,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => setMobileOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative ${
                     isActive
                       ? "bg-white text-black shadow-md shadow-white/10"
@@ -138,6 +141,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={() => setMobileOpen(false)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative ${
                       isActive
                         ? "bg-white text-black shadow-md shadow-white/10"
@@ -166,7 +170,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
       </motion.aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col h-full relative z-0">
+      <div className="flex-1 flex flex-col h-full relative z-0 min-w-0">
         {/* Header */}
         <header className="h-20 bg-white/70 dark:bg-[#1c1c1c]/80 backdrop-blur-xl border-b border-black/10 dark:border-white/10 flex items-center justify-between px-6 lg:px-10 shrink-0">
           <div className="flex items-center gap-4">
